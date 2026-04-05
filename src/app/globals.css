@@ -4,26 +4,39 @@
 
 @layer base {
   :root {
-    --background: 195 13% 95%; /* #F0F4F5 */
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 190 62% 44%; /* #28A5BD */
+    /* Primary Identity: #1FAF9A */
+    --primary: 171 70% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 79 81% 38%; /* #71A112 */
+    
+    /* Backgrounds: #FFFFFF and #F5F7F6 */
+    --background: 150 4% 97%;
+    --foreground: 221 39% 11%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 221 39% 11%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 221 39% 11%;
+    
+    --secondary: 150 4% 92%;
+    --secondary-foreground: 221 39% 11%;
+    
+    --muted: 150 4% 90%;
+    --muted-foreground: 215 14% 46%;
+    
+    /* Accent: #1FAF9A */
+    --accent: 171 70% 40%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 190 62% 44%;
-    --radius: 0.5rem;
+    
+    /* Status Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 150 4% 90%;
+    --input: 150 4% 90%;
+    --ring: 171 70% 40%;
+    
+    --radius: 10px;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -37,6 +50,33 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body;
+    -webkit-tap-highlight-color: transparent;
   }
+}
+
+@layer components {
+  .mobile-container {
+    @apply max-w-md mx-auto min-h-screen bg-white relative flex flex-col shadow-2xl;
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .glass {
+    @apply bg-white/95 backdrop-blur-md border-b border-white/20;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-bold rounded-[10px] shadow-sm transition-all active:scale-95 hover:bg-opacity-90;
+  }
+
+  .card-modern {
+    @apply bg-white rounded-[10px] border border-secondary shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all;
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
 }
