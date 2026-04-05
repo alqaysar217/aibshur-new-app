@@ -47,6 +47,54 @@
       "description": "A modern cafe",
       "imageUrl": "https://picsum.photos/seed/store4/400/200",
       "imageHint": "modern cafe"
+    },
+    {
+      "id": "category-restaurants",
+      "description": "Category icon for restaurants",
+      "imageUrl": "https://picsum.photos/seed/cat-resto/128/128",
+      "imageHint": "restaurants food"
+    },
+    {
+      "id": "category-pharmacies",
+      "description": "Category icon for pharmacies",
+      "imageUrl": "https://picsum.photos/seed/cat-pharma/128/128",
+      "imageHint": "pharmacy medicine"
+    },
+    {
+      "id": "category-supermarkets",
+      "description": "Category icon for supermarkets",
+      "imageUrl": "https://picsum.photos/seed/cat-market/128/128",
+      "imageHint": "supermarket aisle"
+    },
+    {
+      "id": "category-vegetables",
+      "description": "Category icon for vegetables",
+      "imageUrl": "https://picsum.photos/seed/cat-veg/128/128",
+      "imageHint": "fresh vegetables"
+    },
+    {
+      "id": "category-cafes",
+      "description": "Category icon for cafes",
+      "imageUrl": "https://picsum.photos/seed/cat-cafe/128/128",
+      "imageHint": "coffee shop"
+    },
+    {
+      "id": "category-beauty",
+      "description": "Category icon for beauty",
+      "imageUrl": "https://picsum.photos/seed/cat-beauty/128/128",
+      "imageHint": "cosmetics products"
+    },
+    {
+      "id": "category-sweets",
+      "description": "Category icon for sweets",
+      "imageUrl": "https://picsum.photos/seed/cat-sweets/128/128",
+      "imageHint": "desserts pastries"
+    },
+    {
+      "id": "category-bakeries",
+      "description": "Category icon for bakeries",
+      "imageUrl": "https://picsum.photos/seed/cat-bakery/128/128",
+      "imageHint": "bakery bread"
     }
   ]
 }

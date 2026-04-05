@@ -8,20 +8,20 @@ import {
 } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
 import { StoreCard } from '@/components/store-card';
-import { UtensilsCrossed, HeartPulse, ShoppingBasket, Carrot, Coffee, Sparkles, List, MapPin, Heart, Star } from 'lucide-react';
+import { List, MapPin, Heart, Star } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 
 const categories = [
-  { name: 'مطاعم', icon: UtensilsCrossed },
-  { name: 'صيدليات', icon: HeartPulse },
-  { name: 'ماركت', icon: ShoppingBasket },
-  { name: 'خضروات', icon: Carrot },
-  { name: 'كافيه', icon: Coffee },
-  { name: 'تجميل', icon: Sparkles },
-  { name: 'حلويات', icon: Sparkles },
-  { name: 'مخابز', icon: Sparkles },
+  { name: 'مطاعم', imageId: 'category-restaurants' },
+  { name: 'صيدليات', imageId: 'category-pharmacies' },
+  { name: 'ماركت', imageId: 'category-supermarkets' },
+  { name: 'خضروات', imageId: 'category-vegetables' },
+  { name: 'كافيه', imageId: 'category-cafes' },
+  { name: 'تجميل', imageId: 'category-beauty' },
+  { name: 'حلويات', imageId: 'category-sweets' },
+  { name: 'مخابز', imageId: 'category-bakeries' },
 ];
 
 const filters = [
@@ -49,6 +49,16 @@ export default function HomePage() {
     }
   });
 
+  const categoryImages = categories.map(cat => {
+      const imageData = PlaceHolderImages.find(p => p.id === cat.imageId);
+      return {
+          ...cat,
+          imageUrl: imageData?.imageUrl || '',
+          imageHint: imageData?.imageHint || '',
+          description: imageData?.description || ''
+      }
+  });
+
   return (
     <div className="bg-background min-h-screen pb-20">
       <HomeHeader />
@@ -57,10 +67,17 @@ export default function HomePage() {
         {/* Store Categories */}
         <div className="overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
           <div className="flex gap-4">
-            {categories.map((cat) => (
+            {categoryImages.map((cat) => (
               <div key={cat.name} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center shadow-sm border">
-                  <cat.icon className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center shadow-sm border overflow-hidden">
+                  <Image
+                    src={cat.imageUrl}
+                    alt={cat.description}
+                    width={64}
+                    height={64}
+                    className="object-cover w-full h-full"
+                    data-ai-hint={cat.imageHint}
+                  />
                 </div>
                 <p className="text-xs font-medium text-center text-muted-foreground">{cat.name}</p>
               </div>
