@@ -13,6 +13,18 @@
       "imageHint": "location map"
     },
     {
+      "id": "register-user-illustration",
+      "description": "An illustration for the user registration screen",
+      "imageUrl": "https://picsum.photos/seed/register-user/250/150",
+      "imageHint": "happy customer"
+    },
+    {
+      "id": "register-delegate-illustration",
+      "description": "An illustration for the delegate registration screen",
+      "imageUrl": "https://picsum.photos/seed/register-delegate/250/150",
+      "imageHint": "delivery driver"
+    },
+    {
       "id": "ad-banner-1",
       "description": "First advertisement banner",
       "imageUrl": "https://picsum.photos/seed/ad1/600/300",
