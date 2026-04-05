@@ -24,6 +24,7 @@ export default function Home() {
           width={128}
           height={128}
           priority
+          className="rounded-lg"
         />
       </div>
       <h1 className="text-4xl font-bold text-foreground mt-4">أبشر</h1>
