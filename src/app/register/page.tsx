@@ -24,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Upload, CreditCard, BookUser } from 'lucide-react';
+import { Upload, CreditCard, BookUser, User, UserCog, Phone, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // User Schema
@@ -142,8 +142,8 @@ export default function RegisterPage() {
       
       <Tabs defaultValue="user" className="w-full" dir="rtl">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="user">عميل</TabsTrigger>
-          <TabsTrigger value="delegate">مندوب</TabsTrigger>
+          <TabsTrigger value="user" className="gap-2"><User />عميل</TabsTrigger>
+          <TabsTrigger value="delegate" className="gap-2"><UserCog />مندوب</TabsTrigger>
         </TabsList>
         
         {/* User Registration Tab */}
@@ -161,19 +161,23 @@ export default function RegisterPage() {
             )}
             <Form {...userForm}>
               <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="w-full space-y-4">
-                <FormField
-                  control={userForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="الاسم الكامل" {...field} className="h-12 text-base"/>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <div className="relative">
+                    <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <FormField
+                      control={userForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input placeholder="الاسم الكامل" {...field} className="h-12 text-base pr-12"/>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                     <FormField
                     control={userForm.control}
                     name="phone"
@@ -183,7 +187,7 @@ export default function RegisterPage() {
                             <Input
                                 type="tel"
                                 placeholder="7X XXX XXXX"
-                                className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 text-foreground"
+                                className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 ps-12 text-foreground"
                                 dir="ltr"
                                 {...field}
                             />
@@ -241,19 +245,23 @@ export default function RegisterPage() {
                 )}
                 <Form {...delegateForm}>
                 <form onSubmit={delegateForm.handleSubmit(onDelegateSubmit)} className="w-full space-y-4">
-                    <FormField
-                        control={delegateForm.control}
-                        name="name"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <Input placeholder="الاسم حسب الهوية" {...field} className="h-12 text-base"/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    <div className="relative">
+                        <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <FormField
+                            control={delegateForm.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input placeholder="الاسم حسب الهوية" {...field} className="h-12 text-base pr-12"/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                         <FormField
                         control={delegateForm.control}
                         name="phone"
@@ -263,7 +271,7 @@ export default function RegisterPage() {
                                 <Input
                                     type="tel"
                                     placeholder="7X XXX XXXX"
-                                    className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 text-foreground"
+                                    className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 ps-12 text-foreground"
                                     dir="ltr"
                                     {...field}
                                 />
@@ -282,18 +290,21 @@ export default function RegisterPage() {
                             <span className="ms-2 font-semibold text-lg text-muted-foreground">+967</span>
                         </div>
                     </div>
-                    <FormField
-                        control={delegateForm.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <Input placeholder="البريد الإلكتروني" type="email" {...field} className="h-12 text-base"/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    <div className="relative">
+                        <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <FormField
+                            control={delegateForm.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input placeholder="البريد الإلكتروني" type="email" {...field} className="h-12 text-base pr-12"/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
 
                     <FormField
                         control={delegateForm.control}

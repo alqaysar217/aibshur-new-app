@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Phone } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,10 +36,11 @@ export default function LoginPage() {
         
         <div className="w-full max-w-sm">
             <div className="relative mb-4">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                 <Input
                     type="tel"
                     placeholder="7X XXX XXXX"
-                    className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 text-foreground"
+                    className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 ps-12 text-foreground"
                     dir="ltr"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pe-4 pointer-events-none border-s">
