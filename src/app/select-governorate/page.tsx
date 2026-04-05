@@ -48,7 +48,7 @@ export default function GovernorateSelectionPage() {
         </p>
       </div>
 
-      <div className="flex flex-col flex-grow p-6 pt-2">
+      <div className="flex flex-col flex-grow p-6 pt-2 min-h-0">
         <div className="relative mb-4">
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             <Input
@@ -65,7 +65,7 @@ export default function GovernorateSelectionPage() {
                 <li key={gov}>
                 <Button
                     variant="outline"
-                    className="w-full justify-start p-4 text-base h-auto"
+                    className="w-full justify-start text-right p-4 text-base h-auto"
                     onClick={() => handleSelect(gov)}
                 >
                     {gov}
