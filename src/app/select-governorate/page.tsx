@@ -54,7 +54,7 @@ export default function GovernorateSelectionPage() {
             <Input
                 type="text"
                 placeholder="ابحث عن محافظتك..."
-                className="w-full pr-12 pl-4 h-12 text-base bg-muted"
+                className="w-full pr-12 pl-4 h-12 text-base bg-muted text-right"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -65,7 +65,7 @@ export default function GovernorateSelectionPage() {
                 <li key={gov}>
                 <Button
                     variant="outline"
-                    className="w-full justify-start p-4 text-base h-auto"
+                    className="w-full justify-start p-4 text-base h-auto text-right"
                     onClick={() => handleSelect(gov)}
                 >
                     {gov}
