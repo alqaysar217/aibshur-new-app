@@ -2,8 +2,10 @@
 
 import React, { useState, useRef, ChangeEvent, KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const OTP_LENGTH = 6;
 const MOCK_OTP = "123456";
@@ -13,6 +15,7 @@ export default function OtpPage() {
   const [error, setError] = useState<string>('');
   const router = useRouter();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const otpImage = PlaceHolderImages.find(p => p.id === 'otp-illustration');
 
   const handleChange = (element: HTMLInputElement, index: number) => {
     const value = element.value.replace(/[^0-9]/g, '');
@@ -50,7 +53,17 @@ export default function OtpPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-card p-6 text-center">
+      {otpImage && (
+          <Image
+              src={otpImage.imageUrl}
+              alt={otpImage.description}
+              width={300}
+              height={200}
+              className="mb-8 rounded-lg object-contain"
+              data-ai-hint={otpImage.imageHint}
+          />
+      )}
       <h1 className="text-3xl font-bold mb-4">التحقق من الرمز</h1>
       <p className="text-muted-foreground mb-8 max-w-xs">
         أدخل الرمز المكون من {OTP_LENGTH} أرقام الذي تم إرساله إلى هاتفك.

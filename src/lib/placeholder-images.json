@@ -25,6 +25,12 @@
       "imageHint": "delivery driver"
     },
     {
+      "id": "otp-illustration",
+      "description": "An illustration for the OTP verification screen",
+      "imageUrl": "https://picsum.photos/seed/otp-verify/300/200",
+      "imageHint": "security code"
+    },
+    {
       "id": "ad-banner-1",
       "description": "First advertisement banner",
       "imageUrl": "https://picsum.photos/seed/ad1/600/300",
