@@ -24,7 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Upload } from 'lucide-react';
+import { Upload, CreditCard, BookUser } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // User Schema
 const userFormSchema = z.object({
@@ -299,27 +300,35 @@ export default function RegisterPage() {
                         name="idType"
                         render={({ field }) => (
                             <FormItem className="space-y-3 text-right">
-                            <FormLabel>نوع الهوية</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    setIdType(value);
-                                }}
-                                defaultValue={field.value}
-                                className="flex space-x-4 space-x-reverse"
-                                >
-                                <FormItem className="flex items-center space-x-2 space-x-reverse">
-                                    <FormControl><RadioGroupItem value="card" /></FormControl>
-                                    <FormLabel className="font-normal">بطاقة شخصية</FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-2 space-x-reverse">
-                                    <FormControl><RadioGroupItem value="passport" /></FormControl>
-                                    <FormLabel className="font-normal">جواز سفر</FormLabel>
-                                </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
+                                <FormLabel>نوع الهوية</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            setIdType(value);
+                                        }}
+                                        value={field.value}
+                                        className="grid grid-cols-2 gap-4"
+                                    >
+                                        <Label className={cn(
+                                            "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
+                                            field.value === 'card' ? "border-primary bg-primary/10 text-primary" : "border-muted"
+                                        )}>
+                                            <RadioGroupItem value="card" className="sr-only" />
+                                            <CreditCard className="mb-3 h-8 w-8"/>
+                                            <span className="font-bold">بطاقة شخصية</span>
+                                        </Label>
+                                        <Label className={cn(
+                                            "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
+                                            field.value === 'passport' ? "border-primary bg-primary/10 text-primary" : "border-muted"
+                                        )}>
+                                            <RadioGroupItem value="passport" className="sr-only" />
+                                            <BookUser className="mb-3 h-8 w-8"/>
+                                            <span className="font-bold">جواز سفر</span>
+                                        </Label>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -368,3 +377,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    
