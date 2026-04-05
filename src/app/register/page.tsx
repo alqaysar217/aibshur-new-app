@@ -21,11 +21,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Upload, CreditCard, BookUser, User, UserCog, Phone, Mail } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Upload, User, UserCog, Phone, Mail } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // User Schema
 const userFormSchema = z.object({
@@ -177,7 +176,7 @@ export default function RegisterPage() {
                     />
                 </div>
                 <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                    <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                     <FormField
                     control={userForm.control}
                     name="phone"
@@ -187,7 +186,7 @@ export default function RegisterPage() {
                             <Input
                                 type="tel"
                                 placeholder="7X XXX XXXX"
-                                className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 ps-12 text-foreground"
+                                className="w-full text-left tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                                 dir="ltr"
                                 {...field}
                             />
@@ -196,14 +195,13 @@ export default function RegisterPage() {
                         </FormItem>
                     )}
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pe-4 pointer-events-none border-s h-14 top-0">
+                    <div className="absolute inset-y-0 left-0 flex items-center ps-4 pointer-events-none border-e h-14 top-0">
                         <Image
                             src="/yemen-flag.svg"
                             alt="Yemen Flag"
                             width={24}
                             height={16}
                         />
-                        <span className="ms-2 font-semibold text-lg text-muted-foreground">+967</span>
                     </div>
                 </div>
                 <FormField
@@ -244,7 +242,7 @@ export default function RegisterPage() {
                 />
                 )}
                 <Form {...delegateForm}>
-                <form onSubmit={delegateForm.handleSubmit(onDelegateSubmit)} className="w-full space-y-4">
+                <form onSubmit={delegateForm.handleSubmit(onDelegateSubmit)} className="w-full space-y-4 text-right">
                     <div className="relative">
                         <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormField
@@ -261,7 +259,7 @@ export default function RegisterPage() {
                         />
                     </div>
                      <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                        <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                         <FormField
                         control={delegateForm.control}
                         name="phone"
@@ -271,7 +269,7 @@ export default function RegisterPage() {
                                 <Input
                                     type="tel"
                                     placeholder="7X XXX XXXX"
-                                    className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 ps-12 text-foreground"
+                                    className="w-full text-left tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                                     dir="ltr"
                                     {...field}
                                 />
@@ -280,14 +278,13 @@ export default function RegisterPage() {
                             </FormItem>
                         )}
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pe-4 pointer-events-none border-s h-14 top-0">
+                        <div className="absolute inset-y-0 left-0 flex items-center ps-4 pointer-events-none border-e h-14 top-0">
                             <Image
                                 src="/yemen-flag.svg"
                                 alt="Yemen Flag"
                                 width={24}
                                 height={16}
                             />
-                            <span className="ms-2 font-semibold text-lg text-muted-foreground">+967</span>
                         </div>
                     </div>
                     <div className="relative">
@@ -310,35 +307,26 @@ export default function RegisterPage() {
                         control={delegateForm.control}
                         name="idType"
                         render={({ field }) => (
-                            <FormItem className="space-y-3 text-right">
+                            <FormItem>
                                 <FormLabel>نوع الهوية</FormLabel>
-                                <FormControl>
-                                    <RadioGroup
-                                        onValueChange={(value) => {
-                                            field.onChange(value);
-                                            setIdType(value);
-                                        }}
-                                        value={field.value}
-                                        className="grid grid-cols-2 gap-4"
-                                    >
-                                        <Label className={cn(
-                                            "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
-                                            field.value === 'card' ? "border-primary bg-primary/10 text-primary" : "border-muted"
-                                        )}>
-                                            <RadioGroupItem value="card" className="sr-only" />
-                                            <CreditCard className="mb-3 h-8 w-8"/>
-                                            <span className="font-bold">بطاقة شخصية</span>
-                                        </Label>
-                                        <Label className={cn(
-                                            "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
-                                            field.value === 'passport' ? "border-primary bg-primary/10 text-primary" : "border-muted"
-                                        )}>
-                                            <RadioGroupItem value="passport" className="sr-only" />
-                                            <BookUser className="mb-3 h-8 w-8"/>
-                                            <span className="font-bold">جواز سفر</span>
-                                        </Label>
-                                    </RadioGroup>
-                                </FormControl>
+                                <Select
+                                    onValueChange={(value) => {
+                                        field.onChange(value);
+                                        setIdType(value);
+                                    }}
+                                    defaultValue={field.value}
+                                    dir="rtl"
+                                >
+                                    <FormControl>
+                                        <SelectTrigger className="h-12 text-base">
+                                            <SelectValue placeholder="اختر نوع الهوية" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="card">بطاقة شخصية</SelectItem>
+                                        <SelectItem value="passport">جواز سفر</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -388,5 +376,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    

@@ -36,21 +36,20 @@ export default function LoginPage() {
         
         <div className="w-full max-w-sm">
             <div className="relative mb-4">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                 <Input
                     type="tel"
                     placeholder="7X XXX XXXX"
-                    className="w-full text-left tracking-[0.2em] text-lg h-14 pe-32 ps-12 text-foreground"
+                    className="w-full text-left tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                     dir="ltr"
                 />
-                <div className="absolute inset-y-0 right-0 flex items-center pe-4 pointer-events-none border-s">
+                <div className="absolute inset-y-0 left-0 flex items-center ps-4 pointer-events-none border-e">
                     <Image
                         src="/yemen-flag.svg"
                         alt="Yemen Flag"
                         width={24}
                         height={16}
                     />
-                    <span className="ms-2 font-semibold text-lg text-muted-foreground">+967</span>
                 </div>
             </div>
             
