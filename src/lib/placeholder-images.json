@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "login-illustration",
+      "description": "An illustration for the login screen",
+      "imageUrl": "https://picsum.photos/seed/delivery-login/300/200",
+      "imageHint": "delivery illustration"
+    },
+    {
+      "id": "ad-banner-1",
+      "description": "First advertisement banner",
+      "imageUrl": "https://picsum.photos/seed/ad1/600/300",
+      "imageHint": "food delivery"
+    },
+    {
+      "id": "ad-banner-2",
+      "description": "Second advertisement banner",
+      "imageUrl": "https://picsum.photos/seed/ad2/600/300",
+      "imageHint": "special offer"
+    },
+    {
+      "id": "ad-banner-3",
+      "description": "Third advertisement banner",
+      "imageUrl": "https://picsum.photos/seed/ad3/600/300",
+      "imageHint": "fast food"
+    },
+    {
+      "id": "store-yemeni-food",
+      "description": "A Yemeni food restaurant",
+      "imageUrl": "https://picsum.photos/seed/store1/400/200",
+      "imageHint": "yemeni food"
+    },
+    {
+      "id": "store-supermarket",
+      "description": "A supermarket storefront",
+      "imageUrl": "https://picsum.photos/seed/store2/400/200",
+      "imageHint": "supermarket groceries"
+    },
+    {
+      "id": "store-pharmacy",
+      "description": "A pharmacy storefront",
+      "imageUrl": "https://picsum.photos/seed/store3/400/200",
+      "imageHint": "pharmacy storefront"
+    },
+    {
+      "id": "store-cafe",
+      "description": "A modern cafe",
+      "imageUrl": "https://picsum.photos/seed/store4/400/200",
+      "imageHint": "modern cafe"
+    }
+  ]
 }
