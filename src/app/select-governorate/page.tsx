@@ -65,10 +65,10 @@ export default function GovernorateSelectionPage() {
                 <li key={gov}>
                 <Button
                     variant="outline"
-                    className="w-full justify-start p-4 text-base h-auto text-right"
+                    className="w-full p-4 text-base h-auto"
                     onClick={() => handleSelect(gov)}
                 >
-                    {gov}
+                    <span className="flex-1 text-right">{gov}</span>
                 </Button>
                 </li>
             ))}
