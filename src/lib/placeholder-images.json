@@ -7,6 +7,12 @@
       "imageHint": "delivery illustration"
     },
     {
+      "id": "governorate-selection-illustration",
+      "description": "An illustration for the governorate selection screen",
+      "imageUrl": "https://picsum.photos/seed/yemen-map/300/200",
+      "imageHint": "location map"
+    },
+    {
       "id": "ad-banner-1",
       "description": "First advertisement banner",
       "imageUrl": "https://picsum.photos/seed/ad1/600/300",
