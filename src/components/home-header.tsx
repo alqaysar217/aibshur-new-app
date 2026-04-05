@@ -19,7 +19,7 @@ export function HomeHeader() {
           </Button>
         </div>
         <Link href="/home" className="flex items-center gap-2">
-          <Image src="/logo-app.png" alt="أبشر Logo" width={32} height={32} />
+          <Image src="/logo-app.png" alt="أبشر Logo" width={32} height={32} className="rounded-lg" />
           <span className="font-bold text-xl">أبشر</span>
         </Link>
       </div>
