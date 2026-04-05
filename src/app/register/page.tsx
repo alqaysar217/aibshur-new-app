@@ -23,7 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { User, UserCog, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser } from 'lucide-react';
+import { User, Motorcycle, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // User Schema
@@ -142,7 +142,7 @@ export default function RegisterPage() {
       <Tabs defaultValue="user" className="w-full" dir="rtl">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="user" className="gap-2"><User />عميل</TabsTrigger>
-          <TabsTrigger value="delegate" className="gap-2"><UserCog />مندوب</TabsTrigger>
+          <TabsTrigger value="delegate" className="gap-2"><Motorcycle />مندوب</TabsTrigger>
         </TabsList>
         
         {/* User Registration Tab */}
