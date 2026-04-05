@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Phone } from 'lucide-react';
+import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { countries, type Country } from '@/lib/countries';
 
 export default function LoginPage() {
   const router = useRouter();
   const loginImage = PlaceHolderImages.find(p => p.id === 'login-illustration');
+  const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
 
   const handleContinue = () => {
     router.push('/otp');
@@ -42,14 +46,25 @@ export default function LoginPage() {
                     placeholder="7X XXX XXXX"
                     className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                 />
-                <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
-                    <Image
-                        src="/yemen-flag.svg"
-                        alt="Yemen Flag"
-                        width={24}
-                        height={16}
-                    />
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
+                      <span className="text-2xl">{selectedCountry.flag}</span>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="max-h-60 overflow-y-auto">
+                    {countries.map((country) => (
+                      <DropdownMenuItem
+                        key={country.code}
+                        onSelect={() => setSelectedCountry(country)}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="text-xl">{country.flag}</span>
+                        <span>{country.name} ({country.dialCode})</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             
             <Button className="w-full h-12 text-lg font-semibold" onClick={handleContinue}>

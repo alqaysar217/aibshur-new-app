@@ -25,6 +25,8 @@ import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { User, Bike, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { countries, type Country } from '@/lib/countries';
 
 // User Schema
 const userFormSchema = z.object({
@@ -64,6 +66,7 @@ export default function RegisterPage() {
   const userImage = PlaceHolderImages.find(p => p.id === 'register-user-illustration');
   const delegateImage = PlaceHolderImages.find(p => p.id === 'register-delegate-illustration');
   const [idType, setIdType] = useState('card');
+  const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
 
   const userForm = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
@@ -194,14 +197,25 @@ export default function RegisterPage() {
                         </FormItem>
                     )}
                     />
-                    <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
-                        <Image
-                            src="/yemen-flag.svg"
-                            alt="Yemen Flag"
-                            width={24}
-                            height={16}
-                        />
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
+                          <span className="text-2xl">{selectedCountry.flag}</span>
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="max-h-60 overflow-y-auto">
+                        {countries.map((country) => (
+                          <DropdownMenuItem
+                            key={country.code}
+                            onSelect={() => setSelectedCountry(country)}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <span className="text-xl">{country.flag}</span>
+                            <span>{country.name} ({country.dialCode})</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
                 <FormField
                   control={userForm.control}
@@ -276,14 +290,25 @@ export default function RegisterPage() {
                             </FormItem>
                         )}
                         />
-                        <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
-                            <Image
-                                src="/yemen-flag.svg"
-                                alt="Yemen Flag"
-                                width={24}
-                                height={16}
-                            />
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
+                              <span className="text-2xl">{selectedCountry.flag}</span>
+                            </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="max-h-60 overflow-y-auto">
+                            {countries.map((country) => (
+                              <DropdownMenuItem
+                                key={country.code}
+                                onSelect={() => setSelectedCountry(country)}
+                                className="flex items-center gap-2 cursor-pointer"
+                              >
+                                <span className="text-xl">{country.flag}</span>
+                                <span>{country.name} ({country.dialCode})</span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                     <div className="relative">
                         <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
