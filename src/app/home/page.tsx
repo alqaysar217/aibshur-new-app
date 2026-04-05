@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/carousel';
 import { Badge } from '@/components/ui/badge';
 import { StoreCard } from '@/components/store-card';
-import { UtensilsCrossed, HeartPulse, ShoppingBasket, Carrot, Coffee, Sparkles } from 'lucide-react';
+import { UtensilsCrossed, HeartPulse, ShoppingBasket, Carrot, Coffee, Sparkles, List, MapPin, Heart, Star } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,12 @@ const categories = [
   { name: 'مخابز', icon: Sparkles },
 ];
 
-const filters = ['الكل', 'الأقرب', 'المفضلة', 'الأعلى تقييم'];
+const filters = [
+    { name: 'الكل', icon: List },
+    { name: 'الأقرب', icon: MapPin },
+    { name: 'المفضلة', icon: Heart },
+    { name: 'الأعلى تقييم', icon: Star },
+];
 
 const storesData = [
   { id: '1', name: 'مطعم البيت الصنعاني', imageId: 'store-yemeni-food', address: 'شارع حدة، صنعاء', distance: '1.2 كم', category: 'مطعم', rating: 4.5, status: 'مفتوح' },
@@ -81,8 +86,9 @@ export default function HomePage() {
         {/* Store Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
             {filters.map((filter, index) => (
-                <Button key={filter} variant={index === 0 ? 'default' : 'outline'} className="rounded-full whitespace-nowrap">
-                    {filter}
+                <Button key={filter.name} variant={index === 0 ? 'default' : 'outline'} className="rounded-full whitespace-nowrap">
+                    <filter.icon />
+                    {filter.name}
                 </Button>
             ))}
         </div>
