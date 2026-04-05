@@ -23,7 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Upload, User, UserCog, Phone, Mail } from 'lucide-react';
+import { User, UserCog, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // User Schema
@@ -100,7 +100,7 @@ export default function RegisterPage() {
     router.push('/home');
   }
 
-  const FileUploadField = ({ name, label }: { name: "personalPhoto" | "idPhotoFront" | "idPhotoBack", label: string }) => {
+  const FileUploadField = ({ name, label, icon: Icon }: { name: "personalPhoto" | "idPhotoFront" | "idPhotoBack", label: string, icon: React.ComponentType<{className?: string}> }) => {
     const { control, register, watch } = delegateForm;
     const fileName = watch(name)?.[0]?.name;
 
@@ -114,7 +114,7 @@ export default function RegisterPage() {
                     <FormControl>
                         <div className="relative">
                             <Button type="button" variant="outline" className="w-full justify-start text-muted-foreground gap-2" onClick={() => document.getElementById(name)?.click()}>
-                                <Upload />
+                                <Icon className="h-5 w-5 text-muted-foreground" />
                                 <span className='truncate'>{fileName || 'اختر ملف'}</span>
                             </Button>
                             <Input
@@ -186,8 +186,7 @@ export default function RegisterPage() {
                             <Input
                                 type="tel"
                                 placeholder="7X XXX XXXX"
-                                className="w-full text-left tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
-                                dir="ltr"
+                                className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                                 {...field}
                             />
                         </FormControl>
@@ -195,7 +194,7 @@ export default function RegisterPage() {
                         </FormItem>
                     )}
                     />
-                    <div className="absolute inset-y-0 left-0 flex items-center ps-4 pointer-events-none border-e h-14 top-0">
+                    <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
                         <Image
                             src="/yemen-flag.svg"
                             alt="Yemen Flag"
@@ -269,8 +268,7 @@ export default function RegisterPage() {
                                 <Input
                                     type="tel"
                                     placeholder="7X XXX XXXX"
-                                    className="w-full text-left tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
-                                    dir="ltr"
+                                    className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                                     {...field}
                                 />
                             </FormControl>
@@ -278,7 +276,7 @@ export default function RegisterPage() {
                             </FormItem>
                         )}
                         />
-                        <div className="absolute inset-y-0 left-0 flex items-center ps-4 pointer-events-none border-e h-14 top-0">
+                        <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
                             <Image
                                 src="/yemen-flag.svg"
                                 alt="Yemen Flag"
@@ -319,12 +317,25 @@ export default function RegisterPage() {
                                 >
                                     <FormControl>
                                         <SelectTrigger className="h-12 text-base">
+                                          <div className='flex gap-2 items-center'>
+                                            <BadgeInfo className="h-5 w-5 text-muted-foreground" />
                                             <SelectValue placeholder="اختر نوع الهوية" />
+                                          </div>
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="card">بطاقة شخصية</SelectItem>
-                                        <SelectItem value="passport">جواز سفر</SelectItem>
+                                        <SelectItem value="card">
+                                          <div className='flex gap-2 items-center'>
+                                            <CreditCard className='h-5 w-5' />
+                                            <span>بطاقة شخصية</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="passport">
+                                          <div className='flex gap-2 items-center'>
+                                            <BookUser className='h-5 w-5' />
+                                            <span>جواز سفر</span>
+                                          </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -333,11 +344,14 @@ export default function RegisterPage() {
                     />
                     
                     <div className="space-y-4 rounded-lg border p-4 text-right">
-                        <h4 className="text-sm font-medium">المرفقات المطلوبة</h4>
-                        <FileUploadField name="personalPhoto" label="الصورة الشخصية" />
-                        <FileUploadField name="idPhotoFront" label={idType === 'card' ? "صورة البطاقة (الأمام)" : "صورة الجواز"} />
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <Paperclip className="h-4 w-4" />
+                          المرفقات المطلوبة
+                        </h4>
+                        <FileUploadField name="personalPhoto" label="الصورة الشخصية" icon={User} />
+                        <FileUploadField name="idPhotoFront" label={idType === 'card' ? "صورة البطاقة (الأمام)" : "صورة الجواز"} icon={idType === 'card' ? CreditCard : BookUser} />
                         {idType === 'card' && (
-                           <FileUploadField name="idPhotoBack" label="صورة البطاقة (الخلف)" />
+                           <FileUploadField name="idPhotoBack" label="صورة البطاقة (الخلف)" icon={CreditCard} />
                         )}
                     </div>
                     

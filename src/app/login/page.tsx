@@ -40,10 +40,9 @@ export default function LoginPage() {
                 <Input
                     type="tel"
                     placeholder="7X XXX XXXX"
-                    className="w-full text-left tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
-                    dir="ltr"
+                    className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
                 />
-                <div className="absolute inset-y-0 left-0 flex items-center ps-4 pointer-events-none border-e">
+                <div className="absolute inset-y-0 left-0 flex items-center px-4 cursor-pointer border-e h-14 top-0">
                     <Image
                         src="/yemen-flag.svg"
                         alt="Yemen Flag"
