@@ -48,8 +48,8 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
 
   return (
     <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={handleShowDetails}>
-      <CardContent className="p-3 flex gap-4 items-center">
-         <div className="relative w-24 h-24 flex-shrink-0">
+      <CardContent className="p-2 flex gap-3 items-start">
+         <div className="relative w-20 h-20 flex-shrink-0">
           <Image
             src={product.imageUrl}
             alt={product.name}
@@ -58,40 +58,44 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
             data-ai-hint={product.imageHint}
           />
         </div>
-        <div className="flex-1">
-          <div className="flex justify-between items-start mb-1">
-            <h3 className="font-bold text-base leading-tight pr-2">{product.name}</h3>
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground flex-shrink-0 -mt-1 -ml-2" onClick={(e) => { e.stopPropagation(); console.log('Favorite clicked'); }}>
-              <Heart className="h-5 w-5" />
-            </Button>
+        <div className="flex-1 flex flex-col justify-between h-20">
+          <div>
+            <div className="flex justify-between items-start">
+                <h3 className="font-bold text-sm leading-tight pr-2 line-clamp-1">{product.name}</h3>
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground flex-shrink-0 -mt-1 -mr-2" onClick={(e) => { e.stopPropagation(); console.log('Favorite clicked'); }}>
+                <Heart className="h-5 w-5" />
+                </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                {product.description}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mb-2 line-clamp-2 h-8">
-            {product.description}
-          </p>
-          <div className="flex justify-between items-end">
-            <div className="flex flex-col gap-1 items-start">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                 <p className="text-sm font-bold text-primary">{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</p>
                 <div className="flex items-center gap-1 text-amber-500">
                     <Star className="h-4 w-4 fill-current" />
-                    <span className="font-semibold text-sm text-foreground">{product.rating.toFixed(1)}</span>
+                    <span className="font-semibold text-xs text-foreground">{product.rating.toFixed(1)}</span>
                 </div>
-                <p className="text-base font-bold text-primary">{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</p>
             </div>
-            {product.hasVariants ? (
-              <Button variant="outline" size="sm" className="h-9 self-end" onClick={(e) => {e.stopPropagation(); handleShowDetails();}}>
-                عرض التفاصيل
-              </Button>
-            ) : quantity > 0 ? (
-                <QuantityCounter 
-                    value={quantity} 
-                    onIncrement={handleIncrement} 
-                    onDecrement={handleDecrement} 
-                />
-            ) : (
-              <Button size="sm" className="h-9 self-end" onClick={handleAddToCart}>
-                <Plus className="h-4 w-4 ml-1" />
-                إضافة
-              </Button>
-            )}
+            <div className="flex-shrink-0">
+                {product.hasVariants ? (
+                <Button variant="outline" size="sm" className="h-8 text-xs px-2" onClick={(e) => {e.stopPropagation(); handleShowDetails();}}>
+                    التفاصيل
+                </Button>
+                ) : quantity > 0 ? (
+                    <QuantityCounter 
+                        value={quantity} 
+                        onIncrement={handleIncrement} 
+                        onDecrement={handleDecrement} 
+                    />
+                ) : (
+                <Button size="sm" className="h-8 text-xs px-3" onClick={handleAddToCart}>
+                    <Plus className="h-3 w-3 ml-1" />
+                    إضافة
+                </Button>
+                )}
+            </div>
           </div>
         </div>
       </CardContent>

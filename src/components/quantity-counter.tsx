@@ -17,7 +17,7 @@ export function QuantityCounter({ value, onIncrement, onDecrement, className }: 
       <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={onDecrement} disabled={value === 0}>
         <Minus className="h-4 w-4" />
       </Button>
-      <span className="w-8 text-center font-bold text-lg">{value}</span>
+      <span className="w-5 text-center font-bold text-base">{value}</span>
       <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={onIncrement}>
         <Plus className="h-4 w-4" />
       </Button>
