@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
@@ -28,10 +29,10 @@ export default function Home() {
         />
       </div>
       <h1 className="text-4xl font-bold text-foreground mt-4">أبشر</h1>
-      <div className="absolute bottom-16">
-        <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-primary animate-pulse"></div>
-        </div>
+      
+      <div className="absolute bottom-24 flex flex-col items-center gap-4">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <p className="text-muted-foreground text-lg">جاري التحميل...</p>
       </div>
     </div>
   );
