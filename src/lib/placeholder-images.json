@@ -149,6 +149,24 @@
       "description": "A can of Pepsi",
       "imageUrl": "https://picsum.photos/seed/prod-pepsi/200/200",
       "imageHint": "pepsi can"
+    },
+    {
+      "id": "product-variant-small",
+      "description": "Small size variant of a product",
+      "imageUrl": "https://picsum.photos/seed/variant-sm/100/100",
+      "imageHint": "food portion"
+    },
+    {
+      "id": "product-variant-medium",
+      "description": "Medium size variant of a product",
+      "imageUrl": "https://picsum.photos/seed/variant-md/100/100",
+      "imageHint": "food portion"
+    },
+    {
+      "id": "product-variant-large",
+      "description": "Large size variant of a product",
+      "imageUrl": "https://picsum.photos/seed/variant-lg/100/100",
+      "imageHint": "food portion"
     }
   ]
 }
