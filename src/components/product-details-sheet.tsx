@@ -41,8 +41,8 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-card border-none shadow-2xl m-2 rounded-t-lg" style={{borderRadius: "10px"}}>
-        <SheetClose className="absolute right-4 top-4 z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary bg-white/70 text-black">
+      <SheetContent side="bottom" dir="rtl" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-card border-none shadow-2xl m-2 rounded-t-lg" style={{borderRadius: "10px"}}>
+        <SheetClose className="absolute left-4 top-4 right-auto z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary bg-white/70 text-black">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
         </SheetClose>
@@ -55,7 +55,7 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                 data-ai-hint={product.imageHint}
             />
         </div>
-        <div className="p-4 flex-1 overflow-y-auto" dir="rtl">
+        <div className="p-4 flex-1 overflow-y-auto">
             <SheetHeader className="text-right mb-4">
                 <SheetTitle className="text-2xl">{product.name}</SheetTitle>
                 <SheetDescription>{product.description}</SheetDescription>
@@ -67,8 +67,8 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                 </div>
                 {!product.hasVariants && (
                     <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                        <span>{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
                         <CircleDollarSign className="h-6 w-6" />
+                        <span>{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
                     </div>
                 )}
             </div>
@@ -86,8 +86,8 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                                 <div className='flex-1 text-right'>
                                     <p className='font-semibold'>{variant.name}</p>
                                     <div className='flex items-center gap-1 text-muted-foreground font-bold justify-start'>
-                                        <span>{variant.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
                                         <CircleDollarSign className="h-4 w-4" />
+                                        <span>{variant.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
                                     </div>
                                 </div>
                                 <Button size="sm">إضافة</Button>
