@@ -69,7 +69,7 @@ export default function OtpPage() {
         أدخل الرمز المكون من {OTP_LENGTH} أرقام الذي تم إرساله إلى هاتفك.
       </p>
       
-      <div className="flex items-center gap-2 mb-6" dir="ltr">
+      <div className="flex items-center gap-2 mb-6" dir="rtl">
         {otp.map((data, index) => (
           <Input
             key={index}
