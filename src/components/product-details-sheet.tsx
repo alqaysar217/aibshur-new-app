@@ -85,7 +85,7 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                                 <Image src={variant.imageUrl} alt={variant.name} width={64} height={64} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                 <div className='flex-1 text-right'>
                                     <p className='font-semibold'>{variant.name}</p>
-                                    <div className='flex items-center gap-1 text-muted-foreground font-bold justify-end'>
+                                    <div className='flex items-center gap-1 text-muted-foreground font-bold justify-start'>
                                         <span>{variant.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
                                         <CircleDollarSign className="h-4 w-4" />
                                     </div>
