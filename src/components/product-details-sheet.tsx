@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Star, CircleDollarSign, Layers, X } from 'lucide-react';
+import { Star, CircleDollarSign, Layers } from 'lucide-react';
 import type { Product } from './product-card';
 import { QuantityCounter } from './quantity-counter';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -25,6 +25,8 @@ const variants = [
 
 export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDetailsSheetProps) {
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+
 
   const productVariants = variants.map(v => {
     const imageData = PlaceHolderImages.find(img => img.id === v.imageId);
@@ -34,63 +36,73 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
   useEffect(() => {
     if (isOpen) {
         setQuantity(1);
+        setSelectedVariant(null);
     }
   }, [isOpen]);
 
   if (!product) return null;
 
+  const handleAddToCart = () => {
+    // Logic to add to cart
+    console.log(`Added ${quantity} of ${product.name} to cart.`);
+    onOpenChange(false);
+  }
+  
+  const handleVariantAddToCart = (variantId: string) => {
+      const variant = productVariants.find(v => v.id === variantId);
+      console.log(`Added 1 of ${product.name} (${variant?.name}) to cart.`);
+      // Potentially close sheet or show added confirmation
+  }
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" dir="rtl" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-card border-none shadow-2xl m-2 rounded-t-lg" style={{borderRadius: "10px"}}>
-        <SheetClose className="absolute left-4 top-4 right-auto z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary bg-white/70 text-black">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-        </SheetClose>
+      <SheetContent side="bottom" dir="rtl" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-background border-t-0 shadow-2xl mx-auto w-full max-w-md rounded-t-2xl">
         <div className="relative h-48 w-full">
             <Image
                 src={product.imageUrl}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-cover rounded-t-2xl"
                 data-ai-hint={product.imageHint}
             />
+             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-2xl"></div>
         </div>
         <div className="p-4 flex-1 overflow-y-auto">
             <SheetHeader className="text-right mb-4">
-                <SheetTitle className="text-2xl">{product.name}</SheetTitle>
-                <SheetDescription>{product.description}</SheetDescription>
+                <SheetTitle className="text-2xl font-bold">{product.name}</SheetTitle>
+                <SheetDescription className="text-base text-muted-foreground">{product.description}</SheetDescription>
             </SheetHeader>
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-1 text-amber-500">
-                    <Star className="h-5 w-5 fill-current" />
+            <div className="flex justify-between items-center mb-6 text-right">
+                <div className="flex items-center gap-1.5 text-amber-500">
                     <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
+                    <Star className="h-5 w-5 fill-current" />
                 </div>
                 {!product.hasVariants && (
                     <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                        <CircleDollarSign className="h-6 w-6" />
                         <span>{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
+                        <CircleDollarSign className="h-6 w-6" />
                     </div>
                 )}
             </div>
 
             {product.hasVariants && (
                 <div className="space-y-3">
-                    <h4 className="font-bold text-right flex items-center gap-2">
+                    <h4 className="font-bold text-right flex items-center justify-end gap-2 text-lg">
+                        <span>اختر الحجم:</span>
                         <Layers className="h-5 w-5" />
-                        اختر الحجم:
                     </h4>
                     {productVariants.map(variant => (
-                        <Card key={variant.id} className='p-2'>
-                            <div className='flex justify-between items-center gap-3'>
-                                <Image src={variant.imageUrl} alt={variant.name} width={64} height={64} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
+                        <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
+                            <div className='flex justify-between items-center gap-4'>
+                                <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                 <div className='flex-1 text-right'>
-                                    <p className='font-semibold'>{variant.name}</p>
-                                    <div className='flex items-center gap-1 text-muted-foreground font-bold justify-start'>
-                                        <CircleDollarSign className="h-4 w-4" />
+                                    <p className='font-semibold text-base'>{variant.name}</p>
+                                    <div className='flex items-center gap-1.5 font-bold justify-end text-primary'>
                                         <span>{variant.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
+                                        <CircleDollarSign className="h-4 w-4" />
                                     </div>
                                 </div>
-                                <Button size="sm">إضافة</Button>
+                                <Button size="sm" className="h-9 px-4 text-sm" onClick={() => handleVariantAddToCart(variant.id)}>إضافة</Button>
                             </div>
                         </Card>
                     ))}
@@ -99,13 +111,13 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
         </div>
         
         {!product.hasVariants && (
-            <div className="p-4 border-t flex items-center justify-between gap-4 bg-card">
+            <div className="p-4 border-t flex items-center justify-between gap-4 bg-background/95 backdrop-blur-sm sticky bottom-0">
                  <QuantityCounter 
                     value={quantity} 
                     onIncrement={(e) => { e.stopPropagation(); setQuantity(q => q + 1); }} 
                     onDecrement={(e) => { e.stopPropagation(); setQuantity(q => (q > 1 ? q - 1 : 1)); }}
                 />
-                <Button className="flex-1 h-12 text-lg">
+                <Button className="flex-1 h-12 text-lg font-semibold" onClick={handleAddToCart}>
                     إضافة إلى السلة
                 </Button>
             </div>
