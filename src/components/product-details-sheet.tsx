@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Star, CircleDollarSign, Layers, X } from 'lucide-react';
+import { Star, CircleDollarSign, Layers } from 'lucide-react';
 import type { Product } from './product-card';
 import { QuantityCounter } from './quantity-counter';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -65,11 +65,6 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
         dir="rtl" 
         className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-background border-t-0 shadow-2xl mx-auto w-full max-w-md rounded-t-2xl"
       >
-        <SheetClose className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary z-10">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </SheetClose>
-
         <div className="relative h-48 w-full">
             <Image
                 src={product.imageUrl}
@@ -101,9 +96,9 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
 
             {product.hasVariants && (
                 <div className="space-y-3">
-                    <h4 className="font-bold text-right flex items-center justify-end gap-2 text-lg">
-                        <span>اختر الحجم:</span>
+                    <h4 className="font-bold text-right flex items-center justify-start gap-2 text-lg">
                         <Layers className="h-5 w-5" />
+                        <span>اختر الحجم:</span>
                     </h4>
                     {productVariants.map(variant => (
                         <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
