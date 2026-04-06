@@ -74,7 +74,7 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
                     <Star className="h-4 w-4 fill-current" />
                     <span className="font-semibold text-sm text-foreground">{product.rating.toFixed(1)}</span>
                 </div>
-                <p className="text-base font-bold text-primary">{product.price.toLocaleString()}&nbsp;ر.ي</p>
+                <p className="text-base font-bold text-primary">{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</p>
             </div>
             {product.hasVariants ? (
               <Button variant="outline" size="sm" className="h-9 self-end" onClick={(e) => {e.stopPropagation(); handleShowDetails();}}>

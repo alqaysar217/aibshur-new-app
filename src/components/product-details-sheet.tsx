@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Star, CircleDollarSign, Layers } from 'lucide-react';
+import { Star, CircleDollarSign, Layers, X } from 'lucide-react';
 import type { Product } from './product-card';
 import { QuantityCounter } from './quantity-counter';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -41,7 +41,11 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="p-0 flex flex-col rounded-t-lg max-h-[90dvh] overflow-hidden">
+      <SheetContent side="bottom" className="p-0 flex flex-col rounded-t-lg max-h-[90dvh] overflow-hidden m-2 bg-card border-none shadow-2xl" style={{borderRadius: "10px"}}>
+        <SheetClose className="absolute right-4 top-4 z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary bg-white/70 text-black">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+        </SheetClose>
         <div className="relative h-48 w-full">
             <Image
                 src={product.imageUrl}
@@ -64,7 +68,7 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                 {!product.hasVariants && (
                     <div className="flex items-center gap-2 text-2xl font-bold text-primary">
                         <CircleDollarSign className="h-6 w-6" />
-                        <span>{product.price.toLocaleString()} ر.ي</span>
+                        <span>{product.price.toLocaleString('ar-SA')} ر.ي</span>
                     </div>
                 )}
             </div>
@@ -83,7 +87,7 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                                     <p className='font-semibold'>{variant.name}</p>
                                     <div className='flex items-center gap-1 text-muted-foreground font-bold justify-end'>
                                         <CircleDollarSign className="h-4 w-4" />
-                                        <span>{variant.price.toLocaleString()} ر.ي</span>
+                                        <span>{variant.price.toLocaleString('ar-SA')} ر.ي</span>
                                     </div>
                                 </div>
                                 <Button size="sm">إضافة</Button>
