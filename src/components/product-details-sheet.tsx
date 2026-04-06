@@ -53,10 +53,18 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
       console.log(`Added 1 of ${product.name} (${variant?.name}) to cart.`);
       // Potentially close sheet or show added confirmation
   }
+  
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('ar-SA').format(price);
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" dir="rtl" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-background border-t-0 shadow-2xl mx-auto w-full max-w-md rounded-t-2xl">
+      <SheetContent 
+        side="bottom" 
+        dir="rtl" 
+        className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-background border-t-0 shadow-2xl mx-auto w-full max-w-md rounded-t-2xl"
+      >
         <div className="relative h-48 w-full">
             <Image
                 src={product.imageUrl}
@@ -72,37 +80,39 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                 <SheetTitle className="text-2xl font-bold">{product.name}</SheetTitle>
                 <SheetDescription className="text-base text-muted-foreground">{product.description}</SheetDescription>
             </SheetHeader>
-            <div className="flex justify-between items-center mb-6 text-right">
+            <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-1.5 text-amber-500">
-                    <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
                     <Star className="h-5 w-5 fill-current" />
+                    <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
                 </div>
                 {!product.hasVariants && (
                     <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                        <span>{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
                         <CircleDollarSign className="h-6 w-6" />
+                        <span>{formatPrice(product.price)}&nbsp;ر.ي</span>
                     </div>
                 )}
             </div>
 
             {product.hasVariants && (
                 <div className="space-y-3">
-                    <h4 className="font-bold text-right flex items-center justify-end gap-2 text-lg">
-                        <span>اختر الحجم:</span>
+                    <h4 className="font-bold text-right flex items-center gap-2 text-lg">
                         <Layers className="h-5 w-5" />
+                        <span>اختر الحجم:</span>
                     </h4>
                     {productVariants.map(variant => (
                         <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
                             <div className='flex justify-between items-center gap-4'>
-                                <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
-                                <div className='flex-1 text-right'>
-                                    <p className='font-semibold text-base'>{variant.name}</p>
-                                    <div className='flex items-center gap-1.5 font-bold justify-end text-primary'>
-                                        <span>{variant.price.toLocaleString('ar-SA')}&nbsp;ر.ي</span>
-                                        <CircleDollarSign className="h-4 w-4" />
-                                    </div>
-                                </div>
                                 <Button size="sm" className="h-9 px-4 text-sm" onClick={() => handleVariantAddToCart(variant.id)}>إضافة</Button>
+                                <div className='flex items-center gap-3 flex-1'>
+                                    <div className='flex-1 text-right'>
+                                        <p className='font-semibold text-base'>{variant.name}</p>
+                                        <div className='flex items-center gap-1.5 font-bold text-primary'>
+                                            <CircleDollarSign className="h-4 w-4" />
+                                            <span>{formatPrice(variant.price)}&nbsp;ر.ي</span>
+                                        </div>
+                                    </div>
+                                    <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
+                                </div>
                             </div>
                         </Card>
                     ))}
@@ -112,14 +122,14 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
         
         {!product.hasVariants && (
             <div className="p-4 border-t flex items-center justify-between gap-4 bg-background/95 backdrop-blur-sm sticky bottom-0">
+                <Button className="flex-1 h-12 text-lg font-semibold" onClick={handleAddToCart}>
+                    إضافة إلى السلة
+                </Button>
                  <QuantityCounter 
                     value={quantity} 
                     onIncrement={(e) => { e.stopPropagation(); setQuantity(q => q + 1); }} 
                     onDecrement={(e) => { e.stopPropagation(); setQuantity(q => (q > 1 ? q - 1 : 1)); }}
                 />
-                <Button className="flex-1 h-12 text-lg font-semibold" onClick={handleAddToCart}>
-                    إضافة إلى السلة
-                </Button>
             </div>
         )}
       </SheetContent>
