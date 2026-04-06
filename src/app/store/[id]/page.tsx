@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, Drumstick, UtensilsCrossed, Hamburger, CupSoda, Leaf } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, Drumstick, UtensilsCrossed, Sandwich, CupSoda, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard, type Product } from '@/components/product-card';
@@ -30,7 +30,7 @@ const productFilters = [
     { name: 'مفضلاتي', icon: Heart },
     { name: 'لحوم', icon: Drumstick },
     { name: 'أرز', icon: UtensilsCrossed },
-    { name: 'وجبات سريعة', icon: Hamburger },
+    { name: 'وجبات سريعة', icon: Sandwich },
     { name: 'مشروبات', icon: CupSoda },
     { name: 'سلطات', icon: Leaf },
 ];
