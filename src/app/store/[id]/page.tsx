@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, Drumstick, UtensilsCrossed, Hamburger, CupSoda, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard, type Product } from '@/components/product-card';
@@ -24,7 +24,16 @@ const storeDetails = {
   deliveryTime: '25-35',
 };
 
-const productFilters = ['الكل', 'الأكثر طلباً', 'مفضلاتي', 'لحوم', 'أرز', 'وجبات سريعة', 'مشروبات', 'سلطات'];
+const productFilters = [
+    { name: 'الكل', icon: List },
+    { name: 'الأكثر طلباً', icon: TrendingUp },
+    { name: 'مفضلاتي', icon: Heart },
+    { name: 'لحوم', icon: Drumstick },
+    { name: 'أرز', icon: UtensilsCrossed },
+    { name: 'وجبات سريعة', icon: Hamburger },
+    { name: 'مشروبات', icon: CupSoda },
+    { name: 'سلطات', icon: Leaf },
+];
 
 // Add imageId to map to placeholder images
 const productsData: Omit<Product, 'imageUrl' | 'imageHint'>[] = [
@@ -118,12 +127,13 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
             <div className="flex gap-2" dir="rtl">
               {productFilters.map((filter) => (
                 <Button
-                  key={filter}
-                  variant={activeFilter === filter ? 'default' : 'outline'}
+                  key={filter.name}
+                  variant={activeFilter === filter.name ? 'default' : 'outline'}
                   className="rounded-full whitespace-nowrap"
-                  onClick={() => setActiveFilter(filter)}
+                  onClick={() => setActiveFilter(filter.name)}
                 >
-                  {filter}
+                  <filter.icon />
+                  {filter.name}
                 </Button>
               ))}
             </div>
