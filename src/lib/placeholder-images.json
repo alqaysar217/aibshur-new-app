@@ -51,25 +51,25 @@
     {
       "id": "store-yemeni-food",
       "description": "A Yemeni food restaurant",
-      "imageUrl": "https://picsum.photos/seed/store1/400/200",
+      "imageUrl": "https://picsum.photos/seed/store1/100/100",
       "imageHint": "yemeni food"
     },
     {
       "id": "store-supermarket",
       "description": "A supermarket storefront",
-      "imageUrl": "https://picsum.photos/seed/store2/400/200",
+      "imageUrl": "https://picsum.photos/seed/store2/100/100",
       "imageHint": "supermarket groceries"
     },
     {
       "id": "store-pharmacy",
       "description": "A pharmacy storefront",
-      "imageUrl": "https://picsum.photos/seed/store3/400/200",
+      "imageUrl": "https://picsum.photos/seed/store3/100/100",
       "imageHint": "pharmacy storefront"
     },
     {
       "id": "store-cafe",
       "description": "A modern cafe",
-      "imageUrl": "https://picsum.photos/seed/store4/400/200",
+      "imageUrl": "https://picsum.photos/seed/store4/100/100",
       "imageHint": "modern cafe"
     },
     {
@@ -119,6 +119,36 @@
       "description": "Category icon for bakeries",
       "imageUrl": "https://picsum.photos/seed/cat-bakery/128/128",
       "imageHint": "bakery bread"
+    },
+    {
+      "id": "store-banner-yemeni",
+      "description": "Banner image for a yemeni food restaurant",
+      "imageUrl": "https://picsum.photos/seed/store-banner1/800/400",
+      "imageHint": "yemeni restaurant interior"
+    },
+    {
+      "id": "product-mandi-chicken",
+      "description": "A plate of chicken mandi",
+      "imageUrl": "https://picsum.photos/seed/prod-mandi/200/200",
+      "imageHint": "chicken mandi"
+    },
+    {
+      "id": "product-ogda-meat",
+      "description": "A pot of ogda meat stew",
+      "imageUrl": "https://picsum.photos/seed/prod-ogda/200/200",
+      "imageHint": "meat stew"
+    },
+    {
+      "id": "product-fahsa",
+      "description": "A sizzling pot of fahsa",
+      "imageUrl": "https://picsum.photos/seed/prod-fahsa/200/200",
+      "imageHint": "fahsa yemeni"
+    },
+    {
+      "id": "product-pepsi",
+      "description": "A can of Pepsi",
+      "imageUrl": "https://picsum.photos/seed/prod-pepsi/200/200",
+      "imageHint": "pepsi can"
     }
   ]
 }
