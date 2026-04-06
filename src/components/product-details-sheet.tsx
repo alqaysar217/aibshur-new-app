@@ -41,7 +41,7 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="p-0 flex flex-col rounded-t-lg max-h-[90dvh] overflow-hidden m-2 bg-card border-none shadow-2xl" style={{borderRadius: "10px"}}>
+      <SheetContent side="bottom" className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-card border-none shadow-2xl inset-x-2 bottom-2 rounded-lg">
         <SheetClose className="absolute right-4 top-4 z-20 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary bg-white/70 text-black">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
