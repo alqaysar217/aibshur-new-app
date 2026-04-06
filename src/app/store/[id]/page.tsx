@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, Drumstick, UtensilsCrossed, Sandwich, CupSoda, Leaf } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, Drumstick, UtensilsCrossed, Sandwich, CupSoda, Leaf, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard, type Product } from '@/components/product-card';
@@ -22,6 +22,7 @@ const storeDetails = {
   address: 'شارع حدة، صنعاء',
   distance: '1.2 كم',
   deliveryTime: '25-35',
+  workingHours: '8ص - 11م',
 };
 
 const productFilters = [
@@ -106,15 +107,19 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
         {/* Store Details Bar */}
         <div className="p-3 bg-card border-b">
              <div className="flex justify-around text-xs text-center text-muted-foreground">
-                <div className="flex flex-col items-center gap-1 w-20">
+                <div className="flex flex-col items-center gap-1">
                     <MapPin className="h-5 w-5 text-primary" />
                     <span className="font-semibold">{storeDetails.distance}</span>
                 </div>
-                <div className="flex flex-col items-center gap-1 w-20">
+                <div className="flex flex-col items-center gap-1">
                     <Clock className="h-5 w-5 text-primary" />
                     <span className="font-semibold">{storeDetails.deliveryTime} دق</span>
                 </div>
-                 <div className="flex flex-col items-center gap-1 w-20">
+                <div className="flex flex-col items-center gap-1">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">{storeDetails.workingHours}</span>
+                </div>
+                 <div className="flex flex-col items-center gap-1">
                     <Heart className="h-5 w-5 text-primary" />
                     <span className="font-semibold">المفضلة</span>
                 </div>
@@ -141,7 +146,7 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
         </div>
         
         {/* Product List */}
-        <div className="p-4 grid grid-cols-1 gap-4">
+        <div className="p-4 grid grid-cols-1 gap-3">
           {products.map(product => (
             <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />
           ))}
