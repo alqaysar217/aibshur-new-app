@@ -49,7 +49,10 @@ export default function BankAccountsPage() {
     });
 
     // Fetch data from Firestore
-    const bankAccountsQuery = useMemoFirebase(() => collection(firestore, 'bankAccounts'), [firestore]);
+    const bankAccountsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'bankAccounts');
+    }, [firestore]);
     const { data: bankAccounts, isLoading } = useCollection<BankAccount>(bankAccountsQuery);
     
     const handleAddNew = () => {
@@ -77,7 +80,7 @@ export default function BankAccountsPage() {
     };
 
     const confirmDelete = () => {
-        if (selectedAccount) {
+        if (selectedAccount && firestore) {
             const docRef = doc(firestore, 'bankAccounts', selectedAccount.id);
             deleteDocumentNonBlocking(docRef);
             toast({ title: "تم الحذف", description: "تم حذف الحساب البنكي بنجاح." });
@@ -87,6 +90,7 @@ export default function BankAccountsPage() {
     };
     
     async function onSubmit(values: BankAccountFormValues) {
+        if (!firestore) return;
         try {
             if (isEditing && selectedAccount) {
                 const docRef = doc(firestore, 'bankAccounts', selectedAccount.id);
@@ -242,6 +246,7 @@ export default function BankAccountsPage() {
                                                     height={80}
                                                     className="rounded-md object-contain"
                                                     key={field.value}
+                                                    unoptimized
                                                 />
                                             </div>
                                         )}
