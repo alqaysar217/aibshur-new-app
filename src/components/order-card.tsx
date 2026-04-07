@@ -72,16 +72,21 @@ export function OrderCard({ order }: OrderCardProps) {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-        calendar: 'gregory'
+        calendar: 'gregory',
+        timeZone: 'UTC'
       }).format(date);
 
       // On the server, or on the initial client render, always render the full date.
-      if (!isClient || !isToday(date)) {
+      if (!isClient) {
           return fullDate;
       }
       
-      // Only render relative time on the client after hydration.
-      return formatRelativeTime(date);
+      // Only render relative time on the client after hydration if it's today.
+      if (isToday(date)) {
+        return formatRelativeTime(date);
+      }
+      
+      return fullDate;
   }
 
   return (

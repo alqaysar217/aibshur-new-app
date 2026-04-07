@@ -67,7 +67,7 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
     };
     
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', calendar: 'gregory' });
+        return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', calendar: 'gregory', timeZone: 'UTC' });
     }
     
     const formatDate = (date: Date) => {
@@ -75,7 +75,8 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            calendar: 'gregory'
+            calendar: 'gregory',
+            timeZone: 'UTC'
         }).format(date);
     }
     

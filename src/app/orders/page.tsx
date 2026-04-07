@@ -10,16 +10,17 @@ import { BottomNav } from '@/components/bottom-nav';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 // MOCK DATA
+const now = new Date('2024-07-22T12:00:00Z').getTime();
 const ordersData: Omit<Order, 'storeImage' | 'storeImageHint'>[] = [
   // Current Orders
-  { id: 'ORD123', storeName: 'مطعم البيت الصنعاني', orderNumber: '#123', status: 'on_the_way', timestamp: new Date(Date.now() - 15 * 60 * 1000), total: 5800, storeImageId: 'store-yemeni-food' },
-  { id: 'ORD124', storeName: 'كافيتيريا مزاج', orderNumber: '#124', status: 'preparing', timestamp: new Date(Date.now() - 35 * 60 * 1000), total: 2200, storeImageId: 'store-cafe' },
-  { id: 'ORD125', storeName: 'سوبر ماركت العالمية', orderNumber: '#125', status: 'accepted', timestamp: new Date(Date.now() - 55 * 60 * 1000), total: 9500, storeImageId: 'store-supermarket' },
-  { id: 'ORD126', storeName: 'صيدلية الشفاء', orderNumber: '#126', status: 'pending', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), total: 3400, storeImageId: 'store-pharmacy' },
+  { id: 'ORD123', storeName: 'مطعم البيت الصنعاني', orderNumber: '#123', status: 'on_the_way', timestamp: new Date(now - 15 * 60 * 1000), total: 5800, storeImageId: 'store-yemeni-food' },
+  { id: 'ORD124', storeName: 'كافيتيريا مزاج', orderNumber: '#124', status: 'preparing', timestamp: new Date(now - 35 * 60 * 1000), total: 2200, storeImageId: 'store-cafe' },
+  { id: 'ORD125', storeName: 'سوبر ماركت العالمية', orderNumber: '#125', status: 'accepted', timestamp: new Date(now - 55 * 60 * 1000), total: 9500, storeImageId: 'store-supermarket' },
+  { id: 'ORD126', storeName: 'صيدلية الشفاء', orderNumber: '#126', status: 'pending', timestamp: new Date(now - 2 * 60 * 60 * 1000), total: 3400, storeImageId: 'store-pharmacy' },
   // Previous Orders
-  { id: 'ORD101', storeName: 'مطعم البيت الصنعاني', orderNumber: '#101', status: 'delivered', timestamp: new Date('2024-07-20T14:30:00'), total: 6200, storeImageId: 'store-yemeni-food' },
+  { id: 'ORD101', storeName: 'مطعم البيت الصنعاني', orderNumber: '#101', status: 'delivered', timestamp: new Date('2024-07-20T14:30:00Z'), total: 6200, storeImageId: 'store-yemeni-food' },
   // Cancelled Orders
-  { id: 'ORD102', storeName: 'كافيتيريا مزاج', orderNumber: '#102', status: 'cancelled', timestamp: new Date('2024-07-19T18:00:00'), total: 1800, storeImageId: 'store-cafe' },
+  { id: 'ORD102', storeName: 'كافيتيريا مزاج', orderNumber: '#102', status: 'cancelled', timestamp: new Date('2024-07-19T18:00:00Z'), total: 1800, storeImageId: 'store-cafe' },
 ];
 
 const orders: Order[] = ordersData.map(order => {
