@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Bell, Heart, List, MapPin, Search as SearchIcon, ShoppingCart, Star, TrendingUp } from 'lucide-react';
+import { ArrowRight, Bell, Heart, List, MapPin, Search as SearchIcon, ShoppingCart, Star, TrendingUp, Store, ShoppingBasket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -100,8 +100,14 @@ export default function SearchPage() {
         {/* Tabs */}
         <Tabs defaultValue="stores" className="w-full" dir="rtl" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="stores">المتاجر</TabsTrigger>
-            <TabsTrigger value="products">المنتجات</TabsTrigger>
+            <TabsTrigger value="stores" className="gap-2">
+                <Store />
+                المتاجر
+            </TabsTrigger>
+            <TabsTrigger value="products" className="gap-2">
+                <ShoppingBasket />
+                المنتجات
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="stores" className="space-y-4 mt-4">
