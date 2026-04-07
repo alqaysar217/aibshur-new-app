@@ -15,9 +15,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Banknote, User, Wallet, Link2 } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Banknote, User, Wallet, Link2, CheckCircle, XCircle } from 'lucide-react';
 import BankAccountsLoading from './loading';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -269,18 +268,32 @@ export default function BankAccountsPage() {
                                 control={form.control}
                                 name="isActive"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
-                                        <div className="space-y-0.5">
-                                            <FormLabel>حالة الحساب</FormLabel>
-                                            <FormDescription>
-                                               سيظهر الحساب للمستخدمين عند تفعيله.
-                                            </FormDescription>
-                                        </div>
+                                    <FormItem>
+                                        <FormLabel>حالة الحساب</FormLabel>
+                                        <FormDescription>
+                                            اختر ما إذا كان الحساب نشطاً لاستقبال المدفوعات.
+                                        </FormDescription>
                                         <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
+                                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                                <Button
+                                                    type="button"
+                                                    variant={field.value ? 'default' : 'outline'}
+                                                    onClick={() => field.onChange(true)}
+                                                    className="h-12 text-base"
+                                                >
+                                                    <CheckCircle />
+                                                    نشط
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant={!field.value ? 'destructive' : 'outline'}
+                                                    onClick={() => field.onChange(false)}
+                                                    className="h-12 text-base"
+                                                >
+                                                    <XCircle />
+                                                    غير نشط
+                                                </Button>
+                                            </div>
                                         </FormControl>
                                     </FormItem>
                                 )}
@@ -312,5 +325,7 @@ export default function BankAccountsPage() {
         </>
     );
 }
+
+    
 
     
