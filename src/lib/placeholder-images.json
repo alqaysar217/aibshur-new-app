@@ -167,6 +167,24 @@
       "description": "Large size variant of a product",
       "imageUrl": "https://picsum.photos/seed/variant-lg/100/100",
       "imageHint": "food portion"
+    },
+    {
+      "id": "bank-krimi",
+      "description": "Al-Kuraimi Bank logo",
+      "imageUrl": "https://picsum.photos/seed/krimi/100/100",
+      "imageHint": "bank logo"
+    },
+    {
+      "id": "bank-amqi",
+      "description": "Al-Amqi Bank logo",
+      "imageUrl": "https://picsum.photos/seed/amqi/100/100",
+      "imageHint": "bank logo"
+    },
+    {
+      "id": "map-placeholder",
+      "description": "A placeholder map for order tracking",
+      "imageUrl": "https://picsum.photos/seed/map/800/400",
+      "imageHint": "city map"
     }
   ]
 }
