@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 {/* Navigation */}
                 <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                    {sidebarNavItems.map((link) => <NavLink key={link.href} {...link} isCollapsed={isCollapsed} />)}
+                    {sidebarNavItems.map((link) => <NavLink key={link.label} href={link.href} icon={link.icon} text={link.label} isCollapsed={isCollapsed} />)}
                 </nav>
                 
                 {/* Footer */}
