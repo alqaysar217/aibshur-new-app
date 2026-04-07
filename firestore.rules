@@ -103,6 +103,16 @@ service cloud.firestore {
     match /bankAccounts/{bankAccountId} {
       allow read, write: if isAdmin();
     }
+    
+    /**
+     * @description Admin-only governorate management data.
+     * @path /app_provinces/{appProvinceId}
+     * @allow (read, write) Only admins can manage province settings.
+     * @principle Protects administrative settings from unauthorized access.
+     */
+    match /app_provinces/{appProvinceId} {
+      allow read, write: if isAdmin();
+    }
 
     /**
      * @description Publicly readable location data. Writes are disallowed.
@@ -193,3 +203,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
