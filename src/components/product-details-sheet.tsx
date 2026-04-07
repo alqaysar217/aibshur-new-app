@@ -77,43 +77,41 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
         </div>
         <div className="p-4 flex-1 overflow-y-auto">
             <SheetHeader className="mb-4">
-                <SheetTitle className="text-2xl font-bold text-foreground text-right">{product.name}</SheetTitle>
-                <SheetDescription className="text-base text-muted-foreground text-right">{product.description}</SheetDescription>
+                <SheetTitle className="text-right text-2xl font-bold text-foreground">{product.name}</SheetTitle>
+                <SheetDescription className="text-right text-base text-muted-foreground">{product.description}</SheetDescription>
             </SheetHeader>
             
             <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-1.5 text-amber-500">
+                 <div className="flex items-center gap-1.5 text-amber-500">
                     <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
                     <Star className="h-5 w-5 fill-current" />
                 </div>
                 {!product.hasVariants && (
                     <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                        <CircleDollarSign className="h-6 w-6" />
                         <span>{formatPrice(product.price)}&nbsp;ر.ي</span>
+                        <CircleDollarSign className="h-6 w-6" />
                     </div>
                 )}
             </div>
 
             {product.hasVariants && (
                 <div className="space-y-3">
-                    <h4 className="font-bold text-right flex items-center justify-start gap-2 text-lg">
+                    <h4 className="text-right font-bold flex items-center justify-start gap-2 text-lg">
                         <Layers className="h-5 w-5" />
                         <span>اختر الحجم:</span>
                     </h4>
                     {productVariants.map(variant => (
                         <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
                             <div className='flex justify-between items-center gap-4'>
-                                <Button size="sm" className="h-9 px-4 text-sm" onClick={() => handleVariantAddToCart(variant.id)}>إضافة</Button>
-                                <div className='flex items-center gap-3 flex-1 justify-end'>
-                                    <div className='text-right'>
-                                        <p className='font-semibold text-base'>{variant.name}</p>
-                                        <div className='flex items-center justify-end gap-1.5 font-bold text-primary'>
-                                            <span>{formatPrice(variant.price)}&nbsp;ر.ي</span>
-                                            <CircleDollarSign className="h-4 w-4" />
-                                        </div>
+                                <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
+                                <div className='text-right flex-1'>
+                                    <p className='font-semibold text-base'>{variant.name}</p>
+                                    <div className='flex items-center justify-start gap-1.5 font-bold text-primary'>
+                                        <span>{formatPrice(variant.price)}&nbsp;ر.ي</span>
+                                        <CircleDollarSign className="h-4 w-4" />
                                     </div>
-                                    <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                 </div>
+                                <Button size="sm" className="h-9 px-4 text-sm flex-shrink-0" onClick={() => handleVariantAddToCart(variant.id)}>إضافة</Button>
                             </div>
                         </Card>
                     ))}
@@ -123,14 +121,14 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
         
         {!product.hasVariants && (
             <div className="p-4 border-t flex items-center justify-between gap-4 bg-background/95 backdrop-blur-sm sticky bottom-0">
-                <Button className="flex-1 h-12 text-lg font-semibold" onClick={handleAddToCart}>
-                    إضافة إلى السلة
-                </Button>
-                 <QuantityCounter 
+                <QuantityCounter 
                     value={quantity} 
                     onIncrement={(e) => { e.stopPropagation(); setQuantity(q => q + 1); }} 
                     onDecrement={(e) => { e.stopPropagation(); setQuantity(q => (q > 1 ? q - 1 : 1)); }}
                 />
+                 <Button className="flex-1 h-12 text-lg font-semibold" onClick={handleAddToCart}>
+                    إضافة إلى السلة
+                </Button>
             </div>
         )}
       </SheetContent>
