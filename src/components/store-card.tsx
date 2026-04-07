@@ -73,13 +73,17 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, distance, ca
                     <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
                     <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
                 </div>
-                <div className={cn(
-                    "flex items-center gap-1 font-semibold",
-                    isOpen ? "text-primary" : "text-destructive"
-                    )}>
-                    <div className={cn("h-1.5 w-1.5 rounded-full", isOpen ? "bg-primary" : "bg-destructive")}></div>
-                    <span>{status}</span>
-                </div>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "px-1.5 py-0.5 text-[10px] font-semibold",
+                    isOpen
+                      ? "border-primary/30 bg-primary/10 text-primary"
+                      : "border-destructive/30 bg-destructive/10 text-destructive"
+                  )}
+                >
+                  {status}
+                </Badge>
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProductCard, type Product } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 // MOCK DATA
 const storeDetails = {
@@ -97,9 +98,17 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
                     <span>•</span>
                     <span>{storeDetails.category}</span>
                      <span>•</span>
-                    <span className={cn("font-semibold", storeDetails.status === 'مفتوح' ? 'text-green-400' : 'text-red-400')}>
-                        {storeDetails.status}
-                    </span>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "font-semibold",
+                        storeDetails.status === 'مفتوح'
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-destructive/30 bg-destructive/10 text-destructive"
+                      )}
+                    >
+                      {storeDetails.status}
+                    </Badge>
                 </div>
             </div>
         </div>
