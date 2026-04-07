@@ -31,7 +31,7 @@ const appCategorySchema = z.object({
 const storeFilterSchema = z.object({
   filter_name: z.string().min(2, { message: 'اسم الفلتر مطلوب' }),
   filter_image: z.string().min(1, { message: 'رابط الصورة مطلوب' }),
-  parent_store_id: z.string({ required_error: 'يجب اختيار المتجر الرئيسي' }),
+  parent_store_id: z.string({ required_error: 'يجب اختيار المتجر الرئيسي' }).min(1, { message: 'يجب اختيار المتجر الرئيسي' }),
   is_active: z.boolean().default(true),
 });
 
@@ -58,8 +58,23 @@ export default function CategoriesPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const categoryForm = useForm<AppCategoryFormValues>({ resolver: zodResolver(appCategorySchema) });
-    const filterForm = useForm<StoreFilterFormValues>({ resolver: zodResolver(storeFilterSchema) });
+    const categoryForm = useForm<AppCategoryFormValues>({
+        resolver: zodResolver(appCategorySchema),
+        defaultValues: {
+            name: '',
+            image: '',
+            is_active: true,
+        },
+    });
+    const filterForm = useForm<StoreFilterFormValues>({
+        resolver: zodResolver(storeFilterSchema),
+        defaultValues: {
+            filter_name: '',
+            filter_image: '',
+            parent_store_id: '',
+            is_active: true,
+        },
+    });
 
     // Data fetching
     const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'app_categories') : null, [firestore]);
@@ -75,8 +90,16 @@ export default function CategoriesPage() {
 
     // Handlers
     const handleOpenDialog = (type: 'category' | 'filter', isEditing = false, data: AppCategory | StoreFilter | null = null) => {
-        const form = type === 'category' ? categoryForm : filterForm;
-        form.reset(data ? { ...data, is_active: data.is_active ?? true } : { is_active: true });
+        if (isEditing && data) {
+            const form = type === 'category' ? categoryForm : filterForm;
+            form.reset({ ...data, is_active: data.is_active ?? true });
+        } else {
+            if (type === 'category') {
+                categoryForm.reset({ name: '', image: '', is_active: true });
+            } else {
+                filterForm.reset({ filter_name: '', filter_image: '', parent_store_id: '', is_active: true });
+            }
+        }
         setDialogState({ isOpen: true, isEditing, data, type });
     };
 
