@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -49,6 +50,11 @@ type OrderCardProps = {
 };
 
 export function OrderCard({ order }: OrderCardProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const formatRelativeTime = (date: Date) => {
     return formatDistanceToNow(date, { addSuffix: true, locale: ar });
@@ -62,14 +68,16 @@ export function OrderCard({ order }: OrderCardProps) {
   }
 
   const getFormattedTime = (date: Date) => {
-      if (isToday(date)) {
-          return formatRelativeTime(date);
+      // On the server, or on the initial client render, always render the full date.
+      if (!isClient || !isToday(date)) {
+          return new Intl.DateTimeFormat('ar-SA', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+          }).format(date);
       }
-      return new Intl.DateTimeFormat('ar-SA', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-      }).format(date);
+      // Only render relative time on the client after hydration.
+      return formatRelativeTime(date);
   }
 
   return (
