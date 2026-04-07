@@ -102,11 +102,11 @@ export default function SearchPage() {
         <Tabs defaultValue="stores" className="w-full" dir="rtl" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="stores" className="gap-2 h-full">
-                <Store />
+                <Store className="h-5 w-5" />
                 المتاجر
             </TabsTrigger>
             <TabsTrigger value="products" className="gap-2 h-full">
-                <ShoppingBasket />
+                <ShoppingBasket className="h-5 w-5" />
                 المنتجات
             </TabsTrigger>
           </TabsList>

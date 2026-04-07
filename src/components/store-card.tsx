@@ -57,11 +57,11 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, distance, ca
             {/* Row 2: Address and Distance */}
             <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <div className="flex items-center gap-1 truncate">
-                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">{address}</span>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0 pl-1">
-                    <Route className="h-3 w-3" />
+                    <Route className="h-4 w-4" />
                     <span className="font-medium">{distance}</span>
                 </div>
             </div>
@@ -70,7 +70,7 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, distance, ca
             <div className="flex items-center justify-between text-xs">
                 <Badge variant="outline" className="px-1.5 py-0.5 font-normal text-[10px]">{category}</Badge>
                 <div className="flex items-center gap-0.5">
-                    <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                    <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
                     <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
                 </div>
                 <div className={cn(

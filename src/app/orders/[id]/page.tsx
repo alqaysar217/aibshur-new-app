@@ -67,15 +67,14 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
     };
     
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', calendar: 'gregory', timeZone: 'UTC' });
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' });
     }
     
     const formatDate = (date: Date) => {
-         return new Intl.DateTimeFormat('ar-SA', {
+         return new Intl.DateTimeFormat('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            calendar: 'gregory',
             timeZone: 'UTC'
         }).format(date);
     }
@@ -193,7 +192,7 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
             <CardHeader><CardTitle>طريقة الدفع</CardTitle></CardHeader>
             <CardContent>
                  <div className="flex items-center gap-2">
-                    <CreditCard className="text-primary"/>
+                    <CreditCard className="h-5 w-5 text-primary"/>
                     <span className="font-semibold">
                         {orderDetails.paymentMethod === 'cash_on_delivery' && 'نقدًا عند الاستلام'}
                         {orderDetails.paymentMethod === 'wallet' && 'من المحفظة'}

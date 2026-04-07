@@ -38,7 +38,7 @@ export function OrderStatusBadge({ status, className }: { status: OrderStatus; c
   const { text, icon: Icon, color } = statusInfo[status];
   return (
     <Badge className={cn("flex items-center gap-1.5 border-none text-white", color, className)}>
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-4 w-4" />
       <span>{text}</span>
     </Badge>
   );
@@ -62,9 +62,9 @@ export function OrderCard({ order }: OrderCardProps) {
 
   const isToday = (date: Date) => {
     const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
+    return date.getUTCDate() === today.getUTCDate() &&
+           date.getUTCMonth() === today.getUTCMonth() &&
+           date.getUTCFullYear() === today.getUTCFullYear();
   }
 
   const getFormattedTime = (date: Date) => {
@@ -76,12 +76,10 @@ export function OrderCard({ order }: OrderCardProps) {
         timeZone: 'UTC'
       }).format(date);
 
-      // On the server, or on the initial client render, always render the full date.
       if (!isClient) {
           return fullDate;
       }
       
-      // Only render relative time on the client after hydration if it's today.
       if (isToday(date)) {
         return formatRelativeTime(date);
       }

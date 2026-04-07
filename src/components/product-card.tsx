@@ -91,7 +91,7 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
                     />
                 ) : (
                 <Button size="sm" className="h-8 text-xs px-3" onClick={handleAddToCart}>
-                    <Plus className="h-3 w-3 ml-1" />
+                    <Plus className="h-4 w-4" />
                     إضافة
                 </Button>
                 )}

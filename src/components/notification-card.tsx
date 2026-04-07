@@ -52,8 +52,8 @@ export function NotificationCard({ notification, onNotificationClick }: Notifica
             {!isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary flex-shrink-0 mt-1.5"></div>}
           </div>
           <p className="text-xs text-muted-foreground truncate mt-0.5">{body}</p>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-            <Clock className="h-3 w-3" />
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+            <Clock className="h-4 w-4" />
             <span>{relativeTime}</span>
           </div>
         </div>
