@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {/* Header */}
                 <div className={cn("flex items-center h-16 border-b shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
                     <Image 
-                        src="/logo-app.png" 
+                        src="/logo.png" 
                         alt="أبشر Logo" 
                         width={32} 
                         height={32} 

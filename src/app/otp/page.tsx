@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth, initiateAnonymousSignIn } from '@/firebase';
 
 const OTP_LENGTH = 6;
 const MOCK_OTP_USER = "123456";
@@ -18,6 +19,7 @@ export default function OtpPage() {
   const router = useRouter();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const otpImage = PlaceHolderImages.find(p => p.id === 'otp-illustration');
+  const auth = useAuth();
 
   const handleChange = (element: HTMLInputElement, index: number) => {
     const value = element.value.replace(/[^0-9]/g, '');
@@ -46,8 +48,10 @@ export default function OtpPage() {
 
   const handleSubmit = (finalOtp: string) => {
     if (finalOtp === MOCK_OTP_ADMIN) {
+      initiateAnonymousSignIn(auth);
       router.push('/admin/dashboard');
     } else if (finalOtp === MOCK_OTP_USER) {
+      initiateAnonymousSignIn(auth);
       router.push('/home');
     } else {
       setError('الرمز غير صحيح. حاول مرة أخرى.');
