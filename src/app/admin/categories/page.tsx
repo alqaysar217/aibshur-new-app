@@ -90,8 +90,8 @@ export default function CategoriesPage() {
 
     // Handlers
     const handleOpenDialog = (type: 'category' | 'filter', isEditing = false, data: AppCategory | StoreFilter | null = null) => {
+        const form = type === 'category' ? categoryForm : filterForm;
         if (isEditing && data) {
-            const form = type === 'category' ? categoryForm : filterForm;
             form.reset({ ...data, is_active: data.is_active ?? true });
         } else {
             if (type === 'category') {
@@ -190,7 +190,7 @@ export default function CategoriesPage() {
                                     <TableBody>
                                         {categories?.map((cat) => (
                                             <TableRow key={cat.id} className={cn(!cat.is_active && "text-muted-foreground bg-muted/50")}>
-                                                <TableCell><Image src={cat.image} alt={cat.name} width={64} height={64} className="rounded-lg object-contain mx-auto" /></TableCell>
+                                                <TableCell><Image src={cat.image} alt={cat.name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
                                                 <TableCell className="font-medium">{cat.name}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={cat.is_active ? 'default' : 'secondary'}>{cat.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                                                 <TableCell className="text-center">
@@ -236,7 +236,7 @@ export default function CategoriesPage() {
                                     <TableBody>
                                         {filters?.map((filter) => (
                                             <TableRow key={filter.id} className={cn(!filter.is_active && "text-muted-foreground bg-muted/50")}>
-                                                <TableCell><Image src={filter.filter_image} alt={filter.filter_name} width={64} height={64} className="rounded-lg object-contain mx-auto" /></TableCell>
+                                                <TableCell><Image src={filter.filter_image} alt={filter.filter_name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
                                                 <TableCell className="font-medium">{filter.filter_name}</TableCell>
                                                 <TableCell>{storesMap[filter.parent_store_id] || 'غير معروف'}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={filter.is_active ? 'default' : 'secondary'}>{filter.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
