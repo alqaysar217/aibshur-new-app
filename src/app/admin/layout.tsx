@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
-    { label: 'إدارة الحسابات البنكية', href: '#', icon: Banknote },
+    { label: 'إدارة الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
     { label: 'إدارة المحافظات', href: '#', icon: Map },
     { label: 'إدارة الفئات', href: '#', icon: LayoutGrid },
     { label: 'إدارة المتاجر', href: '#', icon: Store },

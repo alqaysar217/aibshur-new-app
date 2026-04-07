@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from '@/lib/utils';
+import { FirebaseClientProvider } from '@/firebase';
 
 // Metadata cannot be exported from a Client Component, so we add it to the <head> manually.
 
@@ -25,14 +26,16 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("antialiased")}>
-        {isAdminPage ? (
-          <>{children}</>
-        ) : (
-          <div className="mobile-container">
-            {children}
-          </div>
-        )}
-        <Toaster />
+        <FirebaseClientProvider>
+          {isAdminPage ? (
+            <>{children}</>
+          ) : (
+            <div className="mobile-container">
+              {children}
+            </div>
+          )}
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );
