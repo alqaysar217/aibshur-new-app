@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Bell, Copy, CreditCard, ShoppingCart, Star } from 'lucide-react';
@@ -21,7 +21,7 @@ const orderDetails = {
     status: 'on_the_way' as OrderStatus,
     storeName: 'مطعم البيت الصنعاني',
     storeImageId: 'store-yemeni-food',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000),
+    timestamp: new Date('2024-07-22T10:00:00Z'),
     products: [
         { id: 'p1', name: 'مندي دجاج', price: 2500, quantity: 2 },
         { id: 'p2', name: 'بيبسي', price: 300, quantity: 2 },
@@ -30,7 +30,7 @@ const orderDetails = {
     deliveryFee: 200,
     discount: 0,
     total: 5800,
-    paymentMethod: 'cash_on_delivery', // 'wallet', 'bank_transfer'
+    paymentMethod: 'bank_transfer', // 'wallet', 'cash_on_delivery'
     bankAccounts: [
         { id: 'bank1', name: 'بنك الكريمي', accountName: 'شركة أبشر للتوصيل', accountNumber: '123456789', logoId: 'bank-krimi' },
         { id: 'bank2', name: 'بنك العمقي', accountName: 'شركة أبشر للتوصيل', accountNumber: '987654321', logoId: 'bank-amqi' },
@@ -52,6 +52,11 @@ const bankLogos = orderDetails.bankAccounts.map(b => {
 export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const { toast } = useToast();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const copyToClipboard = (text: string, label: string) => {
         navigator.clipboard.writeText(text);
@@ -111,7 +116,9 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                     <Image src={storeImage?.imageUrl || ''} alt={orderDetails.storeName} width={48} height={48} className="rounded-md object-cover" data-ai-hint={storeImage?.imageHint || ''} />
                     <div>
                         <p className="font-bold">{orderDetails.storeName}</p>
-                        <p className="text-sm text-muted-foreground">{formatDate(orderDetails.timestamp)} - {formatTime(orderDetails.timestamp)}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {formatDate(orderDetails.timestamp)}{isClient && ` - ${formatTime(orderDetails.timestamp)}`}
+                        </p>
                     </div>
                 </div>
             </CardContent>
@@ -263,3 +270,5 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
     </div>
   );
 }
+
+    
