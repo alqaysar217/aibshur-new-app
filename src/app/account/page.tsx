@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, Gift, Shield, FileText, HelpCircle, LogOut, ChevronLeft } from 'lucide-react';
+import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, Gift, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,12 +8,12 @@ import { BottomNav } from '@/components/bottom-nav';
 import { Separator } from '@/components/ui/separator';
 
 const accountLinks = [
-  { href: '#', label: 'عنوان التوصيل', icon: MapPin },
-  { href: '#', label: 'عضوية ابشر VIP', icon: Gem },
-  { href: '#', label: 'بوابة التبرعات', icon: Gift },
-  { href: '#', label: 'الخصوصية والامان', icon: Shield },
-  { href: '/terms', label: 'شروط الاحكام', icon: FileText },
-  { href: '#', label: 'مركز المساعدة', icon: HelpCircle },
+  { href: '#', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: MapPin },
+  { href: '#', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
+  { href: '#', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: Gift },
+  { href: '#', label: 'الخصوصية والامان', description: 'سياسة حماية بيانات', icon: Shield },
+  { href: '/terms', label: 'شروط الاحكام', description: 'حقوقك والتزاماتك القانونية', icon: FileText },
+  { href: '#', label: 'مركز المساعدة', description: 'الاسئلة الشائعة والدعم الفني', icon: HelpCircle },
 ];
 
 export default function AccountPage() {
@@ -48,13 +48,22 @@ export default function AccountPage() {
                             height={96}
                             className="rounded-full border-4 border-background shadow-md bg-muted"
                         />
-                         <Badge className="absolute -bottom-1 -right-1 border-2 border-background px-2 py-0.5">مستخدم</Badge>
+                         <Badge className="absolute -bottom-1 -right-1 border-2 border-background px-2 py-1 flex items-center gap-1.5">
+                            <User className="h-3 w-3"/>
+                            <span>مستخدم</span>
+                         </Badge>
                     </div>
                     <h2 className="text-2xl font-bold mt-4">مستخدم أبشر</h2>
-                    <div className="text-muted-foreground text-sm mt-2 flex items-center gap-4">
-                        <span>+967 777 123 456</span>
-                        <span>•</span>
-                        <span>أمانة العاصمة</span>
+                    <div className="text-muted-foreground text-sm mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                        <div className="flex items-center gap-1.5">
+                            <Phone className="h-4 w-4" />
+                            <span>775 258 830</span>
+                        </div>
+                        <div className="hidden sm:block">•</div>
+                        <div className="flex items-center gap-1.5">
+                            <MapPin className="h-4 w-4" />
+                            <span>حضرموت</span>
+                        </div>
                     </div>
                 </div>
 
@@ -63,10 +72,15 @@ export default function AccountPage() {
                     {accountLinks.map((item) => (
                          <Link href={item.href} key={item.label} className="block">
                             <Card className="hover:bg-secondary/50 transition-colors active:scale-[0.98] shadow-sm">
-                                <CardContent className="p-3 flex items-center justify-between">
+                                <CardContent className="p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <item.icon className="h-5 w-5 text-primary" />
-                                        <span className="font-semibold text-base">{item.label}</span>
+                                        <div className="bg-primary/10 p-2 rounded-lg">
+                                           <item.icon className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-base">{item.label}</span>
+                                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                                        </div>
                                     </div>
                                     <ChevronLeft className="h-5 w-5 text-muted-foreground" />
                                 </CardContent>
