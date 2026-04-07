@@ -17,7 +17,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, Edit, Banknote, User, Wallet, Link2 } from 'lucide-react';
 import BankAccountsLoading from './loading';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 // Zod schema for form validation
@@ -94,16 +95,6 @@ export default function BankAccountsPage() {
         }
     };
     
-    const handleStatusChange = (account: BankAccount, newStatus: boolean) => {
-        if (!firestore) return;
-        const docRef = doc(firestore, 'bankAccounts', account.id);
-        updateDocumentNonBlocking(docRef, { isActive: newStatus });
-        toast({
-            title: "تم تحديث الحالة",
-            description: `حساب ${account.bankName} الآن ${newStatus ? 'نشط' : 'غير نشط'}.`,
-        });
-    };
-    
     async function onSubmit(values: BankAccountFormValues) {
         if (!firestore) return;
         try {
@@ -171,13 +162,9 @@ export default function BankAccountsPage() {
                                             <TableCell className="text-center">{account.accountName}</TableCell>
                                             <TableCell className="text-center">{account.accountNumber}</TableCell>
                                             <TableCell className="text-center">
-                                                <div className="flex items-center justify-center">
-                                                    <Checkbox
-                                                        checked={account.isActive ?? true}
-                                                        onCheckedChange={(checked) => handleStatusChange(account, checked === true)}
-                                                        aria-label="Account status"
-                                                    />
-                                                </div>
+                                                <Badge variant={(account.isActive ?? true) ? 'default' : 'secondary'}>
+                                                    {(account.isActive ?? true) ? 'نشط' : 'غير نشط'}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
@@ -282,19 +269,19 @@ export default function BankAccountsPage() {
                                 control={form.control}
                                 name="isActive"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 space-x-reverse rounded-lg border p-4 shadow-sm">
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>حالة الحساب</FormLabel>
+                                            <FormDescription>
+                                               سيظهر الحساب للمستخدمين عند تفعيله.
+                                            </FormDescription>
+                                        </div>
                                         <FormControl>
-                                            <Checkbox
+                                            <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
                                             />
                                         </FormControl>
-                                        <div className="space-y-1 leading-none">
-                                            <FormLabel>تفعيل الحساب</FormLabel>
-                                            <FormDescription>
-                                                سيظهر الحساب للمستخدمين عند تفعيله.
-                                            </FormDescription>
-                                        </div>
                                     </FormItem>
                                 )}
                             />
