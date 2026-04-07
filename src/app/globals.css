@@ -42,6 +42,16 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* Sidebar Colors */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 221 39% 11%;
+    --sidebar-border: 150 4% 90%;
+    --sidebar-ring: 171 70% 40%;
+    --sidebar-accent: 150 4% 92%;
+    --sidebar-accent-foreground: 221 39% 11%;
+    --sidebar-primary: 171 70% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
   }
 }
 

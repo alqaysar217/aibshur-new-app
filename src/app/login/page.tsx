@@ -15,9 +15,10 @@ export default function LoginPage() {
   const router = useRouter();
   const loginImage = PlaceHolderImages.find(p => p.id === 'login-illustration');
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
+  const [phone, setPhone] = useState('');
 
   const handleContinue = () => {
-    router.push('/otp');
+    router.push(`/otp?phone=${phone}`);
   };
 
   return (
@@ -45,6 +46,8 @@ export default function LoginPage() {
                     type="tel"
                     placeholder="7X XXX XXXX"
                     className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

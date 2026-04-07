@@ -1,19 +1,24 @@
 'use client';
 
 import React, { useState, useRef, ChangeEvent, KeyboardEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const OTP_LENGTH = 6;
-const MOCK_OTP = "123456";
+const MOCK_OTP_USER = "123456";
+const MOCK_OTP_ADMIN = "654321";
+const ADMIN_PHONE = "777777777";
+
 
 export default function OtpPage() {
   const [otp, setOtp] = useState<string[]>(new Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState<string>('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const phone = searchParams.get('phone');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const otpImage = PlaceHolderImages.find(p => p.id === 'otp-illustration');
 
@@ -43,7 +48,9 @@ export default function OtpPage() {
   };
 
   const handleSubmit = (finalOtp: string) => {
-    if (finalOtp === MOCK_OTP) {
+    if (phone === ADMIN_PHONE && finalOtp === MOCK_OTP_ADMIN) {
+      router.push('/admin/dashboard');
+    } else if (finalOtp === MOCK_OTP_USER) {
       router.push('/home');
     } else {
       setError('الرمز غير صحيح. حاول مرة أخرى.');
