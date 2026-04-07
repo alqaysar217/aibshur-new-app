@@ -16,23 +16,23 @@ import { cn } from '@/lib/utils';
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
     { label: 'إدارة الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
-    { label: 'إدارة المحافظات', href: '#', icon: Map },
-    { label: 'إدارة الفئات', href: '#', icon: LayoutGrid },
-    { label: 'إدارة المتاجر', href: '#', icon: Store },
-    { label: 'إدارة المنتجات', href: '#', icon: ShoppingBasket },
-    { label: 'إدارة الطلبات', href: '#', icon: ClipboardList },
-    { label: 'إدارة المواعيد', href: '#', icon: Calendar },
-    { label: 'إدارة المستخدمين', href: '#', icon: Users },
-    { label: 'إدارة طلبات المناديب', href: '#', icon: Bike },
-    { label: 'إدارة باقات VIP', href: '#', icon: Gem },
-    { label: 'إدارة نقاط الولاء', href: '#', icon: Star },
-    { label: 'إدارة الإعلانات', href: '#', icon: Megaphone },
-    { label: 'إدارة الكوبونات', href: '#', icon: Ticket },
-    { label: 'إدارة التبرعات', href: '#', icon: HandHeart },
-    { label: 'إدارة تقارير المبيعات', href: '#', icon: BarChart2 },
-    { label: 'إدارة أداء الموظفين', href: '#', icon: TrendingUp },
-    { label: 'إعدادات النظام', href: '#', icon: Settings },
-    { label: 'الدعم الفني', href: '#', icon: LifeBuoy },
+    { label: 'إدارة المحافظات', href: '/admin/governorates', icon: Map },
+    { label: 'إدارة الفئات', href: '/admin/categories', icon: LayoutGrid },
+    { label: 'إدارة المتاجر', href: '/admin/stores', icon: Store },
+    { label: 'إدارة المنتجات', href: '/admin/products', icon: ShoppingBasket },
+    { label: 'إدارة الطلبات', href: '/admin/orders', icon: ClipboardList },
+    { label: 'إدارة المواعيد', href: '/admin/appointments', icon: Calendar },
+    { label: 'إدارة المستخدمين', href: '/admin/users', icon: Users },
+    { label: 'إدارة طلبات المناديب', href: '/admin/delegates', icon: Bike },
+    { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Gem },
+    { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
+    { label: 'إدارة الإعلانات', href: '/admin/ads', icon: Megaphone },
+    { label: 'إدارة الكوبونات', href: '/admin/coupons', icon: Ticket },
+    { label: 'إدارة التبرعات', href: '/admin/donations', icon: HandHeart },
+    { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart2 },
+    { label: 'إدارة أداء الموظفين', href: '/admin/performance', icon: TrendingUp },
+    { label: 'إعدادات النظام', href: '/admin/settings', icon: Settings },
+    { label: 'الدعم الفني', href: '/admin/support', icon: LifeBuoy },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -71,11 +71,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {/* Header */}
                 <div className={cn("flex items-center h-16 border-b shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
                     <Image 
-                        src="/logo.png" 
+                        src="/logo-app.png" 
                         alt="أبشر Logo" 
                         width={32} 
                         height={32} 
-                        className="rounded-[10px] object-cover" // تم إضافة انحناء الزوايا هنا بمقدار 10 بكسل
+                        className="rounded-[10px] object-cover"
                     />
                     <span className={cn(
                         "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-primary",
