@@ -113,7 +113,7 @@ export function OrderCard({ order }: OrderCardProps) {
                     <span>{getFormattedTime(order.timestamp)}</span>
                 </div>
                 <div className="font-bold">
-                    {order.total.toLocaleString('ar-SA')}&nbsp;ر.ي
+                    {order.total.toLocaleString('en-US')}&nbsp;ر.ي
                 </div>
             </div>
 

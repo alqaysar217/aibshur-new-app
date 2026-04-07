@@ -72,7 +72,7 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
           </div>
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-                 <p className="text-sm font-bold text-primary">{product.price.toLocaleString('ar-SA')}&nbsp;ر.ي</p>
+                 <p className="text-sm font-bold text-primary">{product.price.toLocaleString('en-US')}&nbsp;ر.ي</p>
                 <div className="flex items-center gap-1 text-amber-500">
                     <Star className="h-4 w-4 fill-current" />
                     <span className="font-semibold text-xs text-foreground">{product.rating.toFixed(1)}</span>

@@ -49,8 +49,8 @@ const bankLogos = orderDetails.bankAccounts.map(b => {
     return { ...b, logoUrl: logo?.imageUrl || '', logoHint: logo?.imageHint || '' };
 });
 
-export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function OrderDetailsPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+    const params = use(paramsPromise);
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
 
@@ -108,7 +108,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         <Card>
             <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                    <span className="font-bold text-lg">طلب رقم #{id}</span>
+                    <span className="font-bold text-lg">طلب رقم #{params.id}</span>
                     <OrderStatusBadge status={orderDetails.status} />
                 </div>
                 <Separator/>
@@ -165,9 +165,9 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                         {orderDetails.products.map(p => (
                             <TableRow key={p.id}>
                                 <TableCell className="font-medium text-right">{p.name}</TableCell>
-                                <TableCell>{p.price.toLocaleString('ar-SA')}</TableCell>
+                                <TableCell>{p.price.toLocaleString('en-US')}</TableCell>
                                 <TableCell>{p.quantity}</TableCell>
-                                <TableCell className="text-left">{(p.price * p.quantity).toLocaleString('ar-SA')}</TableCell>
+                                <TableCell className="text-left">{(p.price * p.quantity).toLocaleString('en-US')}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -179,11 +179,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         <Card>
             <CardHeader><CardTitle>ملخص الفاتورة</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-base">
-                <div className="flex justify-between"><span>إجمالي المنتجات</span><span>{orderDetails.subtotal.toLocaleString('ar-SA')}&nbsp;ر.ي</span></div>
-                <div className="flex justify-between"><span>رسوم التوصيل</span><span>{orderDetails.deliveryFee.toLocaleString('ar-SA')}&nbsp;ر.ي</span></div>
-                {orderDetails.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span>-{orderDetails.discount.toLocaleString('ar-SA')}&nbsp;ر.ي</span></div>}
+                <div className="flex justify-between"><span>إجمالي المنتجات</span><span>{orderDetails.subtotal.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                <div className="flex justify-between"><span>رسوم التوصيل</span><span>{orderDetails.deliveryFee.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                {orderDetails.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span>-{orderDetails.discount.toLocaleString('en-US')}&nbsp;ر.ي</span></div>}
                 <Separator/>
-                <div className="flex justify-between font-bold text-lg"><span>الإجمالي النهائي</span><span>{orderDetails.total.toLocaleString('ar-SA')}&nbsp;ر.ي</span></div>
+                <div className="flex justify-between font-bold text-lg"><span>الإجمالي النهائي</span><span>{orderDetails.total.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
             </CardContent>
         </Card>
 
