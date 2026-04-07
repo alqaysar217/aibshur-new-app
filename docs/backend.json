@@ -25,6 +25,10 @@
           "type": "string",
           "description": "URL to an image of the bank's logo.",
           "format": "uri"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the bank account is active and can be used for transactions."
         }
       },
       "required": [

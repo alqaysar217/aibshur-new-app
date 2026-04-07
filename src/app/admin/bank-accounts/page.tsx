@@ -12,11 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, Edit, Banknote, User, Wallet, Link2 } from 'lucide-react';
 import BankAccountsLoading from './loading';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 // Zod schema for form validation
 const bankAccountSchema = z.object({
@@ -24,6 +26,7 @@ const bankAccountSchema = z.object({
   accountName: z.string().min(2, { message: 'اسم الحساب مطلوب' }),
   accountNumber: z.string().min(5, { message: 'رقم الحساب مطلوب' }),
   logoUrl: z.string().min(1, { message: 'الرجاء إدخال رابط أو مسار صحيح للصورة' }),
+  isActive: z.boolean().default(true),
 });
 
 type BankAccountFormValues = z.infer<typeof bankAccountSchema>;
@@ -45,6 +48,7 @@ export default function BankAccountsPage() {
             accountName: '',
             accountNumber: '',
             logoUrl: '',
+            isActive: true,
         },
     });
 
@@ -63,6 +67,7 @@ export default function BankAccountsPage() {
             accountName: '',
             accountNumber: '',
             logoUrl: '',
+            isActive: true,
         });
         setIsDialogOpen(true);
     };
@@ -70,7 +75,7 @@ export default function BankAccountsPage() {
     const handleEdit = (account: BankAccount) => {
         setIsEditing(true);
         setSelectedAccount(account);
-        form.reset(account);
+        form.reset({ ...account, isActive: account.isActive ?? true });
         setIsDialogOpen(true);
     };
 
@@ -87,6 +92,16 @@ export default function BankAccountsPage() {
             setIsAlertOpen(false);
             setSelectedAccount(null);
         }
+    };
+    
+    const handleStatusChange = (account: BankAccount, newStatus: boolean) => {
+        if (!firestore) return;
+        const docRef = doc(firestore, 'bankAccounts', account.id);
+        updateDocumentNonBlocking(docRef, { isActive: newStatus });
+        toast({
+            title: "تم تحديث الحالة",
+            description: `حساب ${account.bankName} الآن ${newStatus ? 'نشط' : 'غير نشط'}.`,
+        });
     };
     
     async function onSubmit(values: BankAccountFormValues) {
@@ -141,19 +156,29 @@ export default function BankAccountsPage() {
                                     <TableHead className="text-center">اسم البنك</TableHead>
                                     <TableHead className="text-center">اسم الحساب</TableHead>
                                     <TableHead className="text-center">رقم الحساب</TableHead>
+                                    <TableHead className="text-center">الحالة</TableHead>
                                     <TableHead className="text-center">إجراءات</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {bankAccounts && bankAccounts.length > 0 ? (
                                     bankAccounts.map((account) => (
-                                        <TableRow key={account.id}>
+                                        <TableRow key={account.id} className={cn(account.isActive === false && "text-muted-foreground bg-muted/50")}>
                                             <TableCell>
                                                 <Image src={account.logoUrl} alt={account.bankName} width={48} height={48} className="rounded-md object-contain mx-auto" />
                                             </TableCell>
                                             <TableCell className="font-medium text-center">{account.bankName}</TableCell>
                                             <TableCell className="text-center">{account.accountName}</TableCell>
                                             <TableCell className="text-center">{account.accountNumber}</TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex items-center justify-center">
+                                                    <Switch
+                                                        checked={account.isActive ?? true}
+                                                        onCheckedChange={(newStatus) => handleStatusChange(account, newStatus)}
+                                                        aria-label="Account status"
+                                                    />
+                                                </div>
+                                            </TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <Button variant="outline" size="icon" onClick={() => handleEdit(account)} className="h-9 w-9">
@@ -168,7 +193,7 @@ export default function BankAccountsPage() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">
+                                        <TableCell colSpan={6} className="h-24 text-center">
                                             <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                                 <Banknote className="h-10 w-10" />
                                                 <p className="font-semibold">لا توجد حسابات بنكية بعد.</p>
@@ -250,6 +275,26 @@ export default function BankAccountsPage() {
                                                 />
                                             </div>
                                         )}
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="isActive"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>تفعيل الحساب</FormLabel>
+                                            <FormDescription>
+                                                سيظهر الحساب للمستخدمين عند تفعيله.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
                                     </FormItem>
                                 )}
                             />
