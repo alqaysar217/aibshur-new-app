@@ -10,13 +10,12 @@ import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PlusCircle, Trash, Edit, Banknote } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Banknote, User, Wallet, Link2 } from 'lucide-react';
 import BankAccountsLoading from './loading';
 
 // Zod schema for form validation
@@ -128,11 +127,11 @@ export default function BankAccountsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>شعار البنك</TableHead>
-                                    <TableHead>اسم البنك</TableHead>
-                                    <TableHead>اسم الحساب</TableHead>
-                                    <TableHead>رقم الحساب</TableHead>
-                                    <TableHead>إجراءات</TableHead>
+                                    <TableHead className="w-[100px] text-center">الشعار</TableHead>
+                                    <TableHead className="text-center">اسم البنك</TableHead>
+                                    <TableHead className="text-center">اسم الحساب</TableHead>
+                                    <TableHead className="text-center">رقم الحساب</TableHead>
+                                    <TableHead className="text-center">إجراءات</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -140,30 +139,20 @@ export default function BankAccountsPage() {
                                     bankAccounts.map((account) => (
                                         <TableRow key={account.id}>
                                             <TableCell>
-                                                <Image src={account.logoUrl} alt={account.bankName} width={40} height={40} className="rounded-md object-contain" />
+                                                <Image src={account.logoUrl} alt={account.bankName} width={48} height={48} className="rounded-md object-contain mx-auto" />
                                             </TableCell>
-                                            <TableCell className="font-medium">{account.bankName}</TableCell>
-                                            <TableCell>{account.accountName}</TableCell>
-                                            <TableCell>{account.accountNumber}</TableCell>
-                                            <TableCell>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <span className="sr-only">فتح القائمة</span>
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleEdit(account)}>
-                                                            <Edit className="ml-2 h-4 w-4" />
-                                                            تعديل
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleDelete(account)} className="text-destructive">
-                                                            <Trash className="ml-2 h-4 w-4" />
-                                                            حذف
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                            <TableCell className="font-medium text-center">{account.bankName}</TableCell>
+                                            <TableCell className="text-center">{account.accountName}</TableCell>
+                                            <TableCell className="text-center">{account.accountNumber}</TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <Button variant="outline" size="icon" onClick={() => handleEdit(account)} className="h-9 w-9">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="outline" size="icon" onClick={() => handleDelete(account)} className="h-9 w-9 text-destructive hover:text-destructive border-destructive/50 hover:bg-destructive/10">
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -186,7 +175,7 @@ export default function BankAccountsPage() {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}</DialogTitle>
                         <DialogDescription>
@@ -196,13 +185,34 @@ export default function BankAccountsPage() {
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                             <FormField control={form.control} name="bankName" render={({ field }) => (
-                                <FormItem><FormLabel>اسم البنك</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>اسم البنك</FormLabel>
+                                    <div className="relative">
+                                        <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                             <FormField control={form.control} name="accountName" render={({ field }) => (
-                                <FormItem><FormLabel>اسم صاحب الحساب</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>اسم صاحب الحساب</FormLabel>
+                                     <div className="relative">
+                                        <User className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                             <FormField control={form.control} name="accountNumber" render={({ field }) => (
-                                <FormItem><FormLabel>رقم الحساب</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>رقم الحساب</FormLabel>
+                                     <div className="relative">
+                                        <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                             <FormField
                                 control={form.control}
@@ -210,12 +220,15 @@ export default function BankAccountsPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>رابط شعار البنك</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} placeholder="https://... or /logo.png"/>
-                                        </FormControl>
+                                        <div className="relative">
+                                            <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input {...field} dir="ltr" className="text-left pr-10 h-12" placeholder="https://... or /logo.png"/>
+                                            </FormControl>
+                                        </div>
                                         <FormMessage />
                                         {field.value && (
-                                            <div className="mt-2 flex justify-center rounded-lg border border-dashed p-4">
+                                            <div className="mt-4 flex justify-center rounded-lg border border-dashed p-4">
                                                 <Image
                                                     src={field.value}
                                                     alt="معاينة الشعار"
