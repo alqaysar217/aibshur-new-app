@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Bell, Copy, CreditCard, ShoppingCart, Star } from 'lucide-react';
@@ -48,7 +49,8 @@ const bankLogos = orderDetails.bankAccounts.map(b => {
     return { ...b, logoUrl: logo?.imageUrl || '', logoHint: logo?.imageHint || '' };
 });
 
-export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const { toast } = useToast();
 
     const copyToClipboard = (text: string, label: string) => {
@@ -101,7 +103,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
         <Card>
             <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                    <span className="font-bold text-lg">طلب رقم #{params.id}</span>
+                    <span className="font-bold text-lg">طلب رقم #{id}</span>
                     <OrderStatusBadge status={orderDetails.status} />
                 </div>
                 <Separator/>
@@ -123,7 +125,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="relative h-48 w-full">
-                         <Image src={mapImage.imageUrl} alt="Map" layout='fill' objectFit='cover' data-ai-hint={mapImage.imageHint} />
+                         <Image src={mapImage.imageUrl} alt="Map" fill objectFit='cover' data-ai-hint={mapImage.imageHint} />
                          <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white p-3 flex justify-between items-center">
                             <div>
                                 <p className="font-semibold">{orderDetails.delegate.name}</p>
