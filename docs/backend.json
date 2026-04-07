@@ -222,10 +222,6 @@
           "type": "string",
           "description": "The customer service phone number for the governorate."
         },
-        "contact_number": {
-          "type": "string",
-          "description": "Direct contact number (9 digits Yemeni number)."
-        },
         "whatsapp_number": {
           "type": "string",
           "description": "WhatsApp contact number (9 digits Yemeni number)."
@@ -248,7 +244,6 @@
       "required": [
         "province_name",
         "customer_service_number",
-        "contact_number",
         "whatsapp_number"
       ]
     }

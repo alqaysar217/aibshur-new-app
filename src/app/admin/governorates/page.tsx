@@ -11,22 +11,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, Edit, Map, Phone, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import GovernoratesLoading from './loading';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
 
-const phoneRegex = new RegExp(/^7[0-9]{8}$/, 'gm');
+const phoneRegex = new RegExp(/^7[0-9]{8}$/);
 
 // Zod schema for form validation
 const provinceSchema = z.object({
   province_name: z.string().min(2, { message: 'اسم المحافظة مطلوب' }),
   customer_service_number: z.string().min(1, { message: 'رقم خدمة العملاء مطلوب' }),
-  contact_number: z.string().regex(phoneRegex, { message: 'الرجاء إدخال رقم هاتف يمني صحيح (9 أرقام يبدأ بـ 7)' }),
   whatsapp_number: z.string().regex(phoneRegex, { message: 'الرجاء إدخال رقم واتساب يمني صحيح (9 أرقام يبدأ بـ 7)' }),
   is_active: z.boolean().default(true),
 });
@@ -48,7 +46,6 @@ export default function GovernoratesPage() {
         defaultValues: {
             province_name: '',
             customer_service_number: '',
-            contact_number: '',
             whatsapp_number: '',
             is_active: true,
         },
@@ -66,7 +63,6 @@ export default function GovernoratesPage() {
         form.reset({
             province_name: '',
             customer_service_number: '',
-            contact_number: '',
             whatsapp_number: '',
             is_active: true,
         });
@@ -151,7 +147,6 @@ export default function GovernoratesPage() {
                                 <TableRow>
                                     <TableHead className="text-center">اسم المحافظة</TableHead>
                                     <TableHead className="text-center">رقم خدمة العملاء</TableHead>
-                                    <TableHead className="text-center">رقم الاتصال</TableHead>
                                     <TableHead className="text-center">رقم الواتساب</TableHead>
                                     <TableHead className="text-center">الحالة</TableHead>
                                     <TableHead className="text-center">إجراءات</TableHead>
@@ -162,8 +157,7 @@ export default function GovernoratesPage() {
                                     provinces.map((province) => (
                                         <TableRow key={province.id} className={cn(!province.is_active && "text-muted-foreground bg-muted/50")}>
                                             <TableCell className="font-medium text-center">{province.province_name}</TableCell>
-                                            <TableCell className="text-center">{province.customer_service_number}</TableCell>
-                                            <TableCell className="text-center" dir="ltr">{province.contact_number}</TableCell>
+                                            <TableCell className="text-center" dir="ltr">{province.customer_service_number}</TableCell>
                                             <TableCell className="text-center" dir="ltr">{province.whatsapp_number}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant={province.is_active ? 'default' : 'secondary'}>
@@ -184,7 +178,7 @@ export default function GovernoratesPage() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
+                                        <TableCell colSpan={5} className="h-24 text-center">
                                             <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                                 <Map className="h-10 w-10" />
                                                 <p className="font-semibold">لا توجد محافظات مضافة بعد.</p>
@@ -212,28 +206,30 @@ export default function GovernoratesPage() {
                             <FormField control={form.control} name="province_name" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>اسم المحافظة</FormLabel>
-                                    <FormControl><Input {...field} /></FormControl>
+                                    <div className="relative">
+                                        <Map className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                              <FormField control={form.control} name="customer_service_number" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>رقم خدمة العملاء</FormLabel>
-                                    <FormControl><Input {...field} type="tel" dir="ltr" /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="contact_number" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>رقم الاتصال المباشر</FormLabel>
-                                    <FormControl><Input {...field} type="tel" dir="ltr" /></FormControl>
+                                     <div className="relative">
+                                        <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} type="tel" dir="ltr" className="text-left pr-10 h-12" /></FormControl>
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                             <FormField control={form.control} name="whatsapp_number" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>رقم الواتساب</FormLabel>
-                                    <FormControl><Input {...field} type="tel" dir="ltr" /></FormControl>
+                                     <div className="relative">
+                                        <MessageSquare className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} type="tel" dir="ltr" className="text-left pr-10 h-12" /></FormControl>
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )} />
@@ -241,16 +237,32 @@ export default function GovernoratesPage() {
                                 control={form.control}
                                 name="is_active"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-5">
-                                        <div className="space-y-0.5">
-                                            <FormLabel>حالة التفعيل</FormLabel>
-                                            <FormMessage />
-                                        </div>
+                                    <FormItem>
+                                        <FormLabel>حالة المحافظة</FormLabel>
+                                        <FormDescription>
+                                            اختر ما إذا كانت المحافظة ستظهر للمستخدمين.
+                                        </FormDescription>
                                         <FormControl>
-                                            <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            />
+                                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                                <Button
+                                                    type="button"
+                                                    variant={field.value ? 'default' : 'outline'}
+                                                    onClick={() => field.onChange(true)}
+                                                    className="h-12 text-base"
+                                                >
+                                                    <CheckCircle />
+                                                    نشط
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant={!field.value ? 'destructive' : 'outline'}
+                                                    onClick={() => field.onChange(false)}
+                                                    className="h-12 text-base"
+                                                >
+                                                    <XCircle />
+                                                    غير نشط
+                                                </Button>
+                                            </div>
                                         </FormControl>
                                     </FormItem>
                                 )}
