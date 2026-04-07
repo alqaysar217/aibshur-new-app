@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <div className="min-h-screen w-full bg-background">
             <SidebarProvider>
-                <Sidebar collapsible="icon" side="right">
+                <Sidebar collapsible="icon" side="right" className="peer">
                     <SidebarContent>
                         <SidebarMenu>
                             {sidebarNavItems.map((item) => (
@@ -71,7 +71,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </SidebarFooter>
                 </Sidebar>
 
-                <div className="flex flex-col flex-1 min-h-screen transition-[margin] md:ml-0 md:mr-[3rem]">
+                <div className={cn(
+                    "flex flex-col flex-1 min-h-screen transition-all",
+                    "md:mr-[var(--sidebar-width-icon)]",
+                    "peer-data-[state=expanded]:md:mr-[var(--sidebar-width)]"
+                )}>
                     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
                         <SidebarTrigger className="md:hidden" />
                         <div className="flex items-center gap-2">
