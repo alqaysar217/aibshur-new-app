@@ -69,8 +69,8 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, distance, ca
             {/* Row 3: Category, Rating, Status */}
             <div className="flex items-center justify-between text-xs">
                 <Badge variant="outline" className="px-1.5 py-0.5 font-normal text-[10px]">{category}</Badge>
-                <div className="flex items-center gap-0.5 text-amber-500">
-                    <Star className="h-4 w-4 fill-current" />
+                <div className="flex items-center gap-0.5">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
                     <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
                 </div>
                 <Badge

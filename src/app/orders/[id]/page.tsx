@@ -138,8 +138,8 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
                                 <p className="font-semibold">{orderDetails.delegate.name}</p>
                                 <p className="text-xs">في الطريق إليك...</p>
                             </div>
-                            <div className="flex items-center gap-1 text-amber-400">
-                                <Star className="h-4 w-4 fill-current" />
+                            <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
                                 <span className="font-bold text-white">{orderDetails.delegate.rating}</span>
                             </div>
                          </div>

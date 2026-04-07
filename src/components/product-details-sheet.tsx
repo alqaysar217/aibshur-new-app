@@ -86,8 +86,8 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
             </SheetHeader>
             
             <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-1.5 text-amber-500">
-                    <Star className="h-5 w-5 fill-current" />
+                <div className="flex items-center gap-1.5">
+                    <Star className="h-5 w-5 fill-amber-400 text-amber-500" />
                     <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
                 </div>
 
