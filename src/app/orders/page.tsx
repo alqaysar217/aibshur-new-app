@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Bell, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Bell, ShoppingCart, List, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderCard, type Order } from '@/components/order-card';
@@ -10,13 +10,13 @@ import { BottomNav } from '@/components/bottom-nav';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 // MOCK DATA
-const now = new Date('2024-07-22T12:00:00Z').getTime();
+const now = new Date('2024-07-22T12:00:00Z');
 const ordersData: Omit<Order, 'storeImage' | 'storeImageHint'>[] = [
   // Current Orders
-  { id: 'ORD123', storeName: 'مطعم البيت الصنعاني', orderNumber: '#123', status: 'on_the_way', timestamp: new Date(now - 15 * 60 * 1000), total: 5800, storeImageId: 'store-yemeni-food' },
-  { id: 'ORD124', storeName: 'كافيتيريا مزاج', orderNumber: '#124', status: 'preparing', timestamp: new Date(now - 35 * 60 * 1000), total: 2200, storeImageId: 'store-cafe' },
-  { id: 'ORD125', storeName: 'سوبر ماركت العالمية', orderNumber: '#125', status: 'accepted', timestamp: new Date(now - 55 * 60 * 1000), total: 9500, storeImageId: 'store-supermarket' },
-  { id: 'ORD126', storeName: 'صيدلية الشفاء', orderNumber: '#126', status: 'pending', timestamp: new Date(now - 2 * 60 * 60 * 1000), total: 3400, storeImageId: 'store-pharmacy' },
+  { id: 'ORD123', storeName: 'مطعم البيت الصنعاني', orderNumber: '#123', status: 'on_the_way', timestamp: new Date(now.getTime() - 15 * 60 * 1000), total: 5800, storeImageId: 'store-yemeni-food' },
+  { id: 'ORD124', storeName: 'كافيتيريا مزاج', orderNumber: '#124', status: 'preparing', timestamp: new Date(now.getTime() - 35 * 60 * 1000), total: 2200, storeImageId: 'store-cafe' },
+  { id: 'ORD125', storeName: 'سوبر ماركت العالمية', orderNumber: '#125', status: 'accepted', timestamp: new Date(now.getTime() - 55 * 60 * 1000), total: 9500, storeImageId: 'store-supermarket' },
+  { id: 'ORD126', storeName: 'صيدلية الشفاء', orderNumber: '#126', status: 'pending', timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000), total: 3400, storeImageId: 'store-pharmacy' },
   // Previous Orders
   { id: 'ORD101', storeName: 'مطعم البيت الصنعاني', orderNumber: '#101', status: 'delivered', timestamp: new Date('2024-07-20T14:30:00Z'), total: 6200, storeImageId: 'store-yemeni-food' },
   // Cancelled Orders
@@ -58,9 +58,18 @@ export default function OrdersPage() {
       <main className="flex-1">
         <Tabs defaultValue="current" className="w-full" dir="rtl">
           <TabsList className="grid w-full grid-cols-3 sticky top-16 z-10 rounded-none px-0">
-            <TabsTrigger value="current">الحالية</TabsTrigger>
-            <TabsTrigger value="previous">السابقة</TabsTrigger>
-            <TabsTrigger value="cancelled">الملغية</TabsTrigger>
+            <TabsTrigger value="current" className="gap-2 h-full">
+              <List className="h-5 w-5"/>
+              الحالية
+            </TabsTrigger>
+            <TabsTrigger value="previous" className="gap-2 h-full">
+              <CheckCircle className="h-5 w-5"/>
+              السابقة
+            </TabsTrigger>
+            <TabsTrigger value="cancelled" className="gap-2 h-full">
+              <XCircle className="h-5 w-5"/>
+              الملغية
+            </TabsTrigger>
           </TabsList>
           
           <div className="p-4 space-y-4">
