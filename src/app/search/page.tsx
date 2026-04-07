@@ -10,6 +10,7 @@ import { StoreCard } from '@/components/store-card';
 import { ProductCard, type Product } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { BottomNav } from '@/components/bottom-nav';
 
 // MOCK DATA (reusing from other pages)
 const storesData = [
@@ -67,7 +68,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background pb-16">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-sm border-b">
         <div className="flex items-center justify-between h-16 px-2">
@@ -100,11 +101,11 @@ export default function SearchPage() {
         {/* Tabs */}
         <Tabs defaultValue="stores" className="w-full" dir="rtl" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="stores" className="gap-2">
+            <TabsTrigger value="stores" className="gap-2 h-full">
                 <Store />
                 المتاجر
             </TabsTrigger>
-            <TabsTrigger value="products" className="gap-2">
+            <TabsTrigger value="products" className="gap-2 h-full">
                 <ShoppingBasket />
                 المنتجات
             </TabsTrigger>
@@ -159,6 +160,7 @@ export default function SearchPage() {
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
       />
+      <BottomNav />
     </div>
   );
 }
