@@ -92,7 +92,7 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
                 <h1 className="text-2xl font-bold">{storeDetails.name}</h1>
                 <div className="flex items-center gap-3 text-sm mt-1">
                     <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                        <Star className="h-4 w-4 text-amber-400" strokeWidth={1.5} />
                         <span className="text-white">{storeDetails.rating}</span>
                     </div>
                     <span>•</span>

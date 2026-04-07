@@ -67,7 +67,12 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
     };
     
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' });
+        return new Intl.DateTimeFormat('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'UTC',
+          }).format(date);
     }
     
     const formatDate = (date: Date) => {
@@ -139,7 +144,7 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
                                 <p className="text-xs">في الطريق إليك...</p>
                             </div>
                             <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                                <Star className="h-4 w-4 text-amber-400" strokeWidth={1.5} />
                                 <span className="font-bold text-white">{orderDetails.delegate.rating}</span>
                             </div>
                          </div>
@@ -245,7 +250,7 @@ export default function OrderDetailsPage({ params: paramsPromise }: { params: Pr
                 <CardHeader><CardTitle>تقييم الطلب</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                      <div className="flex justify-center gap-2" dir="ltr">
-                        {[5,4,3,2,1].map(star => <Star key={star} className="h-8 w-8 text-gray-300 cursor-pointer hover:text-amber-400 transition-colors"/>)}
+                        {[5,4,3,2,1].map(star => <Star key={star} className="h-8 w-8 text-gray-300 cursor-pointer hover:fill-amber-100 hover:text-amber-400 transition-colors" strokeWidth={1.5} />)}
                     </div>
                     <Textarea placeholder="أخبرنا عن رأيك في التجربة..."/>
                     <Button className="w-full">إرسال التقييم</Button>
