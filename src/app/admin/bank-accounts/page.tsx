@@ -204,9 +204,31 @@ export default function BankAccountsPage() {
                             <FormField control={form.control} name="accountNumber" render={({ field }) => (
                                 <FormItem><FormLabel>رقم الحساب</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
-                            <FormField control={form.control} name="logoUrl" render={({ field }) => (
-                                <FormItem><FormLabel>رابط شعار البنك</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
+                            <FormField
+                                control={form.control}
+                                name="logoUrl"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>رابط شعار البنك</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder="https://... or /logo.png"/>
+                                        </FormControl>
+                                        <FormMessage />
+                                        {field.value && (
+                                            <div className="mt-2 flex justify-center rounded-lg border border-dashed p-4">
+                                                <Image
+                                                    src={field.value}
+                                                    alt="معاينة الشعار"
+                                                    width={80}
+                                                    height={80}
+                                                    className="rounded-md object-contain"
+                                                    key={field.value}
+                                                />
+                                            </div>
+                                        )}
+                                    </FormItem>
+                                )}
+                            />
                              <DialogFooter>
                                 <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                                 <Button type="submit">حفظ التغييرات</Button>
