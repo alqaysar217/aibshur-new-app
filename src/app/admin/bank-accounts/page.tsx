@@ -23,7 +23,7 @@ const bankAccountSchema = z.object({
   bankName: z.string().min(2, { message: 'اسم البنك مطلوب' }),
   accountName: z.string().min(2, { message: 'اسم الحساب مطلوب' }),
   accountNumber: z.string().min(5, { message: 'رقم الحساب مطلوب' }),
-  logoUrl: z.string().url({ message: 'الرجاء إدخال رابط صحيح للصورة' }),
+  logoUrl: z.string().min(1, { message: 'الرجاء إدخال رابط أو مسار صحيح للصورة' }),
 });
 
 type BankAccountFormValues = z.infer<typeof bankAccountSchema>;
@@ -54,7 +54,13 @@ export default function BankAccountsPage() {
     
     const handleAddNew = () => {
         setIsEditing(false);
-        form.reset();
+        setSelectedAccount(null);
+        form.reset({
+            bankName: '',
+            accountName: '',
+            accountNumber: '',
+            logoUrl: '',
+        });
         setIsDialogOpen(true);
     };
 
