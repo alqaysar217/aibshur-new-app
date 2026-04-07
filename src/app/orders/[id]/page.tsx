@@ -60,7 +60,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
     };
     
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', calendar: 'gregory' });
     }
     
     const formatDate = (date: Date) => {
@@ -68,6 +68,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             year: 'numeric',
             month: 'long',
             day: 'numeric',
+            calendar: 'gregory'
         }).format(date);
     }
     

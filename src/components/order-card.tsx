@@ -68,14 +68,18 @@ export function OrderCard({ order }: OrderCardProps) {
   }
 
   const getFormattedTime = (date: Date) => {
+      const fullDate = new Intl.DateTimeFormat('ar-SA', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        calendar: 'gregory'
+      }).format(date);
+
       // On the server, or on the initial client render, always render the full date.
       if (!isClient || !isToday(date)) {
-          return new Intl.DateTimeFormat('ar-SA', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-          }).format(date);
+          return fullDate;
       }
+      
       // Only render relative time on the client after hydration.
       return formatRelativeTime(date);
   }
