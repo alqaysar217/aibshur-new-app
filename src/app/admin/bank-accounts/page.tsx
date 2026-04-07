@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, Edit, Banknote, User, Wallet, Link2 } from 'lucide-react';
 import BankAccountsLoading from './loading';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 // Zod schema for form validation
@@ -172,9 +172,9 @@ export default function BankAccountsPage() {
                                             <TableCell className="text-center">{account.accountNumber}</TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center">
-                                                    <Switch
+                                                    <Checkbox
                                                         checked={account.isActive ?? true}
-                                                        onCheckedChange={(newStatus) => handleStatusChange(account, newStatus)}
+                                                        onCheckedChange={(checked) => handleStatusChange(account, checked === true)}
                                                         aria-label="Account status"
                                                     />
                                                 </div>
@@ -282,19 +282,19 @@ export default function BankAccountsPage() {
                                 control={form.control}
                                 name="isActive"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
-                                        <div className="space-y-0.5">
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 space-x-reverse rounded-lg border p-4 shadow-sm">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
                                             <FormLabel>تفعيل الحساب</FormLabel>
                                             <FormDescription>
                                                 سيظهر الحساب للمستخدمين عند تفعيله.
                                             </FormDescription>
                                         </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
                                     </FormItem>
                                 )}
                             />
@@ -325,3 +325,5 @@ export default function BankAccountsPage() {
         </>
     );
 }
+
+    
