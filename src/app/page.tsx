@@ -20,7 +20,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-card">
       <div className="animate-in zoom-in-125 duration-1000 ease-in-out">
         <Image
-          src="/logo.png"
+          src="/logo-.png"
           alt="أبشر Logo"
           width={128}
           height={128}

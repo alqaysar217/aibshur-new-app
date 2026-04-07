@@ -1,0 +1,173 @@
+/**
+ * Core Philosophy:
+ * This ruleset enforces a security model with two primary postures. First, it defines several top-level
+ * collections (`governorates`, `storeCategories`, `adBanners`, `stores`) as publicly readable by any client,
+ * including unauthenticated users. This supports the app's need to display global data easily. Writes to
+ * this public data are disabled by default to prevent unauthorized modification, awaiting a proper admin
+ * implementation. Second, it establishes a strict user-ownership model for private data.
+ *
+ * Data Structure:
+ * Private user data is structurally segregated into a user-specific subcollection path (`/users/{userId}/profile/{profileId}`).
+ * This ensures that a user's data is isolated and can only be accessed by referencing their unique user ID in the path.
+ * This structure simplifies security rules and makes data access patterns predictable.
+ *
+ * Key Security Decisions:
+ * - Public Data: Core application content like stores and categories is public for reads (`get`, `list`) to allow for easy
+ *   discovery and browsing by all users. All write operations (`create`, `update`, `delete`) on this public data are
+ *   explicitly denied, enforcing a read-only state until an administrative role system is implemented.
+ * - Private User Data: User profiles are strictly private. A user can only access documents located under their own
+ *   ` /users/{userId}` path. This is enforced by matching `request.auth.uid` with the `userId` wildcard in the path.
+ * - No User Listing: The top-level `/users` collection is not listable, preventing attackers from discovering a list of all user IDs.
+ * - Relational Integrity: On creation, a user's profile document must contain an `id` field that matches their `userId`.
+ *   This field is enforced as immutable on updates, preventing ownership from being transferred or altered.
+ * - Default Secure: For any operation not explicitly granted, access is denied. All destructive operations (`update`, `delete`)
+ *   first verify that the document exists before allowing the operation to proceed.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the document being accessed already exists.
+     * Critical for preventing updates or deletes on non-existent paths.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the userId from the path.
+     * This is the foundation of the user-ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * A convenience function that combines ownership and existence checks.
+     * Used for all state-changing operations on existing documents (update, delete).
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+    
+    /**
+     * On create, validates that the internal 'id' field of a user profile
+     * matches the owner's UID from the path, ensuring relational integrity.
+     */
+    function hasValidProfileDataOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * On update, ensures the internal 'id' field of a user profile is immutable,
+     * preventing ownership from being changed after creation.
+     */
+    function hasValidProfileDataOnUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Publicly readable location data. Writes are disallowed.
+     * @path /governorates/{governorateId}
+     * @allow (get) Anyone, authenticated or not, can read a specific governorate.
+     * @deny (create) No user can create a new governorate document.
+     * @principle Makes global, non-sensitive data available for all users while protecting it from modification.
+     */
+    match /governorates/{governorateId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for the container of all user-specific data.
+     * @path /users/{userId}
+     * @allow (get) No one can read the parent user document directly.
+     * @deny (list) The list of all users is not queryable.
+     * @principle Prevents enumeration of all application users. Access is only granted to nested subcollections.
+     */
+    match /users/{userId} {
+      // Direct reads/writes to the /users/{userId} document are disallowed.
+      // Permissions are granted to subcollections like 'profile'.
+      allow read, write: if false;
+      
+      /**
+       * @description User-private profile data, containing personal info and preferences.
+       * @path /users/{userId}/profile/{profileId}
+       * @allow (create) auth.uid=='user123' can (create) a document in /users/user123/profile/.
+       * @deny (get) auth.uid=='user456' cannot (get) a document from /users/user123/profile/.
+       * @principle Restricts access to a user's own data tree, enforcing strict data privacy.
+       */
+      match /profile/{profileId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidProfileDataOnCreate(userId);
+        allow update: if isExistingOwner(userId) && hasValidProfileDataOnUpdate();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Publicly readable store category data. Writes are disallowed.
+     * @path /storeCategories/{storeCategoryId}
+     * @allow (list) Anyone, authenticated or not, can list all store categories.
+     * @deny (update) No user can update an existing store category document.
+     * @principle Makes global, non-sensitive data available for all users while protecting it from modification.
+     */
+    match /storeCategories/{storeCategoryId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Publicly readable promotional banner data. Writes are disallowed.
+     * @path /adBanners/{adBannerId}
+     * @allow (list) Anyone, authenticated or not, can list all ad banners.
+     * @deny (delete) No user can delete an existing ad banner document.
+     * @principle Makes global, non-sensitive data available for all users while protecting it from modification.
+     */
+    match /adBanners/{adBannerId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Publicly readable data for all stores. Writes are disallowed.
+     * @path /stores/{storeId}
+     * @allow (get) Anyone, authenticated or not, can read a specific store's details.
+     * @deny (create) No user can create a new store document.
+     * @principle Makes global, non-sensitive data available for all users while protecting it from modification.
+     */
+    match /stores/{storeId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

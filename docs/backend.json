@@ -1,0 +1,235 @@
+{
+  "entities": {
+    "Governorate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Governorate",
+      "type": "object",
+      "description": "Represents a Yemeni administrative division, which users can select as their current location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Governorate entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The Arabic name of the governorate (e.g., 'صنعاء')."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores non-authentication related profile information for a user, including selected governorate and favorite stores.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity. This typically corresponds to an external authentication system's user ID."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The user's phone number, used for identification and communication. (Not used for authentication itself, which is external)."
+        },
+        "governorateId": {
+          "type": "string",
+          "description": "Reference to the selected Governorate. (Relationship: Governorate 1:N UserProfile)"
+        },
+        "favoriteStoreIds": {
+          "type": "array",
+          "description": "References to Stores the user has marked as favorites. (Relationship: UserProfile N:N Store)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "phoneNumber",
+        "governorateId"
+      ]
+    },
+    "StoreCategory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StoreCategory",
+      "type": "object",
+      "description": "Defines categories for stores, allowing users to filter and discover different types of businesses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StoreCategory entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The Arabic name of the category (e.g., 'مطاعم', 'صيدليات')."
+        },
+        "iconUrl": {
+          "type": "string",
+          "description": "URL to an image representing the category icon.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "iconUrl"
+      ]
+    },
+    "AdBanner": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdBanner",
+      "type": "object",
+      "description": "Represents a promotional banner displayed on the home screen, often as part of a slider.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AdBanner entity."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to the image displayed in the banner.",
+          "format": "uri"
+        },
+        "targetUrl": {
+          "type": "string",
+          "description": "The URL or internal route to navigate to when the banner is clicked.",
+          "format": "uri"
+        },
+        "displayOrder": {
+          "type": "number",
+          "description": "A numerical value indicating the order in which banners should be displayed, lower values appear first."
+        }
+      },
+      "required": [
+        "id",
+        "imageUrl",
+        "targetUrl",
+        "displayOrder"
+      ]
+    },
+    "Store": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Store",
+      "type": "object",
+      "description": "Details about a specific store or business available for delivery in the app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Store entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the store."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical street address of the store."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The geographical latitude coordinate of the store's location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The geographical longitude coordinate of the store's location."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to the main image representing the store.",
+          "format": "uri"
+        },
+        "rating": {
+          "type": "number",
+          "description": "The average rating of the store, typically on a scale (e.g., 0.0 to 5.0)."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current operational status of the store (e.g., 'مفتوح' for open, 'مغلق' for closed)."
+        },
+        "storeCategoryId": {
+          "type": "string",
+          "description": "Reference to the primary category this store belongs to. (Relationship: StoreCategory 1:N Store)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or motto of the store."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address",
+        "latitude",
+        "longitude",
+        "imageUrl",
+        "rating",
+        "status",
+        "storeCategoryId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/governorates/{governorateId}",
+        "definition": {
+          "entityName": "Governorate",
+          "schema": {
+            "$ref": "#/backend/entities/Governorate"
+          },
+          "description": "Stores details of Yemeni governorates. This is a global, publicly readable collection, primarily for users to select their location. No denormalized authorization fields are required, as access is public."
+        }
+      },
+      {
+        "path": "/users/{userId}/profile",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user-specific profile information such as phone number, selected governorate, and favorite stores. This is a private, user-owned document where the document ID ('profile') and the parent `{userId}` match the authenticated user's ID (`request.auth.uid`), ensuring Authorization Independence. The 'id' field within the document also matches `{userId}`."
+        }
+      },
+      {
+        "path": "/storeCategories/{storeCategoryId}",
+        "definition": {
+          "entityName": "StoreCategory",
+          "schema": {
+            "$ref": "#/backend/entities/StoreCategory"
+          },
+          "description": "Defines categories for stores, used for filtering and discovery. This is a global, publicly readable collection. No denormalized authorization fields are required, as access is public."
+        }
+      },
+      {
+        "path": "/adBanners/{adBannerId}",
+        "definition": {
+          "entityName": "AdBanner",
+          "schema": {
+            "$ref": "#/backend/entities/AdBanner"
+          },
+          "description": "Contains promotional banner information for the home screen. This is a global, publicly readable collection. No denormalized authorization fields are required, as access is public."
+        }
+      },
+      {
+        "path": "/stores/{storeId}",
+        "definition": {
+          "entityName": "Store",
+          "schema": {
+            "$ref": "#/backend/entities/Store"
+          },
+          "description": "Details about individual stores or businesses. This is a global, publicly readable collection. Filters for 'favorites', 'closest', 'top rated' will be applied client-side on the retrieved data. No denormalized authorization fields are required for read access, as access is public."
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Structural Segregation, and Access Modeling to ensure security, scalability, and debuggability. All entities are placed in top-level collections or user-specific subcollections to simplify security rules and avoid complex hierarchical dependencies.\n\n**Authorization Independence:**\n*   For global, publicly accessible data such as `Governorate`, `StoreCategory`, `AdBanner`, and `Store`, documents are stored in top-level collections (`/governorates`, `/storeCategories`, `/adBanners`, `/stores`). Their authorization rules will be simple, typically `allow read: if true;` for public access, and `allow write: if request.auth.uid in get(/roles_admin/$(request.auth.uid));` for administrative actions. This completely avoids the need for `get()` calls within rules for authorization checks on these documents themselves.\n*   For private user-owned data like `UserProfile`, the document is placed in a user-specific path: `/users/{userId}/profile`. The `id` field within the `UserProfile` document will explicitly match the `{userId}` wildcard in the path, ensuring that `request.auth.uid == userId` is the sole and sufficient authorization check. This also removes any need for `get()` calls to other documents for `UserProfile` authorization, thereby enabling atomic operations.\n\n**Querying and Authorization Postures (QAPs - Rules are not Filters):**\n*   `Governorates`, `StoreCategories`, `AdBanners`, and `Stores` are designed as globally readable collections. This means `list` operations on these collections can be broadly allowed (e.g., `allow list: if true;` or `allow list: if request.auth != null;`). The application's UI filtering requirements (e.g., 'الأقرب', 'المفضلة', 'الأعلى تقييم' for stores; search for governorates) will be handled client-side using appropriate queries and filtering logic, rather than relying on Firestore security rules to filter results. This adheres to the QAP principle, preventing rules from acting as data filters, which would be inefficient and difficult to debug.\n*   For `UserProfile`, `list` operations are not applicable given its single-document-per-user structure within a subcollection. Access is restricted to `get` operations for the authenticated user, which does not violate QAP.\n\nThis design prioritizes explicit ownership, minimal rule complexity, and efficient data retrieval, aligning with the mandated design principles."
+  }
+}
