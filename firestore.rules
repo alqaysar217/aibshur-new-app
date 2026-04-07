@@ -17,9 +17,9 @@
  *   explicitly denied, enforcing a read-only state until an administrative role system is implemented.
  * - Private User Data: User profiles are strictly private. A user can only access documents located under their own
  *   ` /users/{userId}` path. This is enforced by matching `request.auth.uid` with the `userId` wildcard in the path.
- * - Admin-Only Data: Data like Bank Accounts is restricted. For now, we assume any authenticated user is an
- *   administrator for development purposes. In a production environment, this would be replaced with a robust
- *   role-based access control check (e.g., using custom claims or an `admins` collection).
+ * - Admin-Only Data: Data like Bank Accounts, App Provinces, App Categories, and Store Filters is restricted. 
+ *   For now, we assume any authenticated user is an administrator for development purposes. In a production environment,
+ *   this would be replaced with a robust role-based access control check (e.g., using custom claims or an `admins` collection).
  * - No User Listing: The top-level `/users` collection is not listable, preventing attackers from discovering a list of all user IDs.
  * - Relational Integrity: On creation, a user's profile document must contain an `id` field that matches their `userId`.
  *   This field is enforced as immutable on updates, preventing ownership from being transferred or altered.
@@ -115,6 +115,26 @@ service cloud.firestore {
     }
 
     /**
+     * @description Admin-only global category management.
+     * @path /app_categories/{appCategoryId}
+     * @allow (read, write) Only admins can manage global app categories.
+     * @principle Protects core app structure from unauthorized modification.
+     */
+    match /app_categories/{appCategoryId} {
+        allow read, write: if isAdmin();
+    }
+
+    /**
+     * @description Admin-only store filter management.
+     * @path /store_filters/{storeFilterId}
+     * @allow (read, write) Only admins can manage store-specific filters.
+     * @principle Protects store-level data organization from unauthorized changes.
+     */
+    match /store_filters/{storeFilterId} {
+        allow read, write: if isAdmin();
+    }
+
+    /**
      * @description Publicly readable location data. Writes are disallowed.
      * @path /governorates/{governorateId}
      * @allow (get) Anyone, authenticated or not, can read a specific governorate.
@@ -203,5 +223,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

@@ -246,6 +246,59 @@
         "customer_service_number",
         "whatsapp_number"
       ]
+    },
+    "AppCategory": {
+      "title": "App Category",
+      "type": "object",
+      "description": "Represents a global category for stores in the app.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the category."
+        },
+        "image": {
+          "type": "string",
+          "description": "URL for the category image/icon.",
+          "format": "uri"
+        },
+        "is_active": {
+          "type": "boolean",
+          "description": "Whether the category is active."
+        }
+      },
+      "required": [
+        "name",
+        "image"
+      ]
+    },
+    "StoreFilter": {
+      "title": "Store Filter",
+      "type": "object",
+      "description": "Represents a sub-category or filter within a specific store.",
+      "properties": {
+        "filter_name": {
+          "type": "string",
+          "description": "The name of the filter."
+        },
+        "filter_image": {
+          "type": "string",
+          "description": "URL for the filter image.",
+          "format": "uri"
+        },
+        "parent_store_id": {
+          "type": "string",
+          "description": "The ID of the store this filter belongs to."
+        },
+        "is_active": {
+          "type": "boolean",
+          "description": "Whether the filter is active."
+        }
+      },
+      "required": [
+        "filter_name",
+        "filter_image",
+        "parent_store_id"
+      ]
     }
   },
   "auth": {
@@ -325,9 +378,28 @@
           },
           "description": "Stores administrative details for each governorate. This data is managed by administrators."
         }
+      },
+      {
+        "path": "/app_categories/{appCategoryId}",
+        "definition": {
+          "entityName": "AppCategory",
+          "schema": {
+            "$ref": "#/backend/entities/AppCategory"
+          },
+          "description": "Stores global app categories for stores. This data is managed by administrators."
+        }
+      },
+      {
+        "path": "/store_filters/{storeFilterId}",
+        "definition": {
+          "entityName": "StoreFilter",
+          "schema": {
+            "$ref": "#/backend/entities/StoreFilter"
+          },
+          "description": "Stores filters/sub-categories for specific stores. This data is managed by administrators."
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Structural Segregation, and Access Modeling to ensure security, scalability, and debuggability. All entities are placed in top-level collections or user-specific subcollections to simplify security rules and avoid complex hierarchical dependencies.\n\n**Authorization Independence:**\n*   For global, publicly accessible data such as `Governorate`, `StoreCategory`, `AdBanner`, and `Store`, documents are stored in top-level collections (`/governorates`, `/storeCategories`, `/adBanners`, `/stores`). Their authorization rules will be simple, typically `allow read: if true;` for public access, and `allow write: if request.auth.uid in get(/roles_admin/$(request.auth.uid));` for administrative actions. This completely avoids the need for `get()` calls within rules for authorization checks on these documents themselves.\n*   For private user-owned data like `UserProfile`, the document is placed in a user-specific path: `/users/{userId}/profile`. The `id` field within the `UserProfile` document will explicitly match the `{userId}` wildcard in the path, ensuring that `request.auth.uid == userId` is the sole and sufficient authorization check. This also removes any need for `get()` calls to other documents for `UserProfile` authorization, thereby enabling atomic operations.\n*   For sensitive admin-only data like `BankAccount` and `AppProvince`, documents are stored in top-level collections. Access will be strictly controlled via security rules, likely based on a custom claim or a separate `admins` collection, ensuring only authorized administrators can read or write this data.\n\n**Querying and Authorization Postures (QAPs - Rules are not Filters):**\n*   `Governorates`, `StoreCategories`, `AdBanners`, and `Stores` are designed as globally readable collections. This means `list` operations on these collections can be broadly allowed (e.g., `allow list: if true;` or `allow list: if request.auth != null;`). The application's UI filtering requirements (e.g., 'الأقرب', 'المفضلة', 'الأعلى تقييم' for stores; search for governorates) will be handled client-side using appropriate queries and filtering logic, rather than relying on Firestore security rules to filter results. This adheres to the QAP principle, preventing rules from acting as data filters, which would be inefficient and difficult to debug.\n*   For `UserProfile`, `list` operations are not applicable given its single-document-per-user structure within a subcollection. Access is restricted to `get` operations for the authenticated user, which does not violate QAP.\n*   For `BankAccount` and `AppProvince`, `list` operations will be restricted to admin users, which is a valid QAP as the rule itself doesn't filter based on the *content* of the documents, but rather on the *identity* of the user making the request.\n\nThis design prioritizes explicit ownership, minimal rule complexity, and efficient data retrieval, aligning with the mandated design principles."
+    "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Structural Segregation, and Access Modeling to ensure security, scalability, and debuggability. All entities are placed in top-level collections or user-specific subcollections to simplify security rules and avoid complex hierarchical dependencies.\n\n**Authorization Independence:**\n*   For global, publicly accessible data such as `Governorate`, `StoreCategory`, `AdBanner`, and `Store`, documents are stored in top-level collections (`/governorates`, `/storeCategories`, `/adBanners`, `/stores`). Their authorization rules will be simple, typically `allow read: if true;` for public access, and `allow write: if request.auth.uid in get(/roles_admin/$(request.auth.uid));` for administrative actions. This completely avoids the need for `get()` calls within rules for authorization checks on these documents themselves.\n*   For private user-owned data like `UserProfile`, the document is placed in a user-specific path: `/users/{userId}/profile`. The `id` field within the `UserProfile` document will explicitly match the `{userId}` wildcard in the path, ensuring that `request.auth.uid == userId` is the sole and sufficient authorization check. This also removes any need for `get()` calls to other documents for `UserProfile` authorization, thereby enabling atomic operations.\n*   For sensitive admin-only data like `BankAccount`, `AppProvince`, `AppCategory`, and `StoreFilter`, documents are stored in top-level collections. Access will be strictly controlled via security rules, likely based on a custom claim or a separate `admins` collection, ensuring only authorized administrators can read or write this data.\n\n**Querying and Authorization Postures (QAPs - Rules are not Filters):**\n*   `Governorates`, `StoreCategories`, `AdBanners`, and `Stores` are designed as globally readable collections. This means `list` operations on these collections can be broadly allowed (e.g., `allow list: if true;` or `allow list: if request.auth != null;`). The application's UI filtering requirements (e.g., 'الأقرب', 'المفضلة', 'الأعلى تقييم' for stores; search for governorates) will be handled client-side using appropriate queries and filtering logic, rather than relying on Firestore security rules to filter results. This adheres to the QAP principle, preventing rules from acting as data filters, which would be inefficient and difficult to debug.\n*   For `UserProfile`, `list` operations are not applicable given its single-document-per-user structure within a subcollection. Access is restricted to `get` operations for the authenticated user, which does not violate QAP.\n*   For `BankAccount`, `AppProvince`, `AppCategory`, and `StoreFilter` `list` operations will be restricted to admin users, which is a valid QAP as the rule itself doesn't filter based on the *content* of the documents, but rather on the *identity* of the user making the request.\n\nThis design prioritizes explicit ownership, minimal rule complexity, and efficient data retrieval, aligning with the mandated design principles."
   }
 }
-    
