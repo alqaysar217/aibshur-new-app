@@ -1,17 +1,19 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, Banknote, Map, LayoutGrid, Store, ShoppingBasket, ClipboardList, 
   Calendar, Users, Bike, Gem, Star, Megaphone, Ticket, HandHeart, 
-  BarChart2, TrendingUp, Settings, LifeBuoy, LogOut, Bell, PanelRightClose, PanelRightOpen 
+  BarChart2, TrendingUp, Settings, LifeBuoy, LogOut, Bell, PanelRightClose, PanelRightOpen, Loader2
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
@@ -37,7 +39,37 @@ const sidebarNavItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const { user, isUserLoading } = useUser();
+    const auth = useAuth();
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            router.push('/login');
+        } catch (error) {
+            console.error("Error signing out: ", error);
+        }
+    };
+    
+    useEffect(() => {
+        // If auth state is determined and there's no user, redirect to login.
+        if (!isUserLoading && !user) {
+            router.replace('/login');
+        }
+    }, [isUserLoading, user, router]);
+
+    // While loading auth state or if there's no user, show a loading screen.
+    // This prevents a flash of the admin UI before redirection.
+    if (isUserLoading || !user) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-muted/40">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+        );
+    }
+
 
     const NavLink = ({ href, icon: Icon, text, isCollapsed }) => {
         const isActive = pathname === href;
@@ -94,19 +126,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 
                 {/* Footer */}
                 <div className="px-4 py-4 border-t shrink-0">
-                    <Link href="/login">
-                        <span
+                    <Button
+                        variant="ghost"
+                        onClick={handleLogout}
                         className={cn(
-                            'flex items-center gap-3 px-4 py-2.5 text-sm font-bold rounded-lg transition-colors duration-200 text-destructive hover:bg-destructive/10',
-                            isCollapsed && 'justify-center'
+                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold rounded-lg transition-colors duration-200 text-destructive hover:bg-destructive/10',
+                            isCollapsed ? 'justify-center' : 'justify-start'
                         )}
-                        >
+                    >
                         <LogOut className={'w-5 h-5 shrink-0'} />
-                        <span className={cn("transition-opacity duration-200 whitespace-nowrap", isCollapsed ? "opacity-0 hidden" : "opacity-100")}>
+                        <span className={cn("transition-opacity duration-200 whitespace-nowrap", isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100')}>
                             تسجيل الخروج
                         </span>
-                        </span>
-                    </Link>
+                    </Button>
                 </div>
             </aside>
 
@@ -137,8 +169,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="font-bold">
                                 <DropdownMenuItem className="text-right">الملف الشخصي</DropdownMenuItem>
-                                <DropdownMenuItem asChild className="text-right">
-                                    <Link href="/login">تسجيل الخروج</Link>
+                                <DropdownMenuItem onClick={handleLogout} className="text-right cursor-pointer">
+                                    تسجيل الخروج
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
