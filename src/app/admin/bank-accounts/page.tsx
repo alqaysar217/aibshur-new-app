@@ -197,7 +197,7 @@ export default function BankAccountsPage() {
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
+                    <DialogHeader className="text-right">
                         <DialogTitle>{isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}</DialogTitle>
                         <DialogDescription>
                             {isEditing ? 'قم بتحديث تفاصيل الحساب البنكي.' : 'أدخل تفاصيل الحساب البنكي الجديد.'}
@@ -325,7 +325,3 @@ export default function BankAccountsPage() {
         </>
     );
 }
-
-    
-
-    
