@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Link2, CheckCircle, XCircle, LayoutGrid, Filter, Store, Image as ImageIcon } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Link2, CheckCircle, XCircle, LayoutGrid, Filter, Store, Image as ImageIcon, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import CategoriesLoading from './loading';
@@ -37,12 +37,12 @@ const storeFilterSchema = z.object({
 
 // Types
 type AppCategoryFormValues = z.infer<typeof appCategorySchema>;
-export type AppCategory = AppCategoryFormValues & { id: string };
+type AppCategory = AppCategoryFormValues & { id: string };
 
 type StoreFilterFormValues = z.infer<typeof storeFilterSchema>;
 type StoreFilter = StoreFilterFormValues & { id: string };
 
-type Store = { id: string; name: string };
+type StoreData = { id: string; name: string };
 
 type DialogState = {
     isOpen: boolean;
@@ -84,7 +84,7 @@ export default function CategoriesPage() {
     const { data: filters, isLoading: isLoadingFilters } = useCollection<StoreFilter>(filtersQuery);
 
     const storesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]);
-    const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(storesQuery);
+    const { data: stores, isLoading: isLoadingStores } = useCollection<StoreData>(storesQuery);
 
     const storesMap = useMemo(() => stores?.reduce((acc, store) => ({ ...acc, [store.id]: store.name }), {}) || {}, [stores]);
 
@@ -190,7 +190,7 @@ export default function CategoriesPage() {
                                     <TableBody>
                                         {categories?.map((cat) => (
                                             <TableRow key={cat.id} className={cn(!cat.is_active && "text-muted-foreground bg-muted/50")}>
-                                                <TableCell><Image src={cat.image} alt={cat.name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
+                                                <TableCell><Image src={cat.image || ''} alt={cat.name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
                                                 <TableCell className="font-medium text-center">{cat.name}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={cat.is_active ? 'default' : 'secondary'}>{cat.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                                                 <TableCell className="text-center">
@@ -236,7 +236,7 @@ export default function CategoriesPage() {
                                     <TableBody>
                                         {filters?.map((filter) => (
                                             <TableRow key={filter.id} className={cn(!filter.is_active && "text-muted-foreground bg-muted/50")}>
-                                                <TableCell><Image src={filter.filter_image} alt={filter.filter_name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
+                                                <TableCell><Image src={filter.filter_image || ''} alt={filter.filter_name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
                                                 <TableCell className="font-medium text-center">{filter.filter_name}</TableCell>
                                                 <TableCell className="text-center">{storesMap[filter.parent_store_id] || 'غير معروف'}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={filter.is_active ? 'default' : 'secondary'}>{filter.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
@@ -266,13 +266,23 @@ export default function CategoriesPage() {
                         <Form {...categoryForm}>
                             <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4 py-4" dir="rtl">
                                 <FormField control={categoryForm.control} name="name" render={({ field }) => (
-                                    <FormItem><FormLabel>اسم الفئة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem>
+                                        <FormLabel>اسم الفئة</FormLabel>
+                                        <div className="relative">
+                                            <Tag className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                            <FormControl><Input {...field} className="pr-10" /></FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
                                 )} />
                                 <FormField control={categoryForm.control} name="image" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>رابط صورة الفئة</FormLabel>
-                                        <FormControl><Input {...field} dir="ltr" /></FormControl>
-                                        {field.value && <Image src={field.value} alt="معاينة" width={80} height={80} className="rounded-lg object-contain mt-2 border p-2" unoptimized/>}
+                                        <div className="relative">
+                                            <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                            <FormControl><Input {...field} dir="ltr" className="pr-10" /></FormControl>
+                                        </div>
+                                        {field.value && <Image src={field.value || ''} alt="معاينة" width={80} height={80} className="rounded-lg object-contain mt-2 border p-2 mx-auto" unoptimized/>}
                                         <FormMessage />
                                     </FormItem>
                                 )} />
@@ -293,14 +303,24 @@ export default function CategoriesPage() {
                     ) : (
                          <Form {...filterForm}>
                             <form onSubmit={filterForm.handleSubmit(onFilterSubmit)} className="space-y-4 py-4" dir="rtl">
-                                <FormField control={filterForm.control} name="filter_name" render={({ field }) => (
-                                    <FormItem><FormLabel>اسم الفلتر</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                 <FormField control={filterForm.control} name="filter_name" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>اسم الفلتر</FormLabel>
+                                        <div className="relative">
+                                            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                            <FormControl><Input {...field} className="pr-10" /></FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
                                 )} />
                                 <FormField control={filterForm.control} name="filter_image" render={({ field }) => (
                                      <FormItem>
                                         <FormLabel>رابط صورة الفلتر</FormLabel>
-                                        <FormControl><Input {...field} dir="ltr" /></FormControl>
-                                        {field.value && <Image src={field.value} alt="معاينة" width={80} height={80} className="rounded-lg object-contain mt-2 border p-2" unoptimized/>}
+                                        <div className="relative">
+                                            <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                            <FormControl><Input {...field} dir="ltr" className="pr-10" /></FormControl>
+                                        </div>
+                                        {field.value && <Image src={field.value || ''} alt="معاينة" width={80} height={80} className="rounded-lg object-contain mt-2 border p-2 mx-auto" unoptimized/>}
                                         <FormMessage />
                                     </FormItem>
                                 )} />
@@ -308,7 +328,14 @@ export default function CategoriesPage() {
                                     <FormItem>
                                         <FormLabel>المتجر الرئيسي</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
-                                            <FormControl><SelectTrigger><SelectValue placeholder="اختر المتجر..." /></SelectTrigger></FormControl>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <div className="flex items-center gap-2">
+                                                        <Store className="h-5 w-5 text-muted-foreground" />
+                                                        <SelectValue placeholder="اختر المتجر..." />
+                                                    </div>
+                                                </SelectTrigger>
+                                            </FormControl>
                                             <SelectContent>
                                                 {stores?.map(store => <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>)}
                                             </SelectContent>
