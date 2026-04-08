@@ -59,6 +59,10 @@ type Coupon = Omit<CouponFormValues, 'expiryDate'> & {
   expiryDate: Timestamp; 
 };
 
+// Default expiry date (30 days from now)
+const defaultDate = new Date();
+defaultDate.setDate(defaultDate.getDate() + 30);
+
 export default function CouponsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -76,6 +80,7 @@ export default function CouponsPage() {
             value: 10,
             minOrderAmount: 0,
             maxDiscount: 0,
+            expiryDate: defaultDate,
             maxUses: 100,
             scope: 'global',
             storeIds: [],
@@ -83,6 +88,11 @@ export default function CouponsPage() {
             isActive: true,
         },
     });
+    
+    const scope = form.watch('scope');
+    const discountType = form.watch('discountType');
+    const storeIds = form.watch('storeIds');
+    const productIds = form.watch('productIds');
 
     const { data: coupons, isLoading: isLoadingCoupons } = useCollection<Coupon>(useMemoFirebase(() => firestore ? collection(firestore, 'coupons') : null, [firestore]));
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
@@ -94,7 +104,19 @@ export default function CouponsPage() {
     const handleAddNew = () => {
         setIsEditing(false);
         setSelectedCoupon(null);
-        form.reset({ code: '', discountType: 'percentage', value: 10, minOrderAmount: 0, maxDiscount: 0, maxUses: 100, scope: 'global', storeIds: [], productIds: [], isActive: true });
+        form.reset({
+            code: '',
+            discountType: 'percentage',
+            value: 10,
+            minOrderAmount: 0,
+            maxDiscount: 0,
+            expiryDate: defaultDate,
+            maxUses: 100,
+            scope: 'global',
+            storeIds: [],
+            productIds: [],
+            isActive: true,
+        });
         setIsDialogOpen(true);
     };
 
@@ -153,9 +175,6 @@ export default function CouponsPage() {
 
     const isLoading = isLoadingCoupons || isLoadingStores || isLoadingProducts;
     if (isLoading) return <CouponsLoading />;
-    
-    const scope = form.watch('scope');
-    const discountType = form.watch('discountType');
 
     const ScopeIcon = ({ scope, className }: { scope: Coupon['scope'], className?: string }) => {
         switch (scope) {
@@ -307,11 +326,11 @@ export default function CouponsPage() {
                                     <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
                                     <MultiSelectSearch
                                         options={scope === 'stores' ? (stores || []) : (products || [])}
-                                        selected={scope === 'stores' ? form.getValues('storeIds') || [] : form.getValues('productIds') || []}
+                                        selected={scope === 'stores' ? storeIds || [] : productIds || []}
                                         onSelect={(newSelected) => form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true })}
                                         placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
                                     />
-                                    <FormMessage />
+                                     <FormMessage>{scope === 'stores' ? form.formState.errors.storeIds?.message : form.formState.errors.productIds?.message}</FormMessage>
                                 </FormItem>
                             )}
 
