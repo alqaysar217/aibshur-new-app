@@ -17,7 +17,7 @@
  *   explicitly denied, enforcing a read-only state until an administrative role system is implemented.
  * - Private User Data: User profiles are strictly private. A user can only access documents located under their own
  *   ` /users/{userId}` path. This is enforced by matching `request.auth.uid` with the `userId` wildcard in the path.
- * - Admin-Only Data: Data like Bank Accounts, App Provinces, App Categories, and Store Filters is restricted. 
+ * - Admin-Only Data: Data like Bank Accounts, App Provinces, App Categories, Store Filters, Donations, and Coupons is restricted. 
  *   For now, we assume any authenticated user is an administrator for development purposes. In a production environment,
  *   this would be replaced with a robust role-based access control check (e.g., using custom claims or an `admins` collection).
  * - No User Listing: The top-level `/users` collection is not listable, preventing attackers from discovering a list of all user IDs.
@@ -265,6 +265,16 @@ service cloud.firestore {
     match /donationCampaigns/{campaignId} {
         allow get, list: if true;
         allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Admin-only coupon management.
+     * @path /coupons/{couponId}
+     * @allow (read, write) Only admins can manage coupons.
+     * @principle Protects promotional data and ensures integrity.
+     */
+    match /coupons/{couponId} {
+      allow read, write: if isAdmin();
     }
   }
 }
