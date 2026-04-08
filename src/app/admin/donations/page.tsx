@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,12 @@ const donationSchema = z.object({
   donorName: z.string().min(2, { message: 'اسم المتبرع مطلوب' }),
   donorPhone: z.string().optional(),
   amount: z.coerce.number().min(1, { message: 'المبلغ يجب أن يكون أكبر من صفر' }),
-  typeId: z.string({ required_error: 'يجب اختيار نوع التبرع' }),
+  typeId: z.string({ required_error: 'يجب اختيار نوع التبرع' }).min(1, { message: 'يجب اختيار نوع التبرع' }),
   paymentMethod: z.enum(['cash', 'wallet', 'bank_transfer'], { required_error: 'طريقة التبرع مطلوبة' }),
   bankAccountId: z.string().optional(),
   receiptNumber: z.string().optional(),
   receiptImageUrl: z.string().optional(),
-  donationDate: z.date().default(() => new Date()),
+  donationDate: z.date({ required_error: 'تاريخ التبرع مطلوب' }),
 }).superRefine((data, ctx) => {
     if (data.paymentMethod === 'bank_transfer') {
         if (!data.bankAccountId) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["bankAccountId"], message: "يجب اختيار البنك." });
@@ -50,11 +50,32 @@ const campaignSchema = z.object({
 
 // Types
 type DonationFormValues = z.infer<typeof donationSchema>;
-type Donation = DonationFormValues & { id: string };
+// Adjust Donation to handle Firestore Timestamp
+type Donation = Omit<DonationFormValues, 'donationDate'> & { 
+  id: string;
+  donationDate: Timestamp; 
+};
 
 type CampaignFormValues = z.infer<typeof campaignSchema>;
 type Campaign = CampaignFormValues & { id: string };
 
+const defaultDonationValues: DonationFormValues = {
+    donorName: '',
+    donorPhone: '',
+    amount: 0,
+    typeId: '',
+    paymentMethod: 'cash',
+    bankAccountId: '',
+    receiptNumber: '',
+    receiptImageUrl: '',
+    donationDate: new Date(),
+};
+
+const defaultCampaignValues: CampaignFormValues = {
+    title: '',
+    goalAmount: 0,
+    imageUrl: '',
+};
 
 export default function DonationsPage() {
     const [dialogState, setDialogState] = useState<{ isOpen: boolean; isEditing: boolean; data: Donation | Campaign | null; type: 'donation' | 'campaign' }>({ isOpen: false, isEditing: false, data: null, type: 'donation' });
@@ -63,8 +84,8 @@ export default function DonationsPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const donationForm = useForm<DonationFormValues>({ resolver: zodResolver(donationSchema), defaultValues: { paymentMethod: 'cash' } });
-    const campaignForm = useForm<CampaignFormValues>({ resolver: zodResolver(campaignSchema), defaultValues: {} });
+    const donationForm = useForm<DonationFormValues>({ resolver: zodResolver(donationSchema), defaultValues: defaultDonationValues });
+    const campaignForm = useForm<CampaignFormValues>({ resolver: zodResolver(campaignSchema), defaultValues: defaultCampaignValues });
     
     // Data Fetching
     const { data: donations, isLoading: isLoadingDonations } = useCollection<Donation>(useMemoFirebase(() => firestore ? collection(firestore, 'donations') : null, [firestore]));
@@ -79,11 +100,26 @@ export default function DonationsPage() {
 
     // Handlers
     const handleOpenDialog = (type: 'donation' | 'campaign', isEditing = false, data: Donation | Campaign | null = null) => {
-        const form = type === 'donation' ? donationForm : campaignForm;
-        if (isEditing && data) {
-            form.reset(data);
-        } else {
-            form.reset(type === 'donation' ? { paymentMethod: 'cash' } : {});
+        if (type === 'donation') {
+            if (isEditing && data) {
+                const d = data as Donation;
+                donationForm.reset({
+                    ...defaultDonationValues, // Provide base defaults
+                    ...d, // Spread fetched data
+                    donationDate: d.donationDate?.toDate ? d.donationDate.toDate() : new Date(), // Convert timestamp
+                });
+            } else {
+                donationForm.reset(defaultDonationValues);
+            }
+        } else { // campaign
+            if (isEditing && data) {
+                campaignForm.reset({
+                    ...defaultCampaignValues,
+                    ...(data as Campaign),
+                });
+            } else {
+                campaignForm.reset(defaultCampaignValues);
+            }
         }
         setDialogState({ isOpen: true, isEditing, data, type });
     };
@@ -129,7 +165,12 @@ export default function DonationsPage() {
 
     const totalDonations = useMemo(() => donations?.reduce((sum, d) => sum + d.amount, 0) || 0, [donations]);
     const today = new Date().setHours(0, 0, 0, 0);
-    const todayDonations = useMemo(() => donations?.filter(d => new Date(d.donationDate.toDate()).setHours(0,0,0,0) === today).reduce((sum, d) => sum + d.amount, 0) || 0, [donations, today]);
+    const todayDonations = useMemo(() => {
+        if (!donations) return 0;
+        return donations
+            .filter(d => d.donationDate && new Date(d.donationDate.toDate()).setHours(0,0,0,0) === today)
+            .reduce((sum, d) => sum + d.amount, 0);
+    }, [donations, today]);
 
 
     const isLoading = isLoadingDonations || isLoadingCampaigns || isLoadingTypes || isLoadingBanks;
@@ -270,7 +311,7 @@ export default function DonationsPage() {
                             <form onSubmit={donationForm.handleSubmit(onDonationSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
                                  <FormField control={donationForm.control} name="typeId" render={({ field }) => (
                                     <FormItem><FormLabel>نوع التبرع</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><HandHeart /><SelectValue placeholder="اختر نوع التبرع..." /></div></SelectTrigger></FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><HandHeart /><SelectValue placeholder="اختر نوع التبرع..." /></div></SelectTrigger></FormControl>
                                             <SelectContent>{donationTypes?.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
                                         </Select><FormMessage /></FormItem>
                                 )} />
@@ -286,7 +327,7 @@ export default function DonationsPage() {
 
                                 <FormField control={donationForm.control} name="paymentMethod" render={({ field }) => (
                                     <FormItem><FormLabel>طريقة الدفع</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><Wallet /><SelectValue placeholder="اختر الطريقة..." /></div></SelectTrigger></FormControl>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><Wallet /><SelectValue placeholder="اختر الطريقة..." /></div></SelectTrigger></FormControl>
                                             <SelectContent>
                                                 <SelectItem value="cash">نقد</SelectItem>
                                                 <SelectItem value="wallet">محفظة إلكترونية</SelectItem>
@@ -299,7 +340,7 @@ export default function DonationsPage() {
                                     <div className="space-y-4 rounded-lg border p-4">
                                         <FormField control={donationForm.control} name="bankAccountId" render={({ field }) => (
                                             <FormItem><FormLabel>البنك المحول إليه</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><Banknote /><SelectValue placeholder="اختر البنك..." /></div></SelectTrigger></FormControl>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><Banknote /><SelectValue placeholder="اختر البنك..." /></div></SelectTrigger></FormControl>
                                                     <SelectContent>{bankAccounts?.map(b => <SelectItem key={b.id} value={b.id}>{b.bankName} - {b.accountNumber}</SelectItem>)}</SelectContent>
                                                 </Select><FormMessage /></FormItem>
                                         )} />
