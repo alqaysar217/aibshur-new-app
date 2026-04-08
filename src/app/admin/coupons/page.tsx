@@ -73,7 +73,7 @@ interface MultiSelectSearchProps<T extends {id: string, name: string}> {
     placeholder: string;
 }
 
-// ❗️ COMPONENT MOVED OUTSIDE of CouponsPage to prevent re-creation on render
+// COMPONENT MOVED OUTSIDE of CouponsPage to prevent re-creation on render
 function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps<T>) {
     const [open, setOpen] = useState(false);
     const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
@@ -98,7 +98,7 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent onPointerDownOutside={(e) => e.preventDefault()} className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
                         <CommandInput placeholder={placeholder} />
                         <CommandList>
@@ -128,6 +128,7 @@ export default function CouponsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -151,8 +152,8 @@ export default function CouponsPage() {
     
     const scope = form.watch('scope');
     const discountType = form.watch('discountType');
-    const storeIds = form.watch('storeIds');
-    const productIds = form.watch('productIds');
+    const storeIds = form.watch('storeIds') || [];
+    const productIds = form.watch('productIds') || [];
 
     const { data: coupons, isLoading: isLoadingCoupons } = useCollection<Coupon>(useMemoFirebase(() => firestore ? collection(firestore, 'coupons') : null, [firestore]));
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
@@ -368,7 +369,7 @@ export default function CouponsPage() {
                                     <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover>
+                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                                         <PopoverTrigger asChild><FormControl>
                                             <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
@@ -378,7 +379,10 @@ export default function CouponsPage() {
                                             <Calendar 
                                                 mode="single" 
                                                 selected={field.value} 
-                                                onSelect={field.onChange}
+                                                onSelect={(date) => {
+                                                  field.onChange(date);
+                                                  setIsCalendarOpen(false);
+                                                }}
                                                 disabled={(date) => date < new Date()} 
                                                 initialFocus 
                                             />
@@ -426,7 +430,7 @@ export default function CouponsPage() {
                                     <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
                                     <MultiSelectSearch
                                         options={scope === 'stores' ? (stores || []) : (products || [])}
-                                        selected={scope === 'stores' ? (storeIds || []) : (productIds || [])}
+                                        selected={scope === 'stores' ? storeIds : productIds}
                                         onSelect={(newSelected) => {
                                             form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true });
                                         }}
