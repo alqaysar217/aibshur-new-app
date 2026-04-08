@@ -22,25 +22,26 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, ChevronsUpDown, Check, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, ChevronsUpDown, Check, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info, Power } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Store } from '../stores/page';
 import type { Product } from '../products/page';
+import { Separator } from '@/components/ui/separator';
 
 // Zod Schema
 const couponSchema = z.object({
   code: z.string().min(4, { message: "الكود يجب أن يكون 4 أحرف على الأقل" }),
   discountType: z.enum(['percentage', 'fixed'], { required_error: "نوع الخصم مطلوب" }),
   value: z.coerce.number().min(0.01, { message: "القيمة يجب أن تكون أكبر من صفر" }),
-  minOrderAmount: z.coerce.number().min(0).optional(),
-  maxDiscount: z.coerce.number().min(0).optional(),
+  minOrderAmount: z.coerce.number().min(0).default(0),
+  maxDiscount: z.coerce.number().min(0).default(0),
   expiryDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
   maxUses: z.coerce.number().min(1, { message: "يجب تحديد عدد مرات الاستخدام" }),
   scope: z.enum(['global', 'stores', 'products'], { required_error: "يجب تحديد نطاق الكوبون" }),
-  storeIds: z.array(z.string()).optional(),
-  productIds: z.array(z.string()).optional(),
+  storeIds: z.array(z.string()).optional().default([]),
+  productIds: z.array(z.string()).optional().default([]),
   isActive: z.boolean().default(true),
 }).superRefine((data, ctx) => {
     if (data.scope === 'stores' && (!data.storeIds || data.storeIds.length === 0)) {
@@ -63,7 +64,7 @@ type Coupon = Omit<CouponFormValues, 'expiryDate'> & {
 const defaultDate = new Date();
 defaultDate.setDate(defaultDate.getDate() + 30);
 
-// Multi-Select Search Component
+// Multi-Select Search Component Interface
 interface MultiSelectSearchProps<T extends {id: string, name: string}> {
     options: T[];
     selected: string[];
@@ -71,6 +72,7 @@ interface MultiSelectSearchProps<T extends {id: string, name: string}> {
     placeholder: string;
 }
 
+// ❗️ COMPONENT MOVED OUTSIDE of CouponsPage to prevent re-creation on render
 function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps<T>) {
     const [open, setOpen] = useState(false);
     const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
@@ -125,7 +127,6 @@ export default function CouponsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -149,8 +150,8 @@ export default function CouponsPage() {
     
     const scope = form.watch('scope');
     const discountType = form.watch('discountType');
-    const storeIds = form.watch('storeIds') || [];
-    const productIds = form.watch('productIds') || [];
+    const storeIds = form.watch('storeIds');
+    const productIds = form.watch('productIds');
 
     const { data: coupons, isLoading: isLoadingCoupons } = useCollection<Coupon>(useMemoFirebase(() => firestore ? collection(firestore, 'coupons') : null, [firestore]));
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
@@ -184,8 +185,11 @@ export default function CouponsPage() {
         form.reset({
             ...coupon,
             expiryDate: coupon.expiryDate?.toDate() || defaultDate,
+            minOrderAmount: coupon.minOrderAmount || 0,
+            maxDiscount: coupon.maxDiscount || 0,
             storeIds: coupon.storeIds || [],
             productIds: coupon.productIds || [],
+            isActive: coupon.isActive ?? true,
         });
         setIsDialogOpen(true);
     };
@@ -197,8 +201,11 @@ export default function CouponsPage() {
             ...coupon,
             code: `${coupon.code}-COPY`,
             expiryDate: coupon.expiryDate?.toDate() || defaultDate,
+            minOrderAmount: coupon.minOrderAmount || 0,
+            maxDiscount: coupon.maxDiscount || 0,
             storeIds: coupon.storeIds || [],
             productIds: coupon.productIds || [],
+            isActive: coupon.isActive ?? true,
         });
         setIsDialogOpen(true);
     }
@@ -335,7 +342,7 @@ export default function CouponsPage() {
                                 <FormField control={form.control} name="discountType" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="flex items-center gap-2">
-                                            {form.getValues('discountType') === 'percentage' ? <Percent/> : <CircleDollarSign/>}
+                                            {discountType === 'percentage' ? <Percent/> : <CircleDollarSign/>}
                                             نوع الخصم
                                         </FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
@@ -360,7 +367,7 @@ export default function CouponsPage() {
                                     <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
+                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover>
                                         <PopoverTrigger asChild><FormControl>
                                             <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
@@ -370,21 +377,40 @@ export default function CouponsPage() {
                                             <Calendar 
                                                 mode="single" 
                                                 selected={field.value} 
-                                                onSelect={(date) => {
-                                                    field.onChange(date);
-                                                    setDatePickerOpen(false);
-                                                }} 
+                                                onSelect={field.onChange}
                                                 disabled={(date) => date < new Date()} 
                                                 initialFocus 
                                             />
                                         </PopoverContent>
                                     </Popover><FormMessage /></FormItem>
                                 )}/>
+                                <FormField
+                                    control={form.control}
+                                    name="isActive"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="flex items-center gap-2"><Power />حالة الكوبون</FormLabel>
+                                        <div className="flex items-center space-x-2 space-x-reverse pt-2">
+                                            <FormControl>
+                                                <Switch
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <Label htmlFor="isActive" className="text-sm">
+                                                {field.value ? "نشط" : "غير نشط"}
+                                            </Label>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
                            </div>
+                           <Separator />
                            
                            <FormField control={form.control} name="scope" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><ScopeIcon scope={form.getValues('scope')}/>نطاق الكوبون</FormLabel>
+                                    <FormLabel className="flex items-center gap-2"><ScopeIcon scope={scope}/>نطاق الكوبون</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
                                         <SelectContent>
                                             <SelectItem value="global">عام (على كل التطبيق)</SelectItem>
@@ -394,13 +420,15 @@ export default function CouponsPage() {
                                     </Select><FormMessage/></FormItem>
                             )}/>
                             
-                            {(scope === 'stores' || scope === 'products') && (
+                            {scope !== 'global' && (
                                 <FormItem>
                                     <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
                                     <MultiSelectSearch
                                         options={scope === 'stores' ? (stores || []) : (products || [])}
-                                        selected={scope === 'stores' ? storeIds : productIds}
-                                        onSelect={(newSelected) => form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true })}
+                                        selected={scope === 'stores' ? (storeIds || []) : (productIds || [])}
+                                        onSelect={(newSelected) => {
+                                            form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true });
+                                        }}
                                         placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
                                     />
                                      <FormMessage>{scope === 'stores' ? form.formState.errors.storeIds?.message : form.formState.errors.productIds?.message}</FormMessage>
