@@ -219,5 +219,18 @@ service cloud.firestore {
       allow list: if true;
       allow create, update, delete: if isAdmin();
     }
+    
+    /**
+     * @description Publicly readable product data, admin-only writes.
+     * @path /products/{productId}
+     * @allow (get, list) Public read access for all users.
+     * @allow (create, update, delete) Admin-only write access.
+     * @principle Makes product data available for browsing while protecting it from unauthorized modification.
+     */
+    match /products/{productId} {
+      allow get: if true;
+      allow list: if true;
+      allow create, update, delete: if isAdmin();
+    }
   }
 }
