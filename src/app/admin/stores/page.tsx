@@ -207,11 +207,11 @@ export default function StoresPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[80px]">الشعار</TableHead>
-                                    <TableHead>اسم المتجر</TableHead>
-                                    <TableHead>المحافظة</TableHead>
-                                    <TableHead>الفئة</TableHead>
-                                    <TableHead>الحالة</TableHead>
+                                    <TableHead className="w-[80px] text-center">الشعار</TableHead>
+                                    <TableHead className="text-center">اسم المتجر</TableHead>
+                                    <TableHead className="text-center">المحافظة</TableHead>
+                                    <TableHead className="text-center">الفئة</TableHead>
+                                    <TableHead className="text-center">الحالة</TableHead>
                                     <TableHead className="text-center">إجراءات</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -219,11 +219,11 @@ export default function StoresPage() {
                                 {filteredStores.length > 0 ? (
                                     filteredStores.map((store) => (
                                         <TableRow key={store.id} className={cn(!store.is_active && "text-muted-foreground bg-muted/50")}>
-                                            <TableCell><Image src={store.imageUrl} alt={store.name} width={56} height={56} className="rounded-lg object-cover" unoptimized/></TableCell>
-                                            <TableCell className="font-medium">{store.name}</TableCell>
-                                            <TableCell>{provincesMap[store.provinceId] || 'غير محدد'}</TableCell>
-                                            <TableCell>{categoriesMap[store.categoryId] || 'غير محدد'}</TableCell>
-                                            <TableCell>
+                                            <TableCell><Image src={store.imageUrl} alt={store.name} width={56} height={56} className="rounded-lg object-cover mx-auto" unoptimized/></TableCell>
+                                            <TableCell className="font-medium text-center">{store.name}</TableCell>
+                                            <TableCell className="text-center">{provincesMap[store.provinceId] || 'غير محدد'}</TableCell>
+                                            <TableCell className="text-center">{categoriesMap[store.categoryId] || 'غير محدد'}</TableCell>
+                                            <TableCell className="text-center">
                                                 <Badge variant={store.is_active ? 'default' : 'destructive'} className={cn(store.is_active ? "bg-green-500" : "bg-red-500", "text-white")}>
                                                     {store.is_active ? 'نشط' : 'معطل'}
                                                 </Badge>
@@ -256,8 +256,8 @@ export default function StoresPage() {
                         <DialogDescription className="text-right">{isEditing ? 'قم بتحديث تفاصيل المتجر.' : 'أدخل تفاصيل المتجر الجديد.'}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <Tabs defaultValue="basic" className="w-full">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" dir="rtl">
+                            <Tabs defaultValue="basic" className="w-full" dir="rtl">
                                 <TabsList className="grid w-full grid-cols-3">
                                     <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
                                     <TabsTrigger value="hours">أوقات العمل</TabsTrigger>
@@ -269,7 +269,26 @@ export default function StoresPage() {
                                             <FormItem><FormLabel>اسم المتجر</FormLabel><div className="relative"><StoreIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                            <FormItem><FormLabel>رابط شعار المتجر</FormLabel><div className="relative"><ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} dir="ltr" className="pr-10" /></FormControl></div><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel>رابط شعار المتجر</FormLabel>
+                                                <div className="relative">
+                                                    <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                                    <FormControl><Input {...field} dir="ltr" className="pr-10" /></FormControl>
+                                                </div>
+                                                {field.value && (
+                                                    <div className="mt-2 flex justify-center rounded-lg border border-dashed border-input p-2">
+                                                        <Image
+                                                            src={field.value}
+                                                            alt="معاينة الشعار"
+                                                            width={80}
+                                                            height={80}
+                                                            className="rounded-md object-contain"
+                                                            unoptimized
+                                                        />
+                                                    </div>
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
                                         )} />
                                         <FormField control={form.control} name="provinceId" render={({ field }) => (
                                             <FormItem><FormLabel>المحافظة</FormLabel>
@@ -354,7 +373,7 @@ export default function StoresPage() {
                                     </div>
                                 </TabsContent>
                             </Tabs>
-                            <DialogFooter className="pt-4 flex-row-reverse sm:justify-start">
+                            <DialogFooter className="pt-4 flex sm:justify-start gap-2">
                                 <Button type="submit">حفظ</Button>
                                 <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                             </DialogFooter>
