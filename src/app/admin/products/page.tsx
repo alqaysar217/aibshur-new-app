@@ -17,9 +17,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Star, Package, FileText, Store as StoreIcon, LayoutGrid, Filter, Link as LinkIcon, CircleDollarSign, Layers, Image as ImageIcon } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Star, Package, FileText, Store as StoreIcon, LayoutGrid, Filter, Link as LinkIcon, CircleDollarSign, Layers, Image as ImageIcon, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Store } from '../stores/page';
@@ -30,13 +29,13 @@ import { Separator } from '@/components/ui/separator';
 const variantSchema = z.object({
   name: z.string().min(1, { message: 'اسم النوع مطلوب' }),
   price: z.coerce.number().min(1, { message: 'السعر مطلوب ويجب أن يكون أكبر من صفر' }),
-  imageUrl: z.string().url({ message: "الرجاء إدخال رابط صحيح" }).optional().or(z.literal('')),
+  imageUrl: z.string().optional(),
 });
 
 const productSchema = z.object({
   name: z.string().min(2, { message: "اسم المنتج مطلوب" }),
   description: z.string().min(10, { message: "الوصف مطلوب (10 أحرف على الأقل)" }),
-  mainImageUrl: z.string().url({ message: "رابط الصورة الرئيسية مطلوب" }),
+  mainImageUrl: z.string().min(1, { message: "رابط الصورة الرئيسية مطلوب" }),
   storeId: z.string({ required_error: "يجب اختيار المتجر" }),
   categoryId: z.string({ required_error: "يجب اختيار القسم" }),
   filterId: z.string().optional(),
@@ -205,7 +204,7 @@ export default function ProductsPage() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-4xl" dir="rtl">
+                <DialogContent className="max-w-4xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className='text-right'>
                         <DialogTitle className='text-right'>{isEditing ? 'تعديل منتج' : 'إضافة منتج جديد'}</DialogTitle>
                         <DialogDescription className='text-right'>أدخل تفاصيل المنتج والأقسام والأسعار الخاصة به.</DialogDescription>
@@ -255,12 +254,38 @@ export default function ProductsPage() {
                            </div>
                            <Separator />
                            <div className='space-y-4'>
-                                <FormField control={form.control} name="hasVariants" render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                        <div className="space-y-0.5"><FormLabel>هل للمنتج أنواع/أحجام متعددة؟</FormLabel><FormDescription>فعّل هذا الخيار لإضافة أسعار وأحجام مختلفة.</FormDescription></div>
-                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    </FormItem>
-                                )}/>
+                                <FormField
+                                    control={form.control}
+                                    name="hasVariants"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>هل للمنتج أنواع/أحجام متعددة؟</FormLabel>
+                                            <FormDescription>
+                                                فعّل هذا الخيار لإضافة أسعار وأحجام مختلفة.
+                                            </FormDescription>
+                                            <FormControl>
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant={field.value ? 'default' : 'outline'}
+                                                        onClick={() => field.onChange(true)}
+                                                    >
+                                                        <CheckCircle />
+                                                        نعم، له أنواع
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant={!field.value ? 'default' : 'outline'}
+                                                        onClick={() => field.onChange(false)}
+                                                    >
+                                                        <XCircle />
+                                                        لا، سعر موحد
+                                                    </Button>
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
 
                                 {!hasVariants ? (
                                     <FormField control={form.control} name="basePrice" render={({ field }) => (
