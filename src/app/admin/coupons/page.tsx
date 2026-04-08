@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -90,7 +90,7 @@ interface MultiSelectSearchProps<T extends {id: string, name: string}> {
 }
 
 // COMPONENT MOVED OUTSIDE of CouponsPage to prevent re-creation on render
-function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps<T>) {
+function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps) {
     const [open, setOpen] = useState(false);
     const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
 
@@ -103,7 +103,7 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
 
     return (
         <div className="space-y-2">
-             <Popover open={open} onOpenChange={setOpen}>
+             <Popover open={open} onOpenChange={setOpen} modal={true}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
                         <div className="flex flex-wrap gap-1">
@@ -363,24 +363,40 @@ export default function CouponsPage() {
                                         <FormField control={form.control} name="maxUses" render={({ field }) => (
                                             <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                         )}/>
-                                        <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                                            <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover>
-                                                <PopoverTrigger asChild><FormControl>
-                                                    <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
-                                                    </Button>
-                                                </FormControl></PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar 
-                                                        mode="single" 
-                                                        selected={field.value} 
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) => date < new Date()} 
-                                                        initialFocus 
-                                                    />
-                                                </PopoverContent>
-                                            </Popover><FormMessage /></FormItem>
-                                        )}/>
+                                        <FormField
+                                            control={form.control}
+                                            name="expiryDate"
+                                            render={({ field }) => {
+                                                const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+                                                return (
+                                                    <FormItem className="flex flex-col">
+                                                        <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
+                                                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen} modal={true}>
+                                                            <PopoverTrigger asChild>
+                                                                <FormControl>
+                                                                    <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
+                                                                        {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value}
+                                                                    onSelect={(date) => {
+                                                                        field.onChange(date);
+                                                                        setIsCalendarOpen(false);
+                                                                    }}
+                                                                    disabled={(date) => date < new Date()}
+                                                                    initialFocus
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                );
+                                            }}
+                                        />
                                         <FormField
                                             control={form.control}
                                             name="isActive"
@@ -422,7 +438,7 @@ export default function CouponsPage() {
                                             <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
                                             <MultiSelectSearch
                                                 options={scope === 'stores' ? (stores || []) : (products || [])}
-                                                selected={scope === 'stores' ? (form.watch('storeIds') || []) : (form.watch('productIds') || [])}
+                                                selected={form.watch(scope === 'stores' ? 'storeIds' : 'productIds') || []}
                                                 onSelect={(newSelected) => {
                                                     form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true });
                                                 }}
