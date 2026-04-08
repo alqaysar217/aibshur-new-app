@@ -149,7 +149,11 @@ export default function DonationsPage() {
 
     const onDonationSubmit = (values: DonationFormValues) => {
         if (!firestore) return;
-        const dataToSave = { ...values, timestamp: serverTimestamp() };
+        const dataToSave = { 
+            ...values, 
+            campaignId: values.campaignId === '_none_' ? '' : values.campaignId,
+            timestamp: serverTimestamp() 
+        };
         if (dialogState.isEditing && dialogState.data) {
             updateDocumentNonBlocking(doc(firestore, 'donations', dialogState.data.id), dataToSave);
             toast({ title: "تم تحديث التبرع بنجاح" });
@@ -332,7 +336,7 @@ export default function DonationsPage() {
                                     <FormItem><FormLabel>الحملة التابع لها (اختياري)</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><Megaphone /><SelectValue placeholder="اختر حملة (إن وجد)..." /></div></SelectTrigger></FormControl>
                                             <SelectContent>
-                                                <SelectItem value="">-- بدون حملة --</SelectItem>
+                                                <SelectItem value="_none_">-- بدون حملة --</SelectItem>
                                                 {campaigns?.filter(c => c.isActive).map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
                                             </SelectContent>
                                         </Select><FormMessage /></FormItem>
@@ -432,5 +436,3 @@ export default function DonationsPage() {
         </>
     );
 }
-
-    
