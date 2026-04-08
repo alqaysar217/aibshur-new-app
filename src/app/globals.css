@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    /* Primary Identity: #1414B8 */
-    --primary: 240 79% 40%;
+    /* Primary Identity: #1FAF9A */
+    --primary: 171 70% 40%;
     --primary-foreground: 0 0% 100%;
     
     /* Backgrounds: #FFFFFF and #F5F7F6 */
@@ -24,8 +24,8 @@
     --muted: 150 4% 90%;
     --muted-foreground: 215 14% 46%;
     
-    /* Accent: #1414B8 */
-    --accent: 240 79% 40%;
+    /* Accent: #1FAF9A */
+    --accent: 171 70% 40%;
     --accent-foreground: 0 0% 100%;
     
     /* Status Colors */
@@ -34,7 +34,7 @@
     
     --border: 150 4% 90%;
     --input: 150 4% 90%;
-    --ring: 240 79% 40%;
+    --ring: 171 70% 40%;
     
     --radius: 10px;
     --chart-1: 12 76% 61%;
