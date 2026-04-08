@@ -196,13 +196,15 @@ export default function BankAccountsPage() {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader className="text-left">
-                        <DialogTitle>{isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}</DialogTitle>
-                        <DialogDescription>
-                            {isEditing ? 'قم بتحديث تفاصيل الحساب البنكي.' : 'أدخل تفاصيل الحساب البنكي الجديد.'}
-                        </DialogDescription>
-                    </DialogHeader>
+            <DialogContent className="sm:max-w-md [&>button]:right-auto [&>button]:left-4">
+            <DialogHeader className="flex flex-col items-end text-right">
+                <DialogTitle className="w-full text-right">
+                    {isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}
+                </DialogTitle>
+                <DialogDescription className="w-full text-right">
+                    {isEditing ? 'قم بتحديث تفاصيل الحساب البنكي.' : 'أدخل تفاصيل الحساب البنكي الجديد.'}
+                </DialogDescription>
+            </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 py-2">
                             <FormField control={form.control} name="bankName" render={({ field }) => (

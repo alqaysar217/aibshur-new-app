@@ -194,99 +194,118 @@ export default function GovernoratesPage() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-md rounded-lg">
-                    <DialogHeader>
-                        <DialogTitle>{isEditing ? 'تعديل بيانات المحافظة' : 'إضافة محافظة جديدة'}</DialogTitle>
-                        <DialogDescription>
-                            {isEditing ? 'قم بتحديث تفاصيل المحافظة.' : 'أدخل تفاصيل المحافظة الجديدة.'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                            <FormField control={form.control} name="province_name" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>اسم المحافظة</FormLabel>
-                                    <div className="relative">
-                                        <Map className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                             <FormField control={form.control} name="customer_service_number" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>رقم خدمة العملاء</FormLabel>
-                                     <div className="relative">
-                                        <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} type="tel" dir="ltr" className="text-left pr-10 h-12" /></FormControl>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField control={form.control} name="whatsapp_number" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>رقم الواتساب</FormLabel>
-                                     <div className="relative">
-                                        <MessageSquare className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} type="tel" dir="ltr" className="text-left pr-10 h-12" /></FormControl>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                           <FormField
-                                control={form.control}
-                                name="is_active"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>حالة المحافظة</FormLabel>
-                                        <FormDescription>
-                                            اختر ما إذا كانت المحافظة ستظهر للمستخدمين.
-                                        </FormDescription>
-                                        <FormControl>
-                                            <div className="grid grid-cols-2 gap-2 pt-2">
-                                                <Button
-                                                    type="button"
-                                                    variant={field.value ? 'default' : 'outline'}
-                                                    onClick={() => field.onChange(true)}
-                                                    className="h-12 text-base"
-                                                >
-                                                    <CheckCircle />
-                                                    نشط
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant={!field.value ? 'destructive' : 'outline'}
-                                                    onClick={() => field.onChange(false)}
-                                                    className="h-12 text-base"
-                                                >
-                                                    <XCircle />
-                                                    غير نشط
-                                                </Button>
-                                            </div>
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                             <DialogFooter>
-                                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
-                                <Button type="submit">حفظ</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
+            {/* أضفنا الكلاسات لعكس مكان زر الإغلاق X إلى اليسار */}
+            <DialogContent className="sm:max-w-md rounded-lg [&>button]:right-auto [&>button]:left-4" dir="rtl">
+                <DialogHeader className="flex flex-col items-end text-right">
+                    <DialogTitle className="w-full text-right font-bold">
+                        {isEditing ? 'تعديل بيانات المحافظة' : 'إضافة محافظة جديدة'}
+                    </DialogTitle>
+                    <DialogDescription className="w-full text-right">
+                        {isEditing ? 'قم بتحديث تفاصيل المحافظة.' : 'أدخل تفاصيل المحافظة الجديدة.'}
+                    </DialogDescription>
+                </DialogHeader>
 
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        {/* حقل اسم المحافظة */}
+                        <FormField control={form.control} name="province_name" render={({ field }) => (
+                            <FormItem className="text-right">
+                                <FormLabel>اسم المحافظة</FormLabel>
+                                <div className="relative">
+                                    <Map className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                    <FormControl>
+                                        <Input {...field} className="pr-10 h-12 text-right" placeholder="أدخل اسم المحافظة" />
+                                    </FormControl>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+
+                        {/* حقل رقم خدمة العملاء */}
+                        <FormField control={form.control} name="customer_service_number" render={({ field }) => (
+                            <FormItem className="text-right">
+                                <FormLabel>رقم خدمة العملاء</FormLabel>
+                                <div className="relative">
+                                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                    <FormControl>
+                                        <Input {...field} type="tel" dir="ltr" className="text-left pr-10 h-12" />
+                                    </FormControl>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+
+                        {/* حقل رقم الواتساب */}
+                        <FormField control={form.control} name="whatsapp_number" render={({ field }) => (
+                            <FormItem className="text-right">
+                                <FormLabel>رقم الواتساب</FormLabel>
+                                <div className="relative">
+                                    <MessageSquare className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                    <FormControl>
+                                        <Input {...field} type="tel" dir="ltr" className="text-left pr-10 h-12" />
+                                    </FormControl>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+
+                        {/* حالة المحافظة */}
+                        <FormField control={form.control} name="is_active" render={({ field }) => (
+                            <FormItem className="text-right">
+                                <FormLabel>حالة المحافظة</FormLabel>
+                                <FormDescription className="text-right">
+                                    اختر ما إذا كانت المحافظة ستظهر للمستخدمين.
+                                </FormDescription>
+                                <FormControl>
+                                    <div className="grid grid-cols-2 gap-2 pt-2">
+                                        <Button
+                                            type="button"
+                                            variant={field.value ? 'default' : 'outline'}
+                                            onClick={() => field.onChange(true)}
+                                            className="h-12 text-base gap-2"
+                                        >
+                                            <CheckCircle className="h-4 w-4" />
+                                            نشط
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant={!field.value ? 'destructive' : 'outline'}
+                                            onClick={() => field.onChange(false)}
+                                            className="h-12 text-base gap-2"
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                            غير نشط
+                                        </Button>
+                                    </div>
+                                </FormControl>
+                            </FormItem>
+                        )} />
+
+                        <DialogFooter className="flex-row-reverse gap-2 sm:justify-start">
+                            <Button type="submit" className="flex-1 sm:flex-none">حفظ التغييرات</Button>
+                            <DialogClose asChild>
+                                <Button type="button" variant="outline" className="flex-1 sm:flex-none">إلغاء</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+
+            {/* --- نافذة التأكيد AlertDialog --- */}
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent dir="rtl" className="text-right">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>هل أنت متأكد تماماً؟</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-right">هل أنت متأكد تماماً؟</AlertDialogTitle>
+                        <AlertDialogDescription className="text-right">
                             هذا الإجراء لا يمكن التراجع عنه. سيؤدي هذا إلى حذف بيانات المحافظة بشكل دائم.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
+                    <AlertDialogFooter className="flex-row-reverse gap-2 sm:justify-start">
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+                            نعم، قم بالحذف
+                        </AlertDialogAction>
                         <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete}>نعم، قم بالحذف</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

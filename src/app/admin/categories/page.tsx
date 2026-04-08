@@ -37,7 +37,7 @@ const storeFilterSchema = z.object({
 
 // Types
 type AppCategoryFormValues = z.infer<typeof appCategorySchema>;
-type AppCategory = AppCategoryFormValues & { id: string };
+export type AppCategory = AppCategoryFormValues & { id: string };
 
 type StoreFilterFormValues = z.infer<typeof storeFilterSchema>;
 type StoreFilter = StoreFilterFormValues & { id: string };
@@ -182,7 +182,7 @@ export default function CategoriesPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="text-center w-[120px]">الصورة</TableHead>
-                                            <TableHead>الاسم</TableHead>
+                                            <TableHead className="text-center">الاسم</TableHead>
                                             <TableHead className="text-center">الحالة</TableHead>
                                             <TableHead className="text-center w-[120px]">إجراءات</TableHead>
                                         </TableRow>
@@ -191,7 +191,7 @@ export default function CategoriesPage() {
                                         {categories?.map((cat) => (
                                             <TableRow key={cat.id} className={cn(!cat.is_active && "text-muted-foreground bg-muted/50")}>
                                                 <TableCell><Image src={cat.image} alt={cat.name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
-                                                <TableCell className="font-medium">{cat.name}</TableCell>
+                                                <TableCell className="font-medium text-center">{cat.name}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={cat.is_active ? 'default' : 'secondary'}>{cat.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center gap-2">
@@ -227,8 +227,8 @@ export default function CategoriesPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="text-center w-[120px]">الصورة</TableHead>
-                                            <TableHead>اسم الفلتر</TableHead>
-                                            <TableHead>المتجر الرئيسي</TableHead>
+                                            <TableHead className="text-center">اسم الفلتر</TableHead>
+                                            <TableHead className="text-center">المتجر الرئيسي</TableHead>
                                             <TableHead className="text-center">الحالة</TableHead>
                                             <TableHead className="text-center w-[120px]">إجراءات</TableHead>
                                         </TableRow>
@@ -237,8 +237,8 @@ export default function CategoriesPage() {
                                         {filters?.map((filter) => (
                                             <TableRow key={filter.id} className={cn(!filter.is_active && "text-muted-foreground bg-muted/50")}>
                                                 <TableCell><Image src={filter.filter_image} alt={filter.filter_name} width={64} height={64} className="rounded-lg object-contain mx-auto" unoptimized /></TableCell>
-                                                <TableCell className="font-medium">{filter.filter_name}</TableCell>
-                                                <TableCell>{storesMap[filter.parent_store_id] || 'غير معروف'}</TableCell>
+                                                <TableCell className="font-medium text-center">{filter.filter_name}</TableCell>
+                                                <TableCell className="text-center">{storesMap[filter.parent_store_id] || 'غير معروف'}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={filter.is_active ? 'default' : 'secondary'}>{filter.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center gap-2">
