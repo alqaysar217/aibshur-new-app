@@ -187,7 +187,11 @@ export default function ProductsPage() {
                                         <TableCell><Image src={product.mainImageUrl} alt={product.name} width={56} height={56} className="rounded-lg object-cover mx-auto" unoptimized/></TableCell>
                                         <TableCell className="font-medium text-center">{product.name}</TableCell>
                                         <TableCell className="text-center">{storesMap[product.storeId] || 'غير محدد'}</TableCell>
-                                        <TableCell className="text-center flex items-center justify-center gap-1"><Star className="h-4 w-4 text-amber-400" /> {product.rating}</TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Star className="h-4 w-4 text-amber-400" /> {product.rating.toFixed(1)}
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-center"><Badge variant={product.is_active ? 'default' : 'secondary'}>{product.is_active ? 'مفعل' : 'ملغى'}</Badge></TableCell>
                                         <TableCell className="text-center">
                                             <div className="flex items-center justify-center gap-2">
@@ -250,6 +254,38 @@ export default function ProductsPage() {
                                      <FormField control={form.control} name="rating" render={({ field }) => (
                                         <FormItem><FormLabel>التقييم الافتراضي</FormLabel><div className="relative"><Star className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input type="number" step="0.1" min="0" max="5" {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                     )} />
+                                    <FormField
+                                        control={form.control}
+                                        name="is_active"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>حالة المنتج</FormLabel>
+                                                <FormDescription>
+                                                    فعّل هذا الخيار ليظهر المنتج في التطبيق.
+                                                </FormDescription>
+                                                <FormControl>
+                                                    <div className="grid grid-cols-2 gap-2 pt-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant={field.value ? 'default' : 'outline'}
+                                                            onClick={() => field.onChange(true)}
+                                                        >
+                                                            <CheckCircle />
+                                                            مفعل
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant={!field.value ? 'destructive' : 'outline'}
+                                                            onClick={() => field.onChange(false)}
+                                                        >
+                                                            <XCircle />
+                                                            ملغى
+                                                        </Button>
+                                                    </div>
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                            </div>
                            <Separator />
