@@ -22,8 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
-import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, ChevronsUpDown, Check, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info, Power } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, ChevronsUpDown, Check, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info, Power, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -114,7 +113,7 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" >
                     <Command>
                         <CommandInput placeholder={placeholder} />
                         <CommandList>
@@ -363,57 +362,58 @@ export default function CouponsPage() {
                                         <FormField control={form.control} name="maxUses" render={({ field }) => (
                                             <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                         )}/>
-                                        <FormField
-                                            control={form.control}
-                                            name="expiryDate"
-                                            render={({ field }) => {
-                                                const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-                                                return (
-                                                    <FormItem className="flex flex-col">
+                                        <div className="md:col-span-2">
+                                            <FormField
+                                                control={form.control}
+                                                name="expiryDate"
+                                                render={({ field }) => (
+                                                    <FormItem>
                                                         <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
-                                                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen} modal={true}>
-                                                            <PopoverTrigger asChild>
-                                                                <FormControl>
-                                                                    <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
-                                                                        {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
-                                                                    </Button>
-                                                                </FormControl>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0" align="start">
-                                                                <Calendar
-                                                                    mode="single"
-                                                                    selected={field.value}
-                                                                    onSelect={(date) => {
-                                                                        field.onChange(date);
-                                                                        setIsCalendarOpen(false);
-                                                                    }}
-                                                                    disabled={(date) => date < new Date()}
-                                                                    initialFocus
-                                                                />
-                                                            </PopoverContent>
-                                                        </Popover>
+                                                        <FormControl>
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value ?? defaultDate}
+                                                                onSelect={field.onChange}
+                                                                disabled={(date) => date < new Date()}
+                                                                className="rounded-md border"
+                                                                initialFocus
+                                                            />
+                                                        </FormControl>
+                                                        <FormDescription>سيتم تعطيل الكوبون بعد هذا التاريخ.</FormDescription>
                                                         <FormMessage />
                                                     </FormItem>
-                                                );
-                                            }}
-                                        />
+                                                )}
+                                            />
+                                        </div>
                                         <FormField
                                             control={form.control}
                                             name="isActive"
                                             render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="flex items-center gap-2"><Power />حالة الكوبون</FormLabel>
-                                                <div className="flex items-center space-x-2 space-x-reverse pt-2">
-                                                    <FormControl>
-                                                        <Switch
-                                                            checked={field.value}
-                                                            onCheckedChange={field.onChange}
-                                                        />
-                                                    </FormControl>
-                                                    <Label htmlFor="isActive" className="text-sm">
-                                                        {field.value ? "نشط" : "غير نشط"}
-                                                    </Label>
-                                                </div>
+                                                <FormDescription>
+                                                    اختر ما إذا كان الكوبون فعالاً.
+                                                </FormDescription>
+                                                <FormControl>
+                                                    <div className="grid grid-cols-2 gap-2 pt-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant={field.value ? 'default' : 'outline'}
+                                                            onClick={() => field.onChange(true)}
+                                                        >
+                                                            <CheckCircle />
+                                                            نشط
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant={!field.value ? 'destructive' : 'outline'}
+                                                            onClick={() => field.onChange(false)}
+                                                        >
+                                                            <XCircle />
+                                                            غير نشط
+                                                        </Button>
+                                                    </div>
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                             )}
