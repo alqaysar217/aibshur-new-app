@@ -250,7 +250,7 @@ export default function StoresPage() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-3xl" dir="rtl">
+                <DialogContent className="max-w-3xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
                         <DialogTitle className="text-right">{isEditing ? 'تعديل بيانات المتجر' : 'إضافة متجر جديد'}</DialogTitle>
                         <DialogDescription className="text-right">{isEditing ? 'قم بتحديث تفاصيل المتجر.' : 'أدخل تفاصيل المتجر الجديد.'}</DialogDescription>
@@ -373,7 +373,7 @@ export default function StoresPage() {
                                     </div>
                                 </TabsContent>
                             </Tabs>
-                            <DialogFooter className="pt-4 flex sm:justify-start gap-2">
+                            <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
                                 <Button type="submit">حفظ</Button>
                                 <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                             </DialogFooter>
