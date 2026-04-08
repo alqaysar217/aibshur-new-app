@@ -208,18 +208,16 @@ service cloud.firestore {
     }
 
     /**
-     * @description Publicly readable data for all stores. Writes are disallowed.
+     * @description Publicly readable store data, admin-only writes.
      * @path /stores/{storeId}
-     * @allow (get) Anyone, authenticated or not, can read a specific store's details.
-     * @deny (create) No user can create a new store document.
-     * @principle Makes global, non-sensitive data available for all users while protecting it from modification.
+     * @allow (get, list) Public read access for all users.
+     * @allow (create, update, delete) Admin-only write access.
+     * @principle Makes store data available for browsing while protecting it from unauthorized modification.
      */
     match /stores/{storeId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isAdmin();
     }
   }
 }

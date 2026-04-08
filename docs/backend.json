@@ -150,30 +150,13 @@
       ]
     },
     "Store": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Store",
       "type": "object",
       "description": "Details about a specific store or business available for delivery in the app.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Store entity."
-        },
         "name": {
           "type": "string",
           "description": "The name of the store."
-        },
-        "address": {
-          "type": "string",
-          "description": "The physical street address of the store."
-        },
-        "latitude": {
-          "type": "number",
-          "description": "The geographical latitude coordinate of the store's location."
-        },
-        "longitude": {
-          "type": "number",
-          "description": "The geographical longitude coordinate of the store's location."
         },
         "imageUrl": {
           "type": "string",
@@ -184,29 +167,80 @@
           "type": "number",
           "description": "The average rating of the store, typically on a scale (e.g., 0.0 to 5.0)."
         },
-        "status": {
+        "deliveryTime": {
           "type": "string",
-          "description": "The current operational status of the store (e.g., 'مفتوح' for open, 'مغلق' for closed)."
+          "description": "Estimated delivery time in minutes, e.g., '25-35'."
         },
-        "storeCategoryId": {
+        "provinceId": {
           "type": "string",
-          "description": "Reference to the primary category this store belongs to. (Relationship: StoreCategory 1:N Store)"
+          "description": "Reference to the AppProvince this store is in."
         },
-        "description": {
+        "categoryId": {
           "type": "string",
-          "description": "A brief description or motto of the store."
+          "description": "Reference to the AppCategory this store belongs to."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The geographical latitude of the store's location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The geographical longitude of the store's location."
+        },
+        "is_active": {
+          "type": "boolean",
+          "description": "Whether the store is currently active and visible to users."
+        },
+        "workingHours": {
+          "type": "array",
+          "description": "An array defining the working hours for each day of the week.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string",
+                "enum": [
+                  "saturday",
+                  "sunday",
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday"
+                ]
+              },
+              "isOpen": {
+                "type": "boolean"
+              },
+              "morning_from": {
+                "type": "string"
+              },
+              "morning_to": {
+                "type": "string"
+              },
+              "evening_from": {
+                "type": "string"
+              },
+              "evening_to": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "day",
+              "isOpen"
+            ]
+          }
         }
       },
       "required": [
-        "id",
         "name",
-        "address",
+        "imageUrl",
+        "provinceId",
+        "categoryId",
         "latitude",
         "longitude",
-        "imageUrl",
-        "rating",
-        "status",
-        "storeCategoryId"
+        "is_active",
+        "workingHours"
       ]
     },
     "AppProvince": {
@@ -366,7 +400,7 @@
           "schema": {
             "$ref": "#/backend/entities/Store"
           },
-          "description": "Details about individual stores or businesses. This is a global, publicly readable collection. Filters for 'favorites', 'closest', 'top rated' will be applied client-side on the retrieved data. No denormalized authorization fields are required for read access, as access is public."
+          "description": "Details about individual stores or businesses. This collection is publicly readable, but write access is restricted to administrators for managing store information."
         }
       },
       {
