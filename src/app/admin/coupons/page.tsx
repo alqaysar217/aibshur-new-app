@@ -17,7 +17,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Calendar } from "@/components/ui/calendar";
@@ -143,6 +142,7 @@ export default function CouponsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -367,18 +367,36 @@ export default function CouponsPage() {
                                                 control={form.control}
                                                 name="expiryDate"
                                                 render={({ field }) => (
-                                                    <FormItem>
+                                                    <FormItem className="flex flex-col">
                                                         <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
-                                                        <FormControl>
-                                                            <Calendar
-                                                                mode="single"
-                                                                selected={field.value ?? defaultDate}
-                                                                onSelect={field.onChange}
-                                                                disabled={(date) => date < new Date()}
-                                                                className="rounded-md border"
-                                                                initialFocus
-                                                            />
-                                                        </FormControl>
+                                                        <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                                            <PopoverTrigger asChild>
+                                                                <FormControl>
+                                                                    <Button
+                                                                        variant={"outline"}
+                                                                        className={cn(
+                                                                            "w-full justify-start text-right font-normal",
+                                                                            !field.value && "text-muted-foreground"
+                                                                        )}
+                                                                    >
+                                                                        <CalendarIcon className="ml-2 h-4 w-4" />
+                                                                        {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value}
+                                                                    onSelect={(date) => {
+                                                                        field.onChange(date);
+                                                                        setIsDatePickerOpen(false);
+                                                                    }}
+                                                                    disabled={(date) => date < new Date()}
+                                                                    initialFocus
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
                                                         <FormDescription>سيتم تعطيل الكوبون بعد هذا التاريخ.</FormDescription>
                                                         <FormMessage />
                                                     </FormItem>
