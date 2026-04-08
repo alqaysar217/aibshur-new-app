@@ -29,6 +29,7 @@ import type { Store } from '../stores/page';
 import type { Product } from '../products/page';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
 
 // Zod Schema
@@ -369,7 +370,7 @@ export default function CouponsPage() {
                                                 render={({ field }) => (
                                                     <FormItem className="flex flex-col">
                                                         <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
-                                                        <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                                        <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen} modal={true}>
                                                             <PopoverTrigger asChild>
                                                                 <FormControl>
                                                                     <Button
