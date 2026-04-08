@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Search, Store as StoreIcon, Building, Tag, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Search, Store as StoreIcon, Building, Tag, Clock, CheckCircle, XCircle, ImageIcon, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AppProvince } from '../governorates/page';
@@ -250,83 +250,89 @@ export default function StoresPage() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>{isEditing ? 'تعديل بيانات المتجر' : 'إضافة متجر جديد'}</DialogTitle>
-                        <DialogDescription>{isEditing ? 'قم بتحديث تفاصيل المتجر.' : 'أدخل تفاصيل المتجر الجديد.'}</DialogDescription>
+                <DialogContent className="max-w-3xl" dir="rtl">
+                    <DialogHeader className="text-right">
+                        <DialogTitle className="text-right">{isEditing ? 'تعديل بيانات المتجر' : 'إضافة متجر جديد'}</DialogTitle>
+                        <DialogDescription className="text-right">{isEditing ? 'قم بتحديث تفاصيل المتجر.' : 'أدخل تفاصيل المتجر الجديد.'}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <Tabs defaultValue="basic" className="w-full">
                                 <TabsList className="grid w-full grid-cols-3">
-                                    <TabsTrigger value="basic">بيانات المتجر</TabsTrigger>
+                                    <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
                                     <TabsTrigger value="hours">أوقات العمل</TabsTrigger>
                                     <TabsTrigger value="location">الموقع على الخريطة</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="basic" className="py-4 space-y-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <FormField control={form.control} name="name" render={({ field }) => (
-                                            <FormItem><FormLabel>اسم المتجر</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>اسم المتجر</FormLabel><div className="relative"><StoreIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                            <FormItem><FormLabel>رابط شعار المتجر</FormLabel><FormControl><Input {...field} dir="ltr" /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>رابط شعار المتجر</FormLabel><div className="relative"><ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} dir="ltr" className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="provinceId" render={({ field }) => (
                                             <FormItem><FormLabel>المحافظة</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="اختر المحافظة..." /></SelectTrigger></FormControl>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                                    <FormControl><SelectTrigger><div className="flex items-center gap-2"><Building className="h-5 w-5 text-muted-foreground" /><SelectValue placeholder="اختر المحافظة..." /></div></SelectTrigger></FormControl>
                                                     <SelectContent>{provinces?.map(p => <SelectItem key={p.id} value={p.id}>{p.province_name}</SelectItem>)}</SelectContent>
                                                 </Select><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="categoryId" render={({ field }) => (
                                             <FormItem><FormLabel>الفئة العامة</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="اختر الفئة..." /></SelectTrigger></FormControl>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                                                    <FormControl><SelectTrigger><div className="flex items-center gap-2"><Tag className="h-5 w-5 text-muted-foreground" /><SelectValue placeholder="اختر الفئة..." /></div></SelectTrigger></FormControl>
                                                     <SelectContent>{categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                                 </Select><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="deliveryTime" render={({ field }) => (
-                                            <FormItem><FormLabel>وقت التوصيل (بالدقائق)</FormLabel><FormControl><Input {...field} placeholder="مثال: 25-35" /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>وقت التوصيل (بالدقائق)</FormLabel><div className="relative"><Clock className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} placeholder="مثال: 25-35" className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="rating" render={({ field }) => (
-                                            <FormItem><FormLabel>التقييم المبدئي</FormLabel><FormControl><Input type="number" step="0.1" min="0" max="5" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>التقييم المبدئي</FormLabel><div className="relative"><Star className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input type="number" step="0.1" min="0" max="5" {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                         )} />
                                     </div>
                                     <FormField control={form.control} name="is_active" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5"><FormLabel>حالة المتجر</FormLabel></div>
-                                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        <FormItem>
+                                            <FormLabel>حالة المتجر</FormLabel>
+                                            <FormDescription>اختر ما إذا كان المتجر سيظهر للمستخدمين.</FormDescription>
+                                            <FormControl>
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)} className="h-12 text-base"><CheckCircle />نشط</Button>
+                                                    <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)} className="h-12 text-base"><XCircle />غير نشط</Button>
+                                                </div>
+                                            </FormControl>
                                         </FormItem>
                                     )} />
                                 </TabsContent>
-                                <TabsContent value="hours" className="py-4 space-y-2">
+                                <TabsContent value="hours" className="py-4 space-y-2 max-h-[50vh] overflow-y-auto pr-2">
                                     {fields.map((field, index) => {
                                         const dayKey = field.day as keyof typeof arabicDays;
                                         return (
-                                            <Card key={field.id} className="p-3">
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                            <div key={field.id} className="rounded-lg border p-3 bg-muted/50">
+                                                <div className="flex flex-col sm:flex-row items-center gap-3">
                                                     <FormField control={form.control} name={`workingHours.${index}.isOpen`} render={({ field: checkboxField }) => (
-                                                        <FormItem className="flex items-center gap-2">
+                                                        <FormItem className="flex items-center gap-2 w-full sm:w-auto">
                                                             <FormControl><Checkbox checked={checkboxField.value} onCheckedChange={checkboxField.onChange} /></FormControl>
-                                                            <FormLabel className="w-20 font-bold">{arabicDays[dayKey]}</FormLabel>
+                                                            <FormLabel className="min-w-[70px] font-bold text-sm">{arabicDays[dayKey]}</FormLabel>
                                                         </FormItem>
                                                     )} />
-                                                    <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2 flex-grow", !form.watch(`workingHours.${index}.isOpen`) && "opacity-50")}>
+                                                    <div className={cn("grid grid-cols-2 sm:grid-cols-4 gap-2 flex-grow w-full", !form.watch(`workingHours.${index}.isOpen`) && "opacity-50 pointer-events-none")}>
                                                         <FormField control={form.control} name={`workingHours.${index}.morning_from`} render={({ field }) => (
-                                                            <FormItem><FormLabel className="text-xs">صباحاً من</FormLabel><FormControl><Input type="time" {...field} disabled={!form.watch(`workingHours.${index}.isOpen`)} /></FormControl></FormItem>
+                                                            <FormItem><FormLabel className="text-xs text-muted-foreground">صباحاً من</FormLabel><FormControl><Input type="time" {...field} className="h-9 text-sm" /></FormControl></FormItem>
                                                         )} />
                                                         <FormField control={form.control} name={`workingHours.${index}.morning_to`} render={({ field }) => (
-                                                            <FormItem><FormLabel className="text-xs">صباحاً إلى</FormLabel><FormControl><Input type="time" {...field} disabled={!form.watch(`workingHours.${index}.isOpen`)} /></FormControl></FormItem>
+                                                            <FormItem><FormLabel className="text-xs text-muted-foreground">صباحاً إلى</FormLabel><FormControl><Input type="time" {...field} className="h-9 text-sm" /></FormControl></FormItem>
                                                         )} />
                                                         <FormField control={form.control} name={`workingHours.${index}.evening_from`} render={({ field }) => (
-                                                            <FormItem><FormLabel className="text-xs">مساءً من</FormLabel><FormControl><Input type="time" {...field} disabled={!form.watch(`workingHours.${index}.isOpen`)} /></FormControl></FormItem>
+                                                            <FormItem><FormLabel className="text-xs text-muted-foreground">مساءً من</FormLabel><FormControl><Input type="time" {...field} className="h-9 text-sm" /></FormControl></FormItem>
                                                         )} />
                                                         <FormField control={form.control} name={`workingHours.${index}.evening_to`} render={({ field }) => (
-                                                            <FormItem><FormLabel className="text-xs">مساءً إلى</FormLabel><FormControl><Input type="time" {...field} disabled={!form.watch(`workingHours.${index}.isOpen`)} /></FormControl></FormItem>
+                                                            <FormItem><FormLabel className="text-xs text-muted-foreground">مساءً إلى</FormLabel><FormControl><Input type="time" {...field} className="h-9 text-sm" /></FormControl></FormItem>
                                                         )} />
                                                     </div>
                                                 </div>
-                                            </Card>
+                                            </div>
                                         );
                                     })}
                                 </TabsContent>
@@ -348,9 +354,9 @@ export default function StoresPage() {
                                     </div>
                                 </TabsContent>
                             </Tabs>
-                            <DialogFooter>
-                                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                            <DialogFooter className="pt-4 flex-row-reverse sm:justify-start">
                                 <Button type="submit">حفظ</Button>
+                                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                             </DialogFooter>
                         </form>
                     </Form>
@@ -358,14 +364,14 @@ export default function StoresPage() {
             </Dialog>
 
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                        <AlertDialogDescription>هذا الإجراء سيحذف المتجر بشكل دائم.</AlertDialogDescription>
+                <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader className="text-right">
+                        <AlertDialogTitle className="text-right">هل أنت متأكد؟</AlertDialogTitle>
+                        <AlertDialogDescription className="text-right">هذا الإجراء سيحذف المتجر بشكل دائم.</AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogFooter className="flex-row-reverse sm:justify-start">
                         <AlertDialogAction onClick={confirmDelete}>نعم، قم بالحذف</AlertDialogAction>
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

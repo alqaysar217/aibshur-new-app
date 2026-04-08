@@ -258,10 +258,19 @@ export default function CategoriesPage() {
 
             {/* Dialog for Add/Edit */}
             <Dialog open={dialogState.isOpen} onOpenChange={(isOpen) => setDialogState(prev => ({...prev, isOpen}))}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{dialogState.type === 'category' ? (dialogState.isEditing ? 'تعديل الفئة' : 'إضافة فئة جديدة') : (dialogState.isEditing ? 'تعديل الفلتر' : 'إضافة فلتر جديد')}</DialogTitle>
-                    </DialogHeader>
+                <DialogContent className="sm:max-w-md rounded-2xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
+    
+                {/* هذا هو الجزء الذي طلبته تحديداً للعناوين */}
+                <DialogHeader className="text-right flex flex-col items-start justify-start w-full space-y-1">
+                    <DialogTitle className="text-xl font-black w-full text-right text-gray-900">
+                        {dialogState.type === 'category' 
+                            ? (dialogState.isEditing ? 'تعديل الفئة' : 'إضافة فئة جديدة') 
+                            : (dialogState.isEditing ? 'تعديل الفلتر' : 'إضافة فلتر جديد')}
+                    </DialogTitle>
+                    <DialogDescription className="text-right w-full text-gray-500">
+                        أكمل الحقول التالية لتحديث البيانات
+                    </DialogDescription>
+                </DialogHeader>
                     {dialogState.type === 'category' ? (
                         <Form {...categoryForm}>
                             <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4 py-4" dir="rtl">
