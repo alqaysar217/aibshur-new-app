@@ -30,6 +30,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { Store } from '../stores/page';
 import type { Product } from '../products/page';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 // Zod Schema
 const couponSchema = z.object({
@@ -64,6 +66,20 @@ type Coupon = Omit<CouponFormValues, 'expiryDate'> & {
 // Default expiry date (30 days from now)
 const defaultDate = new Date();
 defaultDate.setDate(defaultDate.getDate() + 30);
+
+const defaultFormValues: CouponFormValues = {
+    code: '',
+    discountType: 'percentage',
+    value: 10,
+    minOrderAmount: 0,
+    maxDiscount: 0,
+    expiryDate: defaultDate,
+    maxUses: 100,
+    scope: 'global',
+    storeIds: [],
+    productIds: [],
+    isActive: true,
+};
 
 // Multi-Select Search Component Interface
 interface MultiSelectSearchProps<T extends {id: string, name: string}> {
@@ -128,32 +144,17 @@ export default function CouponsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     const { toast } = useToast();
     const firestore = useFirestore();
 
     const form = useForm<CouponFormValues>({
         resolver: zodResolver(couponSchema),
-        defaultValues: {
-            code: '',
-            discountType: 'percentage',
-            value: 10,
-            minOrderAmount: 0,
-            maxDiscount: 0,
-            expiryDate: defaultDate,
-            maxUses: 100,
-            scope: 'global',
-            storeIds: [],
-            productIds: [],
-            isActive: true,
-        },
+        defaultValues: defaultFormValues,
     });
     
     const scope = form.watch('scope');
     const discountType = form.watch('discountType');
-    const storeIds = form.watch('storeIds') || [];
-    const productIds = form.watch('productIds') || [];
 
     const { data: coupons, isLoading: isLoadingCoupons } = useCollection<Coupon>(useMemoFirebase(() => firestore ? collection(firestore, 'coupons') : null, [firestore]));
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
@@ -165,19 +166,7 @@ export default function CouponsPage() {
     const handleAddNew = () => {
         setIsEditing(false);
         setSelectedCoupon(null);
-        form.reset({
-            code: '',
-            discountType: 'percentage',
-            value: 10,
-            minOrderAmount: 0,
-            maxDiscount: 0,
-            expiryDate: defaultDate,
-            maxUses: 100,
-            scope: 'global',
-            storeIds: [],
-            productIds: [],
-            isActive: true,
-        });
+        form.reset(defaultFormValues);
         setIsDialogOpen(true);
     };
 
@@ -330,116 +319,120 @@ export default function CouponsPage() {
             </div>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-3xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
+                <DialogContent className="max-w-2xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
                         <DialogTitle className="text-right">{isEditing ? 'تعديل كوبون' : 'إضافة كوبون جديد'}</DialogTitle>
                         <DialogDescription className="text-right">أدخل تفاصيل الكوبون.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="code" render={({ field }) => (
-                                    <FormItem><FormLabel className="flex items-center gap-2"><Tag/>كود الكوبون</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name="discountType" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="flex items-center gap-2">
-                                            {discountType === 'percentage' ? <Percent/> : <CircleDollarSign/>}
-                                            نوع الخصم
-                                        </FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
-                                                <SelectItem value="fixed">مبلغ ثابت (ر.ي)</SelectItem>
-                                            </SelectContent>
-                                        </Select><FormMessage/></FormItem>
-                                )}/>
-                                <FormField control={form.control} name="value" render={({ field }) => (
-                                    <FormItem><FormLabel className="flex items-center gap-2"><CircleDollarSign/>قيمة الخصم</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                {discountType === 'percentage' && (
-                                <FormField control={form.control} name="maxDiscount" render={({ field }) => (
-                                    <FormItem><FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأعلى للخصم (ر.ي)</FormLabel><FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                )}
-                                <FormField control={form.control} name="minOrderAmount" render={({ field }) => (
-                                    <FormItem><FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأدنى للطلب (ر.ي)</FormLabel><FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                 <FormField control={form.control} name="maxUses" render={({ field }) => (
-                                    <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
-                                <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                        <PopoverTrigger asChild><FormControl>
-                                            <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
-                                                {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
-                                            </Button>
-                                        </FormControl></PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar 
-                                                mode="single" 
-                                                selected={field.value} 
-                                                onSelect={(date) => {
-                                                  field.onChange(date);
-                                                  setIsCalendarOpen(false);
+                        <form onSubmit={form.handleSubmit(onSubmit)}>
+                            <Tabs defaultValue="basic" className="w-full" dir="rtl">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
+                                    <TabsTrigger value="scope">نطاق الكوبون</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="basic" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="code" render={({ field }) => (
+                                            <FormItem><FormLabel className="flex items-center gap-2"><Tag/>كود الكوبون</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        <FormField control={form.control} name="discountType" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    {discountType === 'percentage' ? <Percent/> : <CircleDollarSign/>}
+                                                    نوع الخصم
+                                                </FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                                                        <SelectItem value="fixed">مبلغ ثابت (ر.ي)</SelectItem>
+                                                    </SelectContent>
+                                                </Select><FormMessage/></FormItem>
+                                        )}/>
+                                        <FormField control={form.control} name="value" render={({ field }) => (
+                                            <FormItem><FormLabel className="flex items-center gap-2"><CircleDollarSign/>قيمة الخصم</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        {discountType === 'percentage' && (
+                                        <FormField control={form.control} name="maxDiscount" render={({ field }) => (
+                                            <FormItem><FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأعلى للخصم (ر.ي)</FormLabel><FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        )}
+                                        <FormField control={form.control} name="minOrderAmount" render={({ field }) => (
+                                            <FormItem><FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأدنى للطلب (ر.ي)</FormLabel><FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        <FormField control={form.control} name="maxUses" render={({ field }) => (
+                                            <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}/>
+                                        <FormField control={form.control} name="expiryDate" render={({ field }) => (
+                                            <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover>
+                                                <PopoverTrigger asChild><FormControl>
+                                                    <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
+                                                        {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
+                                                    </Button>
+                                                </FormControl></PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar 
+                                                        mode="single" 
+                                                        selected={field.value} 
+                                                        onSelect={field.onChange}
+                                                        disabled={(date) => date < new Date()} 
+                                                        initialFocus 
+                                                    />
+                                                </PopoverContent>
+                                            </Popover><FormMessage /></FormItem>
+                                        )}/>
+                                        <FormField
+                                            control={form.control}
+                                            name="isActive"
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Power />حالة الكوبون</FormLabel>
+                                                <div className="flex items-center space-x-2 space-x-reverse pt-2">
+                                                    <FormControl>
+                                                        <Switch
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                        />
+                                                    </FormControl>
+                                                    <Label htmlFor="isActive" className="text-sm">
+                                                        {field.value ? "نشط" : "غير نشط"}
+                                                    </Label>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                   </div>
+                                </TabsContent>
+                                <TabsContent value="scope" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+                                   <FormField control={form.control} name="scope" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2"><ScopeIcon scope={scope}/>نطاق الكوبون</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="global">عام (على كل التطبيق)</SelectItem>
+                                                    <SelectItem value="stores">متاجر محددة</SelectItem>
+                                                    <SelectItem value="products">منتجات محددة</SelectItem>
+                                                </SelectContent>
+                                            </Select><FormMessage/></FormItem>
+                                    )}/>
+                                    
+                                    {scope !== 'global' && (
+                                        <FormItem>
+                                            <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
+                                            <MultiSelectSearch
+                                                options={scope === 'stores' ? (stores || []) : (products || [])}
+                                                selected={scope === 'stores' ? (form.watch('storeIds') || []) : (form.watch('productIds') || [])}
+                                                onSelect={(newSelected) => {
+                                                    form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true });
                                                 }}
-                                                disabled={(date) => date < new Date()} 
-                                                initialFocus 
+                                                placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
                                             />
-                                        </PopoverContent>
-                                    </Popover><FormMessage /></FormItem>
-                                )}/>
-                                <FormField
-                                    control={form.control}
-                                    name="isActive"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="flex items-center gap-2"><Power />حالة الكوبون</FormLabel>
-                                        <div className="flex items-center space-x-2 space-x-reverse pt-2">
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <Label htmlFor="isActive" className="text-sm">
-                                                {field.value ? "نشط" : "غير نشط"}
-                                            </Label>
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
+                                             <FormMessage>{scope === 'stores' ? form.formState.errors.storeIds?.message : form.formState.errors.productIds?.message}</FormMessage>
+                                        </FormItem>
                                     )}
-                                />
-                           </div>
-                           <Separator />
-                           
-                           <FormField control={form.control} name="scope" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><ScopeIcon scope={scope}/>نطاق الكوبون</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="global">عام (على كل التطبيق)</SelectItem>
-                                            <SelectItem value="stores">متاجر محددة</SelectItem>
-                                            <SelectItem value="products">منتجات محددة</SelectItem>
-                                        </SelectContent>
-                                    </Select><FormMessage/></FormItem>
-                            )}/>
-                            
-                            {scope !== 'global' && (
-                                <FormItem>
-                                    <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
-                                    <MultiSelectSearch
-                                        options={scope === 'stores' ? (stores || []) : (products || [])}
-                                        selected={scope === 'stores' ? storeIds : productIds}
-                                        onSelect={(newSelected) => {
-                                            form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true });
-                                        }}
-                                        placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
-                                    />
-                                     <FormMessage>{scope === 'stores' ? form.formState.errors.storeIds?.message : form.formState.errors.productIds?.message}</FormMessage>
-                                </FormItem>
-                            )}
-
+                                </TabsContent>
+                            </Tabs>
                             <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
                                 <Button type="submit">حفظ الكوبون</Button>
                                 <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
