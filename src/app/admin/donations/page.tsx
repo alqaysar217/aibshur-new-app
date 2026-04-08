@@ -14,10 +14,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, HandHeart, User, Phone, CircleDollarSign, Banknote, Wallet, Link as LinkIcon, FileImage, Hash, Megaphone, Target, BadgeDollarSign, CalendarDays } from 'lucide-react';
+import { PlusCircle, Trash, Edit, HandHeart, User, Phone, CircleDollarSign, Banknote, Wallet, Link as LinkIcon, FileImage, Hash, Megaphone, Target, BadgeDollarSign, CalendarDays, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import DonationsLoading from './loading';
@@ -30,6 +31,7 @@ const donationSchema = z.object({
   donorPhone: z.string().optional(),
   amount: z.coerce.number().min(1, { message: 'المبلغ يجب أن يكون أكبر من صفر' }),
   typeId: z.string({ required_error: 'يجب اختيار نوع التبرع' }).min(1, { message: 'يجب اختيار نوع التبرع' }),
+  campaignId: z.string().optional(),
   paymentMethod: z.enum(['cash', 'wallet', 'bank_transfer'], { required_error: 'طريقة التبرع مطلوبة' }),
   bankAccountId: z.string().optional(),
   receiptNumber: z.string().optional(),
@@ -44,13 +46,14 @@ const donationSchema = z.object({
 
 const campaignSchema = z.object({
     title: z.string().min(5, { message: "عنوان الحملة مطلوب" }),
+    description: z.string().min(10, { message: "وصف الحملة مطلوب (10 أحرف على الأقل)" }),
     goalAmount: z.coerce.number().min(1, { message: "الهدف المالي مطلوب" }),
     imageUrl: z.string().min(1, { message: "رابط الصورة مطلوب" }),
+    isActive: z.boolean().default(true),
 });
 
 // Types
 type DonationFormValues = z.infer<typeof donationSchema>;
-// Adjust Donation to handle Firestore Timestamp
 type Donation = Omit<DonationFormValues, 'donationDate'> & { 
   id: string;
   donationDate: Timestamp; 
@@ -64,6 +67,7 @@ const defaultDonationValues: DonationFormValues = {
     donorPhone: '',
     amount: 0,
     typeId: '',
+    campaignId: '',
     paymentMethod: 'cash',
     bankAccountId: '',
     receiptNumber: '',
@@ -73,8 +77,10 @@ const defaultDonationValues: DonationFormValues = {
 
 const defaultCampaignValues: CampaignFormValues = {
     title: '',
+    description: '',
     goalAmount: 0,
     imageUrl: '',
+    isActive: true,
 };
 
 export default function DonationsPage() {
@@ -95,6 +101,7 @@ export default function DonationsPage() {
 
     const donationTypesMap = useMemo(() => donationTypes?.reduce((acc, item) => ({ ...acc, [item.id]: item.name }), {}) || {}, [donationTypes]);
     const bankAccountsMap = useMemo(() => bankAccounts?.reduce((acc, item) => ({ ...acc, [item.id]: item.bankName }), {}) || {}, [bankAccounts]);
+    const campaignsMap = useMemo(() => campaigns?.reduce((acc, item) => ({ ...acc, [item.id]: item.title }), {}) || {}, [campaigns]);
     
     const paymentMethod = donationForm.watch('paymentMethod');
 
@@ -104,9 +111,10 @@ export default function DonationsPage() {
             if (isEditing && data) {
                 const d = data as Donation;
                 donationForm.reset({
-                    ...defaultDonationValues, // Provide base defaults
-                    ...d, // Spread fetched data
-                    donationDate: d.donationDate?.toDate ? d.donationDate.toDate() : new Date(), // Convert timestamp
+                    ...defaultDonationValues,
+                    ...d,
+                    campaignId: d.campaignId || '',
+                    donationDate: d.donationDate?.toDate ? d.donationDate.toDate() : new Date(),
                 });
             } else {
                 donationForm.reset(defaultDonationValues);
@@ -116,6 +124,7 @@ export default function DonationsPage() {
                 campaignForm.reset({
                     ...defaultCampaignValues,
                     ...(data as Campaign),
+                    isActive: (data as Campaign).isActive ?? true,
                 });
             } else {
                 campaignForm.reset(defaultCampaignValues);
@@ -222,6 +231,7 @@ export default function DonationsPage() {
                                     <Table>
                                         <TableHeader><TableRow>
                                             <TableHead className="text-center">نوع التبرع</TableHead>
+                                            <TableHead className="text-center">الحملة</TableHead>
                                             <TableHead className="text-center">اسم المتبرع</TableHead>
                                             <TableHead className="text-center">المبلغ</TableHead>
                                             <TableHead className="text-center">طريقة الدفع</TableHead>
@@ -231,6 +241,7 @@ export default function DonationsPage() {
                                             {donations?.map(d => (
                                                 <TableRow key={d.id}>
                                                     <TableCell className="text-center font-medium">{donationTypesMap[d.typeId] || 'غير محدد'}</TableCell>
+                                                    <TableCell className="text-center">{campaignsMap[d.campaignId] || '—'}</TableCell>
                                                     <TableCell className="text-center">{d.donorName}</TableCell>
                                                     <TableCell className="text-center font-semibold" dir="ltr">{d.amount.toLocaleString()} ر.ي</TableCell>
                                                     <TableCell className="text-center">
@@ -271,6 +282,7 @@ export default function DonationsPage() {
                                             <TableHead className="text-center w-[120px]">الصورة</TableHead>
                                             <TableHead className="text-center">عنوان الحملة</TableHead>
                                             <TableHead className="text-center">الهدف المالي</TableHead>
+                                            <TableHead className="text-center">الحالة</TableHead>
                                             <TableHead className="text-center w-[120px]">الإجراءات</TableHead>
                                         </TableRow></TableHeader>
                                         <TableBody>
@@ -279,6 +291,7 @@ export default function DonationsPage() {
                                                     <TableCell><Image src={c.imageUrl} alt={c.title} width={80} height={80} className="rounded-lg object-cover mx-auto" unoptimized /></TableCell>
                                                     <TableCell className="text-center font-medium">{c.title}</TableCell>
                                                     <TableCell className="text-center font-semibold" dir="ltr">{c.goalAmount.toLocaleString()} ر.ي</TableCell>
+                                                    <TableCell className="text-center"><Badge variant={c.isActive ? 'default' : 'secondary'}>{c.isActive ? 'نشطة' : 'غير نشطة'}</Badge></TableCell>
                                                     <TableCell className="text-center">
                                                         <div className="flex items-center justify-center gap-2">
                                                             <Button variant="outline" size="icon" onClick={() => handleOpenDialog('campaign', true, c)}><Edit /></Button>
@@ -310,9 +323,18 @@ export default function DonationsPage() {
                         <Form {...donationForm}>
                             <form onSubmit={donationForm.handleSubmit(onDonationSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
                                  <FormField control={donationForm.control} name="typeId" render={({ field }) => (
-                                    <FormItem><FormLabel>نوع التبرع</FormLabel>
+                                    <FormItem><FormLabel>نوع التبرع (إجباري)</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><HandHeart /><SelectValue placeholder="اختر نوع التبرع..." /></div></SelectTrigger></FormControl>
                                             <SelectContent>{donationTypes?.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                                        </Select><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={donationForm.control} name="campaignId" render={({ field }) => (
+                                    <FormItem><FormLabel>الحملة التابع لها (اختياري)</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><div className="flex items-center gap-2"><Megaphone /><SelectValue placeholder="اختر حملة (إن وجد)..." /></div></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="">-- بدون حملة --</SelectItem>
+                                                {campaigns?.filter(c => c.isActive).map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                                            </SelectContent>
                                         </Select><FormMessage /></FormItem>
                                 )} />
                                 <FormField control={donationForm.control} name="donorName" render={({ field }) => (
@@ -362,9 +384,12 @@ export default function DonationsPage() {
                         </Form>
                     ) : (
                          <Form {...campaignForm}>
-                            <form onSubmit={campaignForm.handleSubmit(onCampaignSubmit)} className="space-y-4 py-4">
+                            <form onSubmit={campaignForm.handleSubmit(onCampaignSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
                                 <FormField control={campaignForm.control} name="title" render={({ field }) => (
                                     <FormItem><FormLabel>عنوان الحملة</FormLabel><div className="relative"><Megaphone className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={campaignForm.control} name="description" render={({ field }) => (
+                                    <FormItem><FormLabel>وصف الحملة</FormLabel><div className="relative"><FileText className="absolute right-3 top-3 h-5 w-5 text-muted-foreground" /><FormControl><Textarea {...field} className="pr-10" placeholder="اشرح الهدف من هذه الحملة..." /></FormControl></div><FormMessage /></FormItem>
                                 )} />
                                 <FormField control={campaignForm.control} name="goalAmount" render={({ field }) => (
                                     <FormItem><FormLabel>الهدف المالي (ر.ي)</FormLabel><div className="relative"><Target className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input type="number" {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
@@ -373,6 +398,13 @@ export default function DonationsPage() {
                                     <FormItem><FormLabel>رابط صورة الحملة</FormLabel><div className="relative"><LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} dir="ltr" className="pr-10" /></FormControl></div>
                                     {field.value && <Image src={field.value} alt="معاينة" width={80} height={80} className="rounded-lg object-contain mt-2 border p-2 mx-auto" unoptimized />}
                                     <FormMessage /></FormItem>
+                                )} />
+                                <FormField control={campaignForm.control} name="isActive" render={({ field }) => (
+                                    <FormItem><FormLabel>حالة الحملة</FormLabel><FormDescription>اختر ما إذا كانت الحملة ستظهر للمستخدمين.</FormDescription>
+                                    <FormControl><div className="grid grid-cols-2 gap-2 pt-2">
+                                        <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)}><CheckCircle />نشطة</Button>
+                                        <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)}><XCircle />غير نشطة</Button>
+                                    </div></FormControl></FormItem>
                                 )} />
                                 <DialogFooter>
                                     <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
@@ -400,3 +432,5 @@ export default function DonationsPage() {
         </>
     );
 }
+
+    
