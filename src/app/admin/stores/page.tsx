@@ -182,7 +182,7 @@ export default function StoresPage() {
                             <CardTitle>إدارة المتاجر</CardTitle>
                             <CardDescription>إضافة وتعديل وحذف المتاجر في النظام.</CardDescription>
                         </div>
-                        <div className="w-full flex flex-col sm:flex-row sm:justify-end gap-2">
+                        <div className="w-full flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2">
                              <div className="relative flex-grow sm:flex-grow-0 sm:w-64">
                                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input placeholder="ابحث بالاسم..." className="pr-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -397,3 +397,5 @@ export default function StoresPage() {
         </>
     );
 }
+
+    
