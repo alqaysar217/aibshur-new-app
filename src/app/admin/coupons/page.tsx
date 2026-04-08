@@ -39,7 +39,7 @@ const couponSchema = z.object({
   value: z.coerce.number().min(0.01, { message: "القيمة يجب أن تكون أكبر من صفر" }),
   minOrderAmount: z.coerce.number().min(0).default(0),
   maxDiscount: z.coerce.number().min(0).default(0),
-  expiryDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
+  expiryDate: z.coerce.date({ required_error: "تاريخ الانتهاء مطلوب" }),
   maxUses: z.coerce.number().min(1, { message: "يجب تحديد عدد مرات الاستخدام" }),
   scope: z.enum(['global', 'stores', 'products'], { required_error: "يجب تحديد نطاق الكوبون" }),
   storeIds: z.array(z.string()).optional().default([]),
@@ -102,7 +102,7 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
 
     return (
         <div className="space-y-2">
-             <Popover open={open} onOpenChange={setOpen} modal={true}>
+             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
                         <div className="flex flex-wrap gap-1">
@@ -143,7 +143,6 @@ export default function CouponsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -368,36 +367,23 @@ export default function CouponsPage() {
                                                 control={form.control}
                                                 name="expiryDate"
                                                 render={({ field }) => (
-                                                    <FormItem className="flex flex-col">
+                                                    <FormItem>
                                                         <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
-                                                        <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen} modal={true}>
-                                                            <PopoverTrigger asChild>
-                                                                <FormControl>
-                                                                    <Button
-                                                                        variant={"outline"}
-                                                                        className={cn(
-                                                                            "w-full justify-start text-right font-normal",
-                                                                            !field.value && "text-muted-foreground"
-                                                                        )}
-                                                                    >
-                                                                        <CalendarIcon className="ml-2 h-4 w-4" />
-                                                                        {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
-                                                                    </Button>
-                                                                </FormControl>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0">
-                                                                <Calendar
-                                                                    mode="single"
-                                                                    selected={field.value}
-                                                                    onSelect={(date) => {
-                                                                        field.onChange(date);
-                                                                        setIsDatePickerOpen(false);
-                                                                    }}
-                                                                    disabled={(date) => date < new Date()}
-                                                                    initialFocus
-                                                                />
-                                                            </PopoverContent>
-                                                        </Popover>
+                                                        <FormControl>
+                                                            <Input 
+                                                                type="date"
+                                                                value={
+                                                                    field.value instanceof Date 
+                                                                    ? format(field.value, 'yyyy-MM-dd') 
+                                                                    : typeof field.value === 'string' 
+                                                                    ? field.value.split('T')[0]
+                                                                    : ''
+                                                                }
+                                                                onChange={(e) => field.onChange(e.target.value)}
+                                                                className="w-full text-left"
+                                                                dir="ltr"
+                                                            />
+                                                        </FormControl>
                                                         <FormDescription>سيتم تعطيل الكوبون بعد هذا التاريخ.</FormDescription>
                                                         <FormMessage />
                                                     </FormItem>
