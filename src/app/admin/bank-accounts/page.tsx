@@ -197,20 +197,20 @@ export default function BankAccountsPage() {
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader className="text-right">
+                    <DialogHeader className="text-left">
                         <DialogTitle>{isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}</DialogTitle>
                         <DialogDescription>
                             {isEditing ? 'قم بتحديث تفاصيل الحساب البنكي.' : 'أدخل تفاصيل الحساب البنكي الجديد.'}
                         </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 py-2">
                             <FormField control={form.control} name="bankName" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>اسم البنك</FormLabel>
                                     <div className="relative">
                                         <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                        <FormControl><Input {...field} className="pr-10" /></FormControl>
                                     </div>
                                     <FormMessage />
                                 </FormItem>
@@ -220,7 +220,7 @@ export default function BankAccountsPage() {
                                     <FormLabel>اسم صاحب الحساب</FormLabel>
                                      <div className="relative">
                                         <User className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                        <FormControl><Input {...field} className="pr-10" /></FormControl>
                                     </div>
                                     <FormMessage />
                                 </FormItem>
@@ -230,7 +230,7 @@ export default function BankAccountsPage() {
                                     <FormLabel>رقم الحساب</FormLabel>
                                      <div className="relative">
                                         <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10 h-12" /></FormControl>
+                                        <FormControl><Input {...field} className="pr-10" /></FormControl>
                                     </div>
                                     <FormMessage />
                                 </FormItem>
@@ -244,17 +244,17 @@ export default function BankAccountsPage() {
                                         <div className="relative">
                                             <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                             <FormControl>
-                                                <Input {...field} dir="ltr" className="text-left pr-10 h-12" placeholder="https://... or /logo.png"/>
+                                                <Input {...field} dir="ltr" className="text-left pr-10" placeholder="https://... or /logo.png"/>
                                             </FormControl>
                                         </div>
                                         <FormMessage />
                                         {field.value && (
-                                            <div className="mt-4 flex justify-center rounded-lg border border-dashed p-4">
+                                            <div className="mt-2 flex justify-center rounded-lg border border-dashed p-2">
                                                 <Image
                                                     src={field.value}
                                                     alt="معاينة الشعار"
-                                                    width={80}
-                                                    height={80}
+                                                    width={64}
+                                                    height={64}
                                                     className="rounded-md object-contain"
                                                     key={field.value}
                                                     unoptimized
@@ -279,7 +279,7 @@ export default function BankAccountsPage() {
                                                     type="button"
                                                     variant={field.value ? 'default' : 'outline'}
                                                     onClick={() => field.onChange(true)}
-                                                    className="h-12 text-base"
+                                                    className="h-10 text-sm"
                                                 >
                                                     <CheckCircle />
                                                     نشط
@@ -288,7 +288,7 @@ export default function BankAccountsPage() {
                                                     type="button"
                                                     variant={!field.value ? 'destructive' : 'outline'}
                                                     onClick={() => field.onChange(false)}
-                                                    className="h-12 text-base"
+                                                    className="h-10 text-sm"
                                                 >
                                                     <XCircle />
                                                     غير نشط
@@ -298,7 +298,7 @@ export default function BankAccountsPage() {
                                     </FormItem>
                                 )}
                             />
-                             <DialogFooter>
+                             <DialogFooter className="pt-4">
                                 <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                                 <Button type="submit">حفظ التغييرات</Button>
                             </DialogFooter>
