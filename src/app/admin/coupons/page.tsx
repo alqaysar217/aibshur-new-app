@@ -63,11 +63,69 @@ type Coupon = Omit<CouponFormValues, 'expiryDate'> & {
 const defaultDate = new Date();
 defaultDate.setDate(defaultDate.getDate() + 30);
 
+// Multi-Select Search Component
+interface MultiSelectSearchProps<T extends {id: string, name: string}> {
+    options: T[];
+    selected: string[];
+    onSelect: (selected: string[]) => void;
+    placeholder: string;
+}
+
+function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps<T>) {
+    const [open, setOpen] = useState(false);
+    const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
+
+    const handleToggle = (id: string) => {
+        const newSelected = selected.includes(id)
+            ? selected.filter(sId => sId !== id)
+            : [...selected, id];
+        onSelect(newSelected);
+    };
+
+    return (
+        <div className="space-y-2">
+             <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
+                        <div className="flex flex-wrap gap-1">
+                            {selectedItems.length > 0 ? selectedItems.map(item => (
+                                <Badge key={item.id} variant="secondary">{item.name}</Badge>
+                            )) : "اختر..."}
+                        </div>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent onPointerDownOutside={(e) => e.preventDefault()} className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                        <CommandInput placeholder={placeholder} />
+                        <CommandList>
+                            <CommandEmpty>لا توجد نتائج.</CommandEmpty>
+                            <CommandGroup>
+                                {options.map((option) => (
+                                    <CommandItem
+                                        key={option.id}
+                                        value={option.name}
+                                        onSelect={() => handleToggle(option.id)}
+                                    >
+                                        <Check className={cn("mr-2 h-4 w-4", selected.includes(option.id) ? "opacity-100" : "opacity-0")} />
+                                        {option.name}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
+}
+
 export default function CouponsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [isDatePickerOpen, setDatePickerOpen] = useState(false);
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -91,8 +149,8 @@ export default function CouponsPage() {
     
     const scope = form.watch('scope');
     const discountType = form.watch('discountType');
-    const storeIds = form.watch('storeIds');
-    const productIds = form.watch('productIds');
+    const storeIds = form.watch('storeIds') || [];
+    const productIds = form.watch('productIds') || [];
 
     const { data: coupons, isLoading: isLoadingCoupons } = useCollection<Coupon>(useMemoFirebase(() => firestore ? collection(firestore, 'coupons') : null, [firestore]));
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
@@ -125,7 +183,9 @@ export default function CouponsPage() {
         setSelectedCoupon(coupon);
         form.reset({
             ...coupon,
-            expiryDate: coupon.expiryDate?.toDate() || new Date(),
+            expiryDate: coupon.expiryDate?.toDate() || defaultDate,
+            storeIds: coupon.storeIds || [],
+            productIds: coupon.productIds || [],
         });
         setIsDialogOpen(true);
     };
@@ -136,7 +196,9 @@ export default function CouponsPage() {
         form.reset({
             ...coupon,
             code: `${coupon.code}-COPY`,
-            expiryDate: coupon.expiryDate?.toDate() || new Date(),
+            expiryDate: coupon.expiryDate?.toDate() || defaultDate,
+            storeIds: coupon.storeIds || [],
+            productIds: coupon.productIds || [],
         });
         setIsDialogOpen(true);
     }
@@ -298,13 +360,24 @@ export default function CouponsPage() {
                                     <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover>
+                                    <FormItem className="flex flex-col"><FormLabel className="flex items-center gap-2"><CalendarIcon/>تاريخ الانتهاء</FormLabel><Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
                                         <PopoverTrigger asChild><FormControl>
                                             <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "d MMMM yyyy", { locale: ar }) : <span>اختر تاريخ</span>}
                                             </Button>
                                         </FormControl></PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus /></PopoverContent>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar 
+                                                mode="single" 
+                                                selected={field.value} 
+                                                onSelect={(date) => {
+                                                    field.onChange(date);
+                                                    setDatePickerOpen(false);
+                                                }} 
+                                                disabled={(date) => date < new Date()} 
+                                                initialFocus 
+                                            />
+                                        </PopoverContent>
                                     </Popover><FormMessage /></FormItem>
                                 )}/>
                            </div>
@@ -326,7 +399,7 @@ export default function CouponsPage() {
                                     <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
                                     <MultiSelectSearch
                                         options={scope === 'stores' ? (stores || []) : (products || [])}
-                                        selected={scope === 'stores' ? storeIds || [] : productIds || []}
+                                        selected={scope === 'stores' ? storeIds : productIds}
                                         onSelect={(newSelected) => form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true })}
                                         placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
                                     />
@@ -352,62 +425,5 @@ export default function CouponsPage() {
                 </AlertDialogContent>
             </AlertDialog>
         </>
-    );
-}
-
-// Multi-Select Search Component
-interface MultiSelectSearchProps<T extends {id: string, name: string}> {
-    options: T[];
-    selected: string[];
-    onSelect: (selected: string[]) => void;
-    placeholder: string;
-}
-
-function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps<T>) {
-    const [open, setOpen] = useState(false);
-    const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
-
-    const handleToggle = (id: string) => {
-        const newSelected = selected.includes(id)
-            ? selected.filter(sId => sId !== id)
-            : [...selected, id];
-        onSelect(newSelected);
-    };
-
-    return (
-        <div className="space-y-2">
-             <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
-                        <div className="flex flex-wrap gap-1">
-                            {selectedItems.length > 0 ? selectedItems.map(item => (
-                                <Badge key={item.id} variant="secondary">{item.name}</Badge>
-                            )) : "اختر..."}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent onPointerDownOutside={(e) => e.preventDefault()} className="w-[--radix-popover-trigger-width] p-0">
-                    <Command>
-                        <CommandInput placeholder={placeholder} />
-                        <CommandList>
-                            <CommandEmpty>لا توجد نتائج.</CommandEmpty>
-                            <CommandGroup>
-                                {options.map((option) => (
-                                    <CommandItem
-                                        key={option.id}
-                                        value={option.name}
-                                        onSelect={() => handleToggle(option.id)}
-                                    >
-                                        <Check className={cn("mr-2 h-4 w-4", selected.includes(option.id) ? "opacity-100" : "opacity-0")} />
-                                        {option.name}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </Command>
-                </PopoverContent>
-            </Popover>
-        </div>
     );
 }
