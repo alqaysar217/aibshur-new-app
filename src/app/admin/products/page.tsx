@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Star, Package, FileText, Store as StoreIcon, LayoutGrid, Filter, Link as LinkIcon, CircleDollarSign, Layers, Image as ImageIcon, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Star, Package, FileText, Store as StoreIcon, LayoutGrid, Filter, Link as LinkIcon, CircleDollarSign, Layers, Image as ImageIcon, CheckCircle, XCircle, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Store } from '../stores/page';
@@ -35,7 +35,7 @@ const variantSchema = z.object({
 const productSchema = z.object({
   name: z.string().min(2, { message: "اسم المنتج مطلوب" }),
   description: z.string().min(10, { message: "الوصف مطلوب (10 أحرف على الأقل)" }),
-  mainImageUrl: z.string().min(1, { message: "رابط الصورة الرئيسية مطلوب" }),
+  mainImageUrl: z.string().optional(),
   storeId: z.string({ required_error: "يجب اختيار المتجر" }),
   categoryId: z.string({ required_error: "يجب اختيار القسم" }),
   filterId: z.string().optional(),
@@ -65,6 +65,9 @@ export default function ProductsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedStoreFilter, setSelectedStoreFilter] = useState('all');
+    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -90,6 +93,7 @@ export default function ProductsPage() {
     
     // Create maps for display names
     const storesMap = useMemo(() => stores?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {}) || {}, [stores]);
+    const categoriesMap = useMemo(() => categories?.reduce((acc, c) => ({ ...acc, [c.id]: c.name }), {}) || {}, [categories]);
 
     // Derived state for dependent dropdown
     const watchedStoreId = form.watch("storeId");
@@ -104,6 +108,15 @@ export default function ProductsPage() {
             form.setValue('filterId', undefined);
         }
     }, [watchedStoreId, form, selectedProduct]);
+    
+    const filteredProducts = useMemo(() => {
+        return (products || []).filter(product => {
+            const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStore = selectedStoreFilter === 'all' || product.storeId === selectedStoreFilter;
+            const matchesCategory = selectedCategoryFilter === 'all' || product.categoryId === selectedCategoryFilter;
+            return matchesSearch && matchesStore && matchesCategory;
+        });
+    }, [products, searchTerm, selectedStoreFilter, selectedCategoryFilter]);
 
     // Handlers
     const handleAddNew = () => {
@@ -160,12 +173,38 @@ export default function ProductsPage() {
         <>
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className='flex-shrink-0'>
                             <CardTitle>إدارة المنتجات</CardTitle>
                             <CardDescription>إضافة وتعديل وحذف المنتجات المعروضة في التطبيق.</CardDescription>
                         </div>
-                        <Button onClick={handleAddNew}><PlusCircle /> إضافة منتج جديد</Button>
+                        <div className="w-full flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2">
+                             <div className="relative flex-grow sm:flex-grow-0 sm:w-64">
+                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input placeholder="ابحث بالاسم..." className="pr-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            </div>
+                            <Select value={selectedStoreFilter} onValueChange={setSelectedStoreFilter}>
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <SelectValue placeholder="فلترة بالمتجر" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">كل المتاجر</SelectItem>
+                                    {stores?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={selectedCategoryFilter} onValueChange={setSelectedCategoryFilter}>
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <SelectValue placeholder="فلترة بالقسم" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">كل الأقسام</SelectItem>
+                                    {categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={handleAddNew} className="flex-shrink-0">
+                                <PlusCircle className="mr-2 h-4 w-4" /> إضافة منتج
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -176,21 +215,22 @@ export default function ProductsPage() {
                                     <TableHead className="text-center w-[80px]">الصورة</TableHead>
                                     <TableHead className="text-center">اسم المنتج</TableHead>
                                     <TableHead className="text-center">المتجر</TableHead>
+                                    <TableHead className="text-center">القسم</TableHead>
                                     <TableHead className="text-center">التقييم</TableHead>
                                     <TableHead className="text-center">الحالة</TableHead>
-                                    <TableHead className="text-center">إجراءات</TableHead>
+                                    <TableHead className="text-center w-[120px]">إجراءات</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {products?.map((product) => (
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.map((product) => (
                                     <TableRow key={product.id} className={cn(!product.is_active && "text-muted-foreground bg-muted/50")}>
-                                        <TableCell><Image src={product.mainImageUrl} alt={product.name} width={56} height={56} className="rounded-lg object-cover mx-auto" unoptimized/></TableCell>
+                                        <TableCell><Image src={product.mainImageUrl || ''} alt={product.name} width={56} height={56} className="rounded-lg object-cover mx-auto" unoptimized/></TableCell>
                                         <TableCell className="font-medium text-center">{product.name}</TableCell>
                                         <TableCell className="text-center">{storesMap[product.storeId] || 'غير محدد'}</TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Star className="h-4 w-4 text-amber-400" /> {product.rating.toFixed(1)}
-                                            </div>
+                                        <TableCell className="text-center">{categoriesMap[product.categoryId] || 'غير محدد'}</TableCell>
+                                        <TableCell className="text-center flex items-center justify-center gap-1">
+                                            <Star className="h-4 w-4 text-amber-400" /> {product.rating.toFixed(1)}
                                         </TableCell>
                                         <TableCell className="text-center"><Badge variant={product.is_active ? 'default' : 'secondary'}>{product.is_active ? 'مفعل' : 'ملغى'}</Badge></TableCell>
                                         <TableCell className="text-center">
@@ -200,7 +240,14 @@ export default function ProductsPage() {
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                                            لا توجد منتجات تطابق بحثك.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </div>
