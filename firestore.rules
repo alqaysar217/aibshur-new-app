@@ -232,5 +232,39 @@ service cloud.firestore {
       allow list: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    /**
+     * @description Admin-only donation records.
+     * @path /donations/{donationId}
+     * @allow (read, write) Only admins can manage donation entries.
+     * @principle Protects donation data and ensures integrity.
+     */
+    match /donations/{donationId} {
+        allow read, write: if isAdmin();
+    }
+
+    /**
+     * @description Publicly readable donation types, admin-only writes.
+     * @path /donationTypes/{donationTypeId}
+     * @allow (get, list) Public read access for all users to see donation options.
+     * @allow (create, update, delete) Admin-only write access.
+     * @principle Allows users to see donation types while protecting them from modification.
+     */
+    match /donationTypes/{donationTypeId} {
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Publicly readable donation campaigns, admin-only writes.
+     * @path /donationCampaigns/{campaignId}
+     * @allow (get, list) Public read access for all users to see campaigns.
+     * @allow (create, update, delete) Admin-only write access.
+     * @principle Allows users to see campaigns while protecting them from modification.
+     */
+    match /donationCampaigns/{campaignId} {
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin();
+    }
   }
 }

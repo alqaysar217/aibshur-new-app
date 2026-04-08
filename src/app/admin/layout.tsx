@@ -30,6 +30,7 @@ const sidebarNavItems = [
     { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
     { label: 'إدارة الإعلانات', href: '/admin/ads', icon: Megaphone },
     { label: 'إدارة الكوبونات', href: '/admin/coupons', icon: Ticket },
+    { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
     { label: 'إدارة التبرعات', href: '/admin/donations', icon: HandHeart },
     { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart2 },
     { label: 'إدارة أداء الموظفين', href: '/admin/performance', icon: TrendingUp },
@@ -46,22 +47,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const handleLogout = async () => {
         try {
-            await signOut(auth);
-            router.push('/login');
+            if (auth) {
+                await signOut(auth);
+                router.push('/login');
+            }
         } catch (error) {
             console.error("Error signing out: ", error);
         }
     };
     
     useEffect(() => {
-        // If auth state is determined and there's no user, redirect to login.
         if (!isUserLoading && !user) {
             router.replace('/login');
         }
     }, [isUserLoading, user, router]);
 
-    // While loading auth state or if there's no user, show a loading screen.
-    // This prevents a flash of the admin UI before redirection.
     if (isUserLoading || !user) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-muted/40">
@@ -69,7 +69,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
         );
     }
-
 
     const NavLink = ({ href, icon: Icon, text, isCollapsed }) => {
         const isActive = pathname === href;
@@ -92,15 +91,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       };
 
     return (
-        /* تمت إضافة dir="rtl" لضمان توزيع العناصر برمجياً وبصرياً لليمين */
         <div className="min-h-screen w-full bg-muted/40 flex" dir="rtl">
-            {/* Aside: تم تغيير border-l إلى border-l ليكون الحد الفاصل على اليسار لأن القائمة على اليمين */}
             <aside className={cn(
                 "h-screen z-10 bg-card border-l flex flex-col transition-all duration-300 ease-in-out sticky top-0 shadow-sm",
                 isCollapsed ? 'w-20' : 'w-72'
             )}>
-                {/* Header */}
-              {/* Header */}
                 <div className={cn("flex items-center h-16 border-b shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
                     <Image 
                         src="/logo-app.png" 
@@ -117,14 +112,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </span>
                 </div>
 
-                {/* Navigation */}
-                <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
+                <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
                     {sidebarNavItems.map((link) => (
                         <NavLink key={link.label} href={link.href} icon={link.icon} text={link.label} isCollapsed={isCollapsed} />
                     ))}
                 </nav>
                 
-                {/* Footer */}
                 <div className="px-4 py-4 border-t shrink-0">
                     <Button
                         variant="ghost"
@@ -142,16 +135,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
             </aside>
 
-            {/* Main Content Area */}
             <div className="flex flex-col flex-1 min-w-0">
                 <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
-                    {/* زر التصغير والتكبير */}
                     <Button variant="outline" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="shrink-0 border-gray-100">
                         {isCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                         <span className="sr-only">Toggle sidebar</span>
                     </Button>
                     
-                    {/* شريط الأدوات العلوي - العناصر هنا ستدفع لليسار تلقائياً بسبب RTL */}
                     <div className="flex items-center gap-2 mr-auto">
                         <Button variant="ghost" size="icon" className="rounded-full relative">
                             <Bell className="h-5 w-5 text-gray-500" />

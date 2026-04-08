@@ -30,7 +30,7 @@ const bankAccountSchema = z.object({
 });
 
 type BankAccountFormValues = z.infer<typeof bankAccountSchema>;
-type BankAccount = BankAccountFormValues & { id: string };
+export type BankAccount = BankAccountFormValues & { id: string };
 
 export default function BankAccountsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -196,12 +196,12 @@ export default function BankAccountsPage() {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-md [&>button]:right-auto [&>button]:left-4">
-            <DialogHeader className="flex flex-col items-end text-right">
-                <DialogTitle className="w-full text-right">
+            <DialogContent className="sm:max-w-md [&>button]:right-auto [&>button]:left-4" dir="rtl">
+            <DialogHeader className="text-left">
+                <DialogTitle className="text-left">
                     {isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}
                 </DialogTitle>
-                <DialogDescription className="w-full text-right">
+                <DialogDescription className="text-left">
                     {isEditing ? 'قم بتحديث تفاصيل الحساب البنكي.' : 'أدخل تفاصيل الحساب البنكي الجديد.'}
                 </DialogDescription>
             </DialogHeader>
@@ -212,7 +212,7 @@ export default function BankAccountsPage() {
                                     <FormLabel>اسم البنك</FormLabel>
                                     <div className="relative">
                                         <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10" /></FormControl>
+                                        <FormControl><Input {...field} className="pr-10 h-11" /></FormControl>
                                     </div>
                                     <FormMessage />
                                 </FormItem>
@@ -222,7 +222,7 @@ export default function BankAccountsPage() {
                                     <FormLabel>اسم صاحب الحساب</FormLabel>
                                      <div className="relative">
                                         <User className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10" /></FormControl>
+                                        <FormControl><Input {...field} className="pr-10 h-11" /></FormControl>
                                     </div>
                                     <FormMessage />
                                 </FormItem>
@@ -232,7 +232,7 @@ export default function BankAccountsPage() {
                                     <FormLabel>رقم الحساب</FormLabel>
                                      <div className="relative">
                                         <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10" /></FormControl>
+                                        <FormControl><Input {...field} className="pr-10 h-11" /></FormControl>
                                     </div>
                                     <FormMessage />
                                 </FormItem>
@@ -246,17 +246,17 @@ export default function BankAccountsPage() {
                                         <div className="relative">
                                             <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                             <FormControl>
-                                                <Input {...field} dir="ltr" className="text-left pr-10" placeholder="https://... or /logo.png"/>
+                                                <Input {...field} dir="ltr" className="text-left pr-10 h-11" placeholder="https://... or /logo.png"/>
                                             </FormControl>
                                         </div>
                                         <FormMessage />
                                         {field.value && (
-                                            <div className="mt-2 flex justify-center rounded-lg border border-dashed p-2">
+                                            <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1">
                                                 <Image
                                                     src={field.value}
                                                     alt="معاينة الشعار"
-                                                    width={64}
-                                                    height={64}
+                                                    width={56}
+                                                    height={56}
                                                     className="rounded-md object-contain"
                                                     key={field.value}
                                                     unoptimized
@@ -300,9 +300,9 @@ export default function BankAccountsPage() {
                                     </FormItem>
                                 )}
                             />
-                             <DialogFooter className="pt-4">
-                                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                             <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
                                 <Button type="submit">حفظ التغييرات</Button>
+                                <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                             </DialogFooter>
                         </form>
                     </Form>
