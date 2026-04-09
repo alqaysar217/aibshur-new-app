@@ -229,8 +229,10 @@ export default function ProductsPage() {
                                         <TableCell className="font-medium text-center">{product.name}</TableCell>
                                         <TableCell className="text-center">{storesMap[product.storeId] || 'غير محدد'}</TableCell>
                                         <TableCell className="text-center">{categoriesMap[product.categoryId] || 'غير محدد'}</TableCell>
-                                        <TableCell className="text-center flex items-center justify-center gap-1">
-                                            <Star className="h-4 w-4 text-amber-400" /> {product.rating.toFixed(1)}
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Star className="h-4 w-4 text-amber-400" /> {product.rating.toFixed(1)}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-center"><Badge variant={product.is_active ? 'default' : 'secondary'}>{product.is_active ? 'مفعل' : 'ملغى'}</Badge></TableCell>
                                         <TableCell className="text-center">
