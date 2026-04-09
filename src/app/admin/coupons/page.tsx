@@ -28,6 +28,9 @@ import type { Product } from '../products/page';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 
 // Zod Schema
@@ -37,7 +40,7 @@ const couponSchema = z.object({
   value: z.coerce.number().min(0.01, { message: "القيمة يجب أن تكون أكبر من صفر" }),
   minOrderAmount: z.coerce.number().min(0).default(0),
   maxDiscount: z.coerce.number().min(0).default(0),
-  expiryDate: z.coerce.date({ required_error: "تاريخ الانتهاء مطلوب" }),
+  expiryDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
   maxUses: z.coerce.number().min(1, { message: "يجب تحديد عدد مرات الاستخدام" }),
   scope: z.enum(['global', 'stores', 'products'], { required_error: "يجب تحديد نطاق الكوبون" }),
   storeIds: z.array(z.string()).optional().default([]),
@@ -86,7 +89,6 @@ interface MultiSelectSearchProps<T extends {id: string, name: string}> {
     placeholder: string;
 }
 
-// COMPONENT MOVED OUTSIDE of CouponsPage to prevent re-creation on render
 function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps) {
     const [open, setOpen] = useState(false);
     const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
@@ -100,8 +102,8 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
 
     return (
         <div className="space-y-2">
-             <DropdownMenu open={open} onOpenChange={setOpen}>
-                <DropdownMenuTrigger asChild>
+             <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
                         <div className="flex flex-wrap gap-1">
                             {selectedItems.length > 0 ? selectedItems.map(item => (
@@ -110,8 +112,8 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
                         </div>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-popover-trigger-width] p-0" onCloseAutoFocus={(e) => e.preventDefault()}>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                     <Command>
                         <CommandInput placeholder={placeholder} />
                         <CommandList>
@@ -130,8 +132,8 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
                             </CommandGroup>
                         </CommandList>
                     </Command>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                </PopoverContent>
+            </Popover>
         </div>
     );
 }
@@ -383,24 +385,24 @@ export default function CouponsPage() {
                                                 control={form.control}
                                                 name="expiryDate"
                                                 render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
-                                                        <FormControl>
-                                                            <Input 
-                                                                type="date"
-                                                                value={
-                                                                    field.value instanceof Date 
-                                                                    ? format(field.value, 'yyyy-MM-dd') 
-                                                                    : ''
-                                                                }
-                                                                onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                                className="w-full text-left"
-                                                                dir="ltr"
-                                                            />
-                                                        </FormControl>
-                                                        <FormDescription>سيتم تعطيل الكوبون بعد هذا التاريخ.</FormDescription>
-                                                        <FormMessage />
-                                                    </FormItem>
+                                                <FormItem>
+                                                    <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
+                                                    <FormControl>
+                                                        <Input 
+                                                            type="date"
+                                                            value={
+                                                                field.value instanceof Date 
+                                                                ? format(field.value, 'yyyy-MM-dd') 
+                                                                : ''
+                                                            }
+                                                            onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                            className="w-full text-left"
+                                                            dir="ltr"
+                                                        />
+                                                    </FormControl>
+                                                    <FormDescription>سيتم تعطيل الكوبون بعد هذا التاريخ.</FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
                                                 )}
                                             />
                                         </div>
