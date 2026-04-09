@@ -93,6 +93,11 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
     // Collection Rules
     //-------------------------------------------------------------------------
+    
+    match /clients/{clientId} { allow read, write: if isAdmin(); }
+    match /drivers/{driverId} { allow read, write: if isAdmin(); }
+    match /storeOwners/{ownerId} { allow read, write: if isAdmin(); }
+    match /admins/{adminId} { allow read, write: if isAdmin(); }
 
     /**
      * @description Admin-only bank account data.

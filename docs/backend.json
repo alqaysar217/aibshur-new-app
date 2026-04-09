@@ -1,5 +1,202 @@
 {
   "entities": {
+    "Client": {
+      "title": "Client",
+      "type": "object",
+      "description": "Represents a customer of the service.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "governorateId": {
+          "type": "string"
+        },
+        "addressDescription": {
+          "type": "string"
+        },
+        "addressType": {
+          "type": "string",
+          "enum": [
+            "home",
+            "work",
+            "other"
+          ]
+        },
+        "receiverName": {
+          "type": "string"
+        },
+        "receiverPhone": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "is_active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "phone",
+        "governorateId",
+        "addressDescription",
+        "addressType",
+        "latitude",
+        "longitude"
+      ]
+    },
+    "Driver": {
+      "title": "Driver",
+      "type": "object",
+      "description": "Represents a delivery driver.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "address": {
+          "type": "string"
+        },
+        "idType": {
+          "type": "string",
+          "enum": [
+            "passport",
+            "card"
+          ]
+        },
+        "personalPhotoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "idFrontPhotoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "idBackPhotoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "is_active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "phone",
+        "email",
+        "address",
+        "idType",
+        "personalPhotoUrl",
+        "idFrontPhotoUrl",
+        "latitude",
+        "longitude"
+      ]
+    },
+    "StoreOwner": {
+      "title": "Store Owner",
+      "type": "object",
+      "description": "Represents the owner of a store.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "storeId": {
+          "type": "string"
+        },
+        "personalPhotoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "idPhotoUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "is_active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "phone",
+        "storeId",
+        "personalPhotoUrl",
+        "idPhotoUrl"
+      ]
+    },
+    "Admin": {
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents a system administrator with specific permissions.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "canUseCustomerApp": {
+              "type": "boolean"
+            },
+            "canUseDriverApp": {
+              "type": "boolean"
+            },
+            "canUseDashboard": {
+              "type": "boolean"
+            }
+          }
+        },
+        "dashboardAccess": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "phone",
+        "permissions"
+      ]
+    },
     "BankAccount": {
       "title": "Bank Account",
       "type": "object",
@@ -360,93 +557,284 @@
       "type": "object",
       "description": "Represents an item sold by a store.",
       "properties": {
-        "name": { "type": "string", "description": "The name of the product." },
-        "description": { "type": "string", "description": "A detailed description of the product." },
-        "storeId": { "type": "string", "description": "Reference to the Store this product belongs to." },
-        "categoryId": { "type": "string", "description": "Reference to the AppCategory this product falls under." },
-        "filterId": { "type": "string", "description": "Reference to a specific StoreFilter within the parent store." },
-        "rating": { "type": "number", "description": "The initial or average rating of the product." },
-        "mainImageUrl": { "type": "string", "format": "uri", "description": "URL for the main product image." },
-        "hasVariants": { "type": "boolean", "description": "Whether the product has multiple types/sizes." },
-        "basePrice": { "type": "number", "description": "The price of the product if it has no variants." },
+        "name": {
+          "type": "string",
+          "description": "The name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the product."
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Reference to the Store this product belongs to."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to the AppCategory this product falls under."
+        },
+        "filterId": {
+          "type": "string",
+          "description": "Reference to a specific StoreFilter within the parent store."
+        },
+        "rating": {
+          "type": "number",
+          "description": "The initial or average rating of the product."
+        },
+        "mainImageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the main product image."
+        },
+        "hasVariants": {
+          "type": "boolean",
+          "description": "Whether the product has multiple types/sizes."
+        },
+        "basePrice": {
+          "type": "number",
+          "description": "The price of the product if it has no variants."
+        },
         "variants": {
           "type": "array",
           "description": "List of product variants (e.g., sizes, colors).",
           "items": {
             "type": "object",
             "properties": {
-              "name": { "type": "string", "description": "Name of the variant (e.g., 'Small', 'Large')." },
-              "price": { "type": "number", "description": "Price of this specific variant." },
-              "imageUrl": { "type": "string", "format": "uri", "description": "URL for the variant's image." }
+              "name": {
+                "type": "string",
+                "description": "Name of the variant (e.g., 'Small', 'Large')."
+              },
+              "price": {
+                "type": "number",
+                "description": "Price of this specific variant."
+              },
+              "imageUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL for the variant's image."
+              }
             },
-            "required": ["name", "price"]
+            "required": [
+              "name",
+              "price"
+            ]
           }
         },
-        "is_active": { "type": "boolean", "description": "Whether the product is active and available for sale." }
+        "is_active": {
+          "type": "boolean",
+          "description": "Whether the product is active and available for sale."
+        }
       },
-      "required": ["name", "description", "storeId", "categoryId", "mainImageUrl", "hasVariants", "is_active"]
+      "required": [
+        "name",
+        "description",
+        "storeId",
+        "categoryId",
+        "mainImageUrl",
+        "hasVariants",
+        "is_active"
+      ]
     },
-     "DonationType": {
+    "DonationType": {
       "title": "Donation Type",
       "type": "object",
       "description": "Defines a type of donation that can be made, e.g., 'Water Provision', 'Build a Mosque'.",
       "properties": {
-        "name": { "type": "string", "description": "The name of the donation type (e.g., 'سقيا ماء')." },
-        "imageUrl": { "type": "string", "format": "uri", "description": "URL for an expressive image for the donation type." },
-        "isActive": { "type": "boolean", "description": "Whether this donation type is currently visible/active." }
+        "name": {
+          "type": "string",
+          "description": "The name of the donation type (e.g., 'سقيا ماء')."
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for an expressive image for the donation type."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether this donation type is currently visible/active."
+        }
       },
-      "required": ["name", "imageUrl", "isActive"]
+      "required": [
+        "name",
+        "imageUrl",
+        "isActive"
+      ]
     },
     "Donation": {
       "title": "Donation",
       "type": "object",
       "description": "Represents a single donation entry recorded in the system.",
       "properties": {
-        "donorName": { "type": "string", "description": "The name of the person who made the donation." },
-        "donorPhone": { "type": "string", "description": "The phone number of the donor (optional)." },
-        "amount": { "type": "number", "description": "The amount of money donated." },
-        "typeId": { "type": "string", "description": "Reference to the DonationType this donation falls under." },
-        "campaignId": { "type": "string", "description": "Optional reference to a specific DonationCampaign." },
-        "paymentMethod": { "type": "string", "enum": ["cash", "wallet", "bank_transfer"], "description": "The method used for the donation." },
-        "bankAccountId": { "type": "string", "description": "Reference to the BankAccount if payment was via bank transfer." },
-        "receiptNumber": { "type": "string", "description": "The receipt or reference number for the bank transfer." },
-        "receiptImageUrl": { "type": "string", "format": "uri", "description": "URL for the image of the transfer receipt." },
-        "donationDate": { "type": "string", "format": "date-time", "description": "The date the donation was made or recorded." }
+        "donorName": {
+          "type": "string",
+          "description": "The name of the person who made the donation."
+        },
+        "donorPhone": {
+          "type": "string",
+          "description": "The phone number of the donor (optional)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of money donated."
+        },
+        "typeId": {
+          "type": "string",
+          "description": "Reference to the DonationType this donation falls under."
+        },
+        "campaignId": {
+          "type": "string",
+          "description": "Optional reference to a specific DonationCampaign."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": [
+            "cash",
+            "wallet",
+            "bank_transfer"
+          ],
+          "description": "The method used for the donation."
+        },
+        "bankAccountId": {
+          "type": "string",
+          "description": "Reference to the BankAccount if payment was via bank transfer."
+        },
+        "receiptNumber": {
+          "type": "string",
+          "description": "The receipt or reference number for the bank transfer."
+        },
+        "receiptImageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the image of the transfer receipt."
+        },
+        "donationDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date the donation was made or recorded."
+        }
       },
-      "required": ["donorName", "amount", "typeId", "paymentMethod", "donationDate"]
+      "required": [
+        "donorName",
+        "amount",
+        "typeId",
+        "paymentMethod",
+        "donationDate"
+      ]
     },
     "DonationCampaign": {
       "title": "Donation Campaign",
       "type": "object",
       "description": "Represents a promotional campaign for a specific donation cause.",
       "properties": {
-        "title": { "type": "string", "description": "The title of the donation campaign." },
-        "description": { "type": "string", "description": "A detailed description of the campaign's purpose and goals." },
-        "goalAmount": { "type": "number", "description": "The financial target for the campaign." },
-        "imageUrl": { "type": "string", "format": "uri", "description": "URL for the campaign's promotional image." },
-        "isActive": { "type": "boolean", "description": "Whether the campaign is currently active and visible." }
+        "title": {
+          "type": "string",
+          "description": "The title of the donation campaign."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the campaign's purpose and goals."
+        },
+        "goalAmount": {
+          "type": "number",
+          "description": "The financial target for the campaign."
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the campaign's promotional image."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the campaign is currently active and visible."
+        }
       },
-      "required": ["title", "description", "goalAmount", "imageUrl", "isActive"]
+      "required": [
+        "title",
+        "description",
+        "goalAmount",
+        "imageUrl",
+        "isActive"
+      ]
     },
     "Coupon": {
       "title": "Coupon",
       "type": "object",
       "description": "Represents a discount coupon.",
       "properties": {
-        "code": { "type": "string", "description": "The unique coupon code." },
-        "discountType": { "type": "string", "enum": ["percentage", "fixed"], "description": "Type of discount." },
-        "value": { "type": "number", "description": "The value of the discount." },
-        "minOrderAmount": { "type": "number", "description": "Minimum order amount for the coupon to be valid." },
-        "maxDiscount": { "type": "number", "description": "Maximum discount amount for percentage-based coupons." },
-        "expiryDate": { "type": "string", "format": "date-time", "description": "The expiration date of the coupon." },
-        "maxUses": { "type": "number", "description": "Total number of times the coupon can be used." },
-        "currentUses": { "type": "number", "description": "How many times the coupon has been used." },
-        "scope": { "type": "string", "enum": ["global", "stores", "products"], "description": "The scope of the coupon." },
-        "storeIds": { "type": "array", "items": { "type": "string" }, "description": "List of store IDs if scope is 'stores'." },
-        "productIds": { "type": "array", "items": { "type": "string" }, "description": "List of product IDs if scope is 'products'." },
-        "isActive": { "type": "boolean", "description": "Whether the coupon is active." }
+        "code": {
+          "type": "string",
+          "description": "The unique coupon code."
+        },
+        "discountType": {
+          "type": "string",
+          "enum": [
+            "percentage",
+            "fixed"
+          ],
+          "description": "Type of discount."
+        },
+        "value": {
+          "type": "number",
+          "description": "The value of the discount."
+        },
+        "minOrderAmount": {
+          "type": "number",
+          "description": "Minimum order amount for the coupon to be valid."
+        },
+        "maxDiscount": {
+          "type": "number",
+          "description": "Maximum discount amount for percentage-based coupons."
+        },
+        "expiryDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The expiration date of the coupon."
+        },
+        "maxUses": {
+          "type": "number",
+          "description": "Total number of times the coupon can be used."
+        },
+        "currentUses": {
+          "type": "number",
+          "description": "How many times the coupon has been used."
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "global",
+            "stores",
+            "products"
+          ],
+          "description": "The scope of the coupon."
+        },
+        "storeIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of store IDs if scope is 'stores'."
+        },
+        "productIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of product IDs if scope is 'products'."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the coupon is active."
+        }
       },
-      "required": ["code", "discountType", "value", "expiryDate", "maxUses", "scope", "isActive"]
+      "required": [
+        "code",
+        "discountType",
+        "value",
+        "expiryDate",
+        "maxUses",
+        "scope",
+        "isActive"
+      ]
     }
   },
   "auth": {
@@ -457,6 +845,46 @@
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Stores client user data."
+        }
+      },
+      {
+        "path": "/drivers/{driverId}",
+        "definition": {
+          "entityName": "Driver",
+          "schema": {
+            "$ref": "#/backend/entities/Driver"
+          },
+          "description": "Stores driver user data."
+        }
+      },
+      {
+        "path": "/storeOwners/{ownerId}",
+        "definition": {
+          "entityName": "StoreOwner",
+          "schema": {
+            "$ref": "#/backend/entities/StoreOwner"
+          },
+          "description": "Stores store owner user data."
+        }
+      },
+      {
+        "path": "/admins/{adminId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": {
+            "$ref": "#/backend/entities/Admin"
+          },
+          "description": "Stores administrator user data and permissions."
+        }
+      },
       {
         "path": "/bankAccounts/{bankAccountId}",
         "definition": {
@@ -561,7 +989,9 @@
         "path": "/donations/{donationId}",
         "definition": {
           "entityName": "Donation",
-          "schema": { "$ref": "#/backend/entities/Donation" },
+          "schema": {
+            "$ref": "#/backend/entities/Donation"
+          },
           "description": "Stores individual donation records. Restricted to admin access."
         }
       },
@@ -569,7 +999,9 @@
         "path": "/donationTypes/{donationTypeId}",
         "definition": {
           "entityName": "DonationType",
-          "schema": { "$ref": "#/backend/entities/DonationType" },
+          "schema": {
+            "$ref": "#/backend/entities/DonationType"
+          },
           "description": "Stores the different types of donations available. Admin-managed but publicly readable."
         }
       },
@@ -577,7 +1009,9 @@
         "path": "/donationCampaigns/{campaignId}",
         "definition": {
           "entityName": "DonationCampaign",
-          "schema": { "$ref": "#/backend/entities/DonationCampaign" },
+          "schema": {
+            "$ref": "#/backend/entities/DonationCampaign"
+          },
           "description": "Stores donation campaign information. Admin-managed, publicly readable."
         }
       },
@@ -585,7 +1019,9 @@
         "path": "/coupons/{couponId}",
         "definition": {
           "entityName": "Coupon",
-          "schema": { "$ref": "#/backend/entities/Coupon" },
+          "schema": {
+            "$ref": "#/backend/entities/Coupon"
+          },
           "description": "Stores discount coupon information. Admin-managed."
         }
       }
