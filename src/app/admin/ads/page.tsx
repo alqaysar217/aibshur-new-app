@@ -299,19 +299,24 @@ export default function AdsPage() {
                                 <TabsContent value="basic" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name="name" render={({ field }) => (
-                                            <FormItem><FormLabel>اسم الإعلان (داخلي)</FormLabel><FormControl><Input {...field} placeholder="مثال: عرض رمضان 2024" /></FormControl><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-muted-foreground" />اسم الإعلان (داخلي)</FormLabel>
+                                                <FormControl><Input {...field} placeholder="مثال: عرض رمضان 2024" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
                                         )} />
                                         <FormField control={form.control} name="displayOrder" render={({ field }) => (
-                                            <FormItem><FormLabel>ترتيب الظهور</FormLabel><div className="relative"><SortAsc className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input type="number" {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><SortAsc className="h-4 w-4 text-muted-foreground" />ترتيب الظهور</FormLabel>
+                                                <FormControl><Input type="number" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
                                         )} />
                                      </div>
                                       <FormField control={form.control} name="imageUrl" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>رابط صورة الإعلان</FormLabel>
-                                            <div className="relative">
-                                                <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                                <FormControl><Input {...field} dir="ltr" className="pl-4 pr-10" placeholder="https://... or /logo.png" /></FormControl>
-                                            </div>
+                                            <FormLabel className="flex items-center gap-2"><ImageIcon className="h-4 w-4 text-muted-foreground" />رابط صورة الإعلان</FormLabel>
+                                            <FormControl><Input {...field} dir="ltr" className="text-left" placeholder="https://... or /logo.png" /></FormControl>
                                             {field.value && <Image src={field.value} alt="معاينة" width={200} height={100} className="rounded-lg object-cover mt-2 border p-1 mx-auto" unoptimized />}
                                             <FormMessage />
                                         </FormItem>
@@ -321,7 +326,7 @@ export default function AdsPage() {
                                         name="expiryDate"
                                         render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>تاريخ الانتهاء (اختياري)</FormLabel>
+                                            <FormLabel className="flex items-center gap-2"><CalendarIcon className="h-4 w-4 text-muted-foreground" />تاريخ الانتهاء (اختياري)</FormLabel>
                                             <FormControl>
                                                 <Input 
                                                     type="date"
@@ -342,7 +347,7 @@ export default function AdsPage() {
                                     />
                                     <FormField control={form.control} name="isActive" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>حالة الإعلان</FormLabel>
+                                            <FormLabel className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-muted-foreground" />حالة الإعلان</FormLabel>
                                             <FormDescription>هل تريد عرض هذا الإعلان للمستخدمين؟</FormDescription>
                                             <FormControl>
                                                 <div className="grid grid-cols-2 gap-2 pt-2">
@@ -355,7 +360,7 @@ export default function AdsPage() {
                                 </TabsContent>
                                 <TabsContent value="destination" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                                      <FormField control={form.control} name="actionType" render={({ field }) => (
-                                        <FormItem><FormLabel>نوع التفاعل عند النقر</FormLabel>
+                                        <FormItem><FormLabel className="flex items-center gap-2"><LinkIcon className="h-4 w-4 text-muted-foreground" />نوع التفاعل عند النقر</FormLabel>
                                             <Select onValueChange={value => { field.onChange(value); form.setValue('targetIds', []); setCustomSearch(''); }} value={field.value} dir="rtl">
                                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر نوع التفاعل..." /></SelectTrigger></FormControl>
                                                 <SelectContent>
