@@ -264,13 +264,13 @@ export default function CouponsPage() {
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name="code" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>كود الكوبون</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><Ticket />كود الكوبون</FormLabel>
                                                 <FormControl><Input {...field} /></FormControl><FormMessage />
                                             </FormItem>
                                         )}/>
                                         <FormField control={form.control} name="discountType" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>نوع الخصم</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><Tag />نوع الخصم</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                                                     <FormControl><SelectTrigger><SelectValue placeholder="اختر النوع..." /></SelectTrigger></FormControl>
                                                     <SelectContent>
@@ -283,27 +283,27 @@ export default function CouponsPage() {
                                         )}/>
                                         <FormField control={form.control} name="value" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>قيمة الخصم</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><CircleDollarSign />قيمة الخصم</FormLabel>
                                                 <FormControl><Input type="number" {...field} /></FormControl><FormMessage />
                                             </FormItem>
                                         )}/>
                                         {form.watch('discountType') === 'percentage' && (
                                         <FormField control={form.control} name="maxDiscount" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>الحد الأعلى للخصم (ر.ي)</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide />الحد الأعلى للخصم (ر.ي)</FormLabel>
                                                 <FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage />
                                             </FormItem>
                                         )}/>
                                         )}
                                         <FormField control={form.control} name="minOrderAmount" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>الحد الأدنى للطلب (ر.ي)</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide />الحد الأدنى للطلب (ر.ي)</FormLabel>
                                                 <FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage />
                                             </FormItem>
                                         )}/>
                                         <FormField control={form.control} name="maxUses" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>إجمالي مرات الاستخدام</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><Ticket />إجمالي مرات الاستخدام</FormLabel>
                                                 <FormControl><Input type="number" {...field} /></FormControl><FormMessage />
                                             </FormItem>
                                         )}/>
@@ -313,7 +313,7 @@ export default function CouponsPage() {
                                                 name="expiryDate"
                                                 render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>تاريخ الانتهاء</FormLabel>
+                                                    <FormLabel className="flex items-center gap-2"><CalendarIcon />تاريخ الانتهاء</FormLabel>
                                                     <FormControl>
                                                         <Input 
                                                             type="date"
@@ -342,7 +342,7 @@ export default function CouponsPage() {
                                             name="isActive"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>حالة الكوبون</FormLabel>
+                                                    <FormLabel className="flex items-center gap-2"><CheckCircle />حالة الكوبون</FormLabel>
                                                      <FormDescription>
                                                         اختر ما إذا كان الكوبون فعالاً.
                                                     </FormDescription>
@@ -376,7 +376,7 @@ export default function CouponsPage() {
                                 <TabsContent value="scope" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                                    <FormField control={form.control} name="scope" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>نطاق الكوبون</FormLabel>
+                                            <FormLabel className="flex items-center gap-2"><Globe />نطاق الكوبون</FormLabel>
                                             <Select onValueChange={(value) => { field.onChange(value); setCustomSearch(''); }} value={field.value} dir="rtl">
                                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر النطاق..." /></SelectTrigger></FormControl>
                                                 <SelectContent>
