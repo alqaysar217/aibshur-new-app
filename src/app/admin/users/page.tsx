@@ -1,8 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, doc } from 'firebase/firestore';
@@ -19,8 +19,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Search, User, Phone, MapPin, Home, Building, Package, UserCog, ShieldCheck, UserCheck, CheckCircle, XCircle, Paperclip, CreditCard, BookUser, Eye, EyeOff, Mail, Briefcase } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Search, User, Phone, MapPin, Home, Building, Package, UserCog, ShieldCheck, UserCheck, CheckCircle, XCircle, Paperclip, CreditCard, BookUser, Eye, EyeOff, Mail, Briefcase, ChevronDown, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AppProvince } from '../governorates/page';
@@ -67,15 +68,21 @@ const storeOwnerSchema = z.object({
     phone: z.string().min(9, "رقم الهاتف مطلوب"),
     address: z.string().min(5, "العنوان مطلوب"),
     storeId: z.string({ required_error: "يجب ربط صاحب المتجر بمتجر" }),
+    idType: z.enum(['passport', 'card'], { required_error: 'الرجاء اختيار نوع الهوية' }),
     personalPhotoUrl: z.string().min(1, "رابط الصورة الشخصية مطلوب"),
-    idPhotoUrl: z.string().min(1, "رابط صورة الهوية مطلوب"),
+    idFrontPhotoUrl: z.string().min(1, "رابط صورة الهوية الأمامية مطلوب"),
+    idBackPhotoUrl: z.string().optional(),
     is_active: z.boolean().default(true),
+}).refine(data => data.idType === 'passport' || !!data.idBackPhotoUrl, {
+    message: "صورة الهوية الخلفية مطلوبة للبطاقة الشخصية",
+    path: ["idBackPhotoUrl"],
 });
 
 const adminSchema = z.object({
     name: z.string().min(2, "الاسم مطلوب"),
     phone: z.string().min(9, "رقم الهاتف مطلوب"),
     address: z.string().min(5, "العنوان مطلوب"),
+    personalPhotoUrl: z.string().optional(),
     latitude: z.number().optional(),
     longitude: z.number().optional(),
     permissions: z.object({
@@ -108,6 +115,14 @@ const dashboardPages = [
 const MapPicker = dynamic(() => import('@/components/map-picker').then(mod => mod.MapPicker), { ssr: false, loading: () => <div className="h-[250px] w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 const UserLocationViewer = dynamic(() => import('@/components/user-location-viewer').then(mod => mod.UserLocationViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
+const ImagePreview = ({ url }: { url?: string }) => {
+    if (!url) return null;
+    return (
+        <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1">
+            <Image src={url} alt="معاينة" width={80} height={80} className="rounded-md object-contain" unoptimized />
+        </div>
+    )
+};
 
 export default function UsersPage() {
     const [activeTab, setActiveTab] = useState<UserType>('clients');
@@ -119,10 +134,10 @@ export default function UsersPage() {
     const firestore = useFirestore();
 
     // Forms
-    const clientForm = useForm<z.infer<typeof clientSchema>>({ resolver: zodResolver(clientSchema) });
-    const driverForm = useForm<z.infer<typeof driverSchema>>({ resolver: zodResolver(driverSchema) });
-    const storeOwnerForm = useForm<z.infer<typeof storeOwnerSchema>>({ resolver: zodResolver(storeOwnerSchema) });
-    const adminForm = useForm<z.infer<typeof adminSchema>>({ resolver: zodResolver(adminSchema) });
+    const clientForm = useForm<z.infer<typeof clientSchema>>({ resolver: zodResolver(clientSchema), defaultValues: { is_active: true, addressType: 'home' }});
+    const driverForm = useForm<z.infer<typeof driverSchema>>({ resolver: zodResolver(driverSchema), defaultValues: { is_active: true, idType: 'card' } });
+    const storeOwnerForm = useForm<z.infer<typeof storeOwnerSchema>>({ resolver: zodResolver(storeOwnerSchema), defaultValues: { is_active: true, idType: 'card' } });
+    const adminForm = useForm<z.infer<typeof adminSchema>>({ resolver: zodResolver(adminSchema), defaultValues: { is_active: true, permissions: { canUseCustomerApp: false, canUseDriverApp: false, canUseDashboard: true }, dashboardAccess: [] } });
     const forms = { clients: clientForm, drivers: driverForm, storeOwners: storeOwnerForm, admins: adminForm };
 
     // Data Fetching
@@ -147,7 +162,7 @@ export default function UsersPage() {
 
     // Handlers
     const handleAddNew = () => {
-        forms[activeTab].reset({ is_active: true }); // Reset with default active state
+        forms[activeTab].reset(forms[activeTab].formState.defaultValues);
         setDialogState({ isOpen: true, isEditing: false, data: null });
     };
 
@@ -224,67 +239,106 @@ export default function UsersPage() {
     const renderFormContent = () => {
         const currentForm = forms[activeTab];
         switch (activeTab) {
-            case 'clients':
+            case 'clients': {
                  const addressType = clientForm.watch('addressType');
-                 return <Form {...clientForm}><form onSubmit={clientForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="governorateId" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>المحافظة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent>{provinces?.map(p => <SelectItem key={p.id} value={p.id}>{p.province_name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                    <FormField name="addressDescription" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>وصف العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="addressType" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>نوع العنوان</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="home">منزل</SelectItem><SelectItem value="work">عمل</SelectItem><SelectItem value="other">آخر</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
-                    {addressType === 'other' && <>
-                        <FormField name="receiverName" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>اسم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                        <FormField name="receiverPhone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>رقم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    </>}
-                    <FormItem><FormLabel>الموقع</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Client).latitude, lng: (dialogState.data as Client).longitude } : undefined} onPositionChange={({ lat, lng }) => { clientForm.setValue('latitude', lat); clientForm.setValue('longitude', lng); }} /></FormItem>
-                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
+                 return <Form {...clientForm}><form onSubmit={clientForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-2">
+                    <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><User />الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Phone />رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="governorateId" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Building/>المحافظة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent>{provinces?.map(p => <SelectItem key={p.id} value={p.id}>{p.province_name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                    <FormField name="addressDescription" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>وصف العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="addressType" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Home/>نوع العنوان</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="home">منزل</SelectItem><SelectItem value="work">عمل</SelectItem><SelectItem value="other">آخر</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
+                    {addressType === 'other' && <div className="p-4 border rounded-lg space-y-4 bg-muted/50"><h4 className="font-semibold text-sm">بيانات المستلم</h4>
+                        <FormField name="receiverName" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><User />اسم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                        <FormField name="receiverPhone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Phone />رقم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    </div>}
+                    <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>الموقع على الخريطة</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Client).latitude, lng: (dialogState.data as Client).longitude } : undefined} onPositionChange={({ lat, lng }) => { clientForm.setValue('latitude', lat, {shouldValidate: true}); clientForm.setValue('longitude', lng, {shouldValidate: true}); }} /><div className="grid grid-cols-2 gap-2 pt-2"><FormField name="latitude" control={clientForm.control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /><FormField name="longitude" control={clientForm.control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /></div></FormItem>
+                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                  </form></Form>;
-            case 'drivers':
+            }
+            case 'drivers': {
                 const idType = driverForm.watch('idType');
-                return <Form {...driverForm}><form onSubmit={driverForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="email" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="address" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="idType" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>نوع الهوية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="passport">جواز سفر</SelectItem><SelectItem value="card">بطاقة شخصية</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
-                    <FormField name="personalPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>صورة شخصية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="idFrontPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>{idType === 'card' ? 'صورة الهوية الأمامية (رابط)' : 'صورة الجواز (رابط)'}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    {idType === 'card' && <FormField name="idBackPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>صورة الهوية الخلفية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />}
-                    <FormItem><FormLabel>الموقع</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Driver).latitude, lng: (dialogState.data as Driver).longitude } : undefined} onPositionChange={({ lat, lng }) => { driverForm.setValue('latitude', lat); driverForm.setValue('longitude', lng); }} /></FormItem>
-                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
+                return <Form {...driverForm}><form onSubmit={driverForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-2">
+                    <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><User />الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Phone />رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="email" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Mail />البريد الإلكتروني</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="address" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><MapPin />العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="idType" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><CreditCard />نوع الهوية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="passport">جواز سفر</SelectItem><SelectItem value="card">بطاقة شخصية</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
+                    <FormField name="personalPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>صورة شخصية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
+                    <FormField name="idFrontPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>{idType === 'card' ? 'صورة الهوية الأمامية (رابط)' : 'صورة الجواز (رابط)'}</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
+                    {idType === 'card' && <FormField name="idBackPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>صورة الهوية الخلفية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />}
+                    <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>الموقع على الخريطة</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Driver).latitude, lng: (dialogState.data as Driver).longitude } : undefined} onPositionChange={({ lat, lng }) => { driverForm.setValue('latitude', lat, {shouldValidate: true}); driverForm.setValue('longitude', lng, {shouldValidate: true}); }} /><div className="grid grid-cols-2 gap-2 pt-2"><FormField name="latitude" control={driverForm.control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /><FormField name="longitude" control={driverForm.control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /></div></FormItem>
+                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                 </form></Form>;
-            case 'storeOwners':
-                 return <Form {...storeOwnerForm}><form onSubmit={storeOwnerForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="address" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="storeId" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>المتجر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent>{stores?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                    <FormField name="personalPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>صورة شخصية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="idPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>صورة الهوية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
+            }
+            case 'storeOwners': {
+                 const idType = storeOwnerForm.watch('idType');
+                 return <Form {...storeOwnerForm}><form onSubmit={storeOwnerForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-2">
+                    <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><User />الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Phone />رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="address" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><MapPin />العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="storeId" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Briefcase />المتجر</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent>{stores?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                    <FormField name="idType" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><CreditCard />نوع الهوية</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="passport">جواز سفر</SelectItem><SelectItem value="card">بطاقة شخصية</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
+                    <FormField name="personalPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>صورة شخصية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
+                    <FormField name="idFrontPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>{idType === 'card' ? 'صورة الهوية الأمامية (رابط)' : 'صورة الجواز (رابط)'}</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
+                    {idType === 'card' && <FormField name="idBackPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>صورة الهوية الخلفية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />}
+                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                 </form></Form>;
-            case 'admins':
+            }
+            case 'admins': {
                 const canUseDashboard = adminForm.watch('permissions.canUseDashboard');
-                 return <Form {...adminForm}><form onSubmit={adminForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                     <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormField name="address" control={currentForm.control} render={({ field }) => <FormItem><FormLabel>العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                    <FormItem><FormLabel>صلاحيات الوصول للتطبيقات</FormLabel>
+                const selectedPages = adminForm.watch('dashboardAccess') || [];
+                 return <Form {...adminForm}><form onSubmit={adminForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-2">
+                     <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><UserCog/>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="phone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Phone/>رقم الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="address" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>العنوان</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField name="personalPhotoUrl" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>الصورة الشخصية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
+
+                    <FormItem><FormLabel className="flex items-center gap-2"><ShieldCheck/>صلاحيات الوصول للتطبيقات</FormLabel>
                         <FormField name="permissions.canUseCustomerApp" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>تطبيق العميل</FormLabel></FormItem>} />
                         <FormField name="permissions.canUseDriverApp" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>تطبيق المندوب</FormLabel></FormItem>} />
                         <FormField name="permissions.canUseDashboard" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>لوحة التحكم</FormLabel></FormItem>} />
                     </FormItem>
                     {canUseDashboard && <FormItem>
-                        <FormLabel>صلاحيات لوحة التحكم</FormLabel>
-                        <FormField name="dashboardAccess" control={currentForm.control} render={() => <FormItem>{dashboardPages.map(page => <FormField key={page.id} control={currentForm.control} name="dashboardAccess" render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value?.includes(page.id)} onCheckedChange={checked => { return checked ? field.onChange([...(field.value || []), page.id]) : field.onChange(field.value?.filter(v => v !== page.id))}} /></FormControl><FormLabel>{page.label}</FormLabel></FormItem>} />)}</FormItem>} />
+                        <FormLabel className="flex items-center gap-2"><ListChecks />صلاحيات لوحة التحكم</FormLabel>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between">
+                                    <span>{selectedPages.length > 0 ? `${selectedPages.length} صفحات مختارة` : 'اختر الصفحات'}</span>
+                                    <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
+                                <DropdownMenuLabel>اختر الصفحات المسموح بها</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <FormField control={currentForm.control} name="dashboardAccess" render={({ field }) => (
+                                    <>
+                                        {dashboardPages.map(page => (
+                                        <DropdownMenuCheckboxItem
+                                            key={page.id}
+                                            checked={field.value?.includes(page.id)}
+                                            onCheckedChange={(checked) => {
+                                                return checked
+                                                ? field.onChange([...(field.value || []), page.id])
+                                                : field.onChange(field.value?.filter(v => v !== page.id))
+                                            }}
+                                            onSelect={(e) => e.preventDefault()} // Prevent closing menu on item click
+                                        >
+                                            {page.label}
+                                        </DropdownMenuCheckboxItem>
+                                        ))}
+                                    </>
+                                )} />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </FormItem>}
-                    {dialogState.isEditing && (dialogState.data as Admin)?.latitude && <FormItem><FormLabel>آخر موقع مسجل</FormLabel><UserLocationViewer className="h-48 w-full rounded-lg overflow-hidden border" position={{ lat: (dialogState.data as Admin).latitude!, lng: (dialogState.data as Admin).longitude! }} /></FormItem>}
-                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
+                    {dialogState.isEditing && (dialogState.data as Admin)?.latitude && <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>آخر موقع مسجل</FormLabel><UserLocationViewer className="h-48 w-full rounded-lg overflow-hidden border" position={{ lat: (dialogState.data as Admin).latitude!, lng: (dialogState.data as Admin).longitude! }} /></FormItem>}
+                    <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                 </form></Form>;
+            }
         }
     };
     
@@ -334,3 +388,5 @@ export default function UsersPage() {
         </>
     );
 }
+
+    
