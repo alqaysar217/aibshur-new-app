@@ -30,7 +30,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 // Zod Schema
 const couponSchema = z.object({
@@ -368,21 +367,31 @@ export default function CouponsPage() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>حالة الكوبون</FormLabel>
-                                                    <div className="flex items-center space-x-2 space-x-reverse">
-                                                        <FormControl>
-                                                            <Switch
-                                                                id="isActive"
-                                                                checked={field.value}
-                                                                onCheckedChange={field.onChange}
-                                                            />
-                                                        </FormControl>
-                                                        <Label htmlFor="isActive" className="text-sm">
-                                                            {field.value ? "نشط" : "غير نشط"}
-                                                        </Label>
-                                                    </div>
                                                      <FormDescription>
                                                         اختر ما إذا كان الكوبون فعالاً.
                                                     </FormDescription>
+                                                     <FormControl>
+                                                        <div className="grid grid-cols-2 gap-2 pt-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant={field.value ? 'default' : 'outline'}
+                                                                onClick={() => field.onChange(true)}
+                                                                className="h-11"
+                                                            >
+                                                                <CheckCircle />
+                                                                نشط
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant={!field.value ? 'destructive' : 'outline'}
+                                                                onClick={() => field.onChange(false)}
+                                                                className="h-11"
+                                                            >
+                                                                <XCircle />
+                                                                غير نشط
+                                                            </Button>
+                                                        </div>
+                                                    </FormControl>
                                                 </FormItem>
                                             )}
                                         />
@@ -416,10 +425,10 @@ export default function CouponsPage() {
                                                 />
                                             </div>
                                             <ScrollArea className="h-48 rounded-md border">
-                                                <Table>
+                                                <Table dir="rtl">
                                                     <TableHeader>
                                                         <TableRow>
-                                                            <TableHead className="w-12"></TableHead>
+                                                            <TableHead className="w-12 text-center">تحديد</TableHead>
                                                             <TableHead className="w-16 text-center">صورة</TableHead>
                                                             <TableHead className="text-right">الاسم</TableHead>
                                                             {scope === 'stores' && <TableHead className="text-right">المحافظة</TableHead>}
@@ -432,7 +441,7 @@ export default function CouponsPage() {
                                                             const itemIds = form.watch(scope === 'stores' ? 'storeIds' : 'productIds') || [];
                                                             return (
                                                                 <TableRow key={item.id}>
-                                                                    <TableCell className="px-2">
+                                                                    <TableCell className="text-center">
                                                                         <Checkbox
                                                                             checked={itemIds.includes(item.id)}
                                                                             onCheckedChange={(checked) => {
@@ -444,18 +453,18 @@ export default function CouponsPage() {
                                                                             }}
                                                                         />
                                                                     </TableCell>
-                                                                    <TableCell>
+                                                                    <TableCell className="text-center">
                                                                         <Image 
                                                                             src={(scope === 'stores' ? (item as Store).imageUrl : (item as Product).mainImageUrl) || '/logo-app.png'}
                                                                             alt={item.name}
                                                                             width={40} height={40}
-                                                                            className="rounded-md object-cover mx-auto"
+                                                                            className="rounded-md object-cover"
                                                                         />
                                                                     </TableCell>
-                                                                    <TableCell>{item.name}</TableCell>
-                                                                    {scope === 'stores' && <TableCell>{provincesMap[(item as Store).provinceId]}</TableCell>}
-                                                                    {scope === 'products' && <TableCell>{storesMap[(item as Product).storeId]}</TableCell>}
-                                                                    {scope === 'products' && <TableCell>{(item as Product).basePrice?.toLocaleString()} ر.ي</TableCell>}
+                                                                    <TableCell className="text-right font-medium">{item.name}</TableCell>
+                                                                    {scope === 'stores' && <TableCell className="text-right">{provincesMap[(item as Store).provinceId]}</TableCell>}
+                                                                    {scope === 'products' && <TableCell className="text-right">{storesMap[(item as Product).storeId]}</TableCell>}
+                                                                    {scope === 'products' && <TableCell className="text-right font-mono">{(item as Product).basePrice?.toLocaleString()} ر.ي</TableCell>}
                                                                 </TableRow>
                                                             )
                                                         })}
