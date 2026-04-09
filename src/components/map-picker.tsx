@@ -26,6 +26,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({ onPositionChange, initialP
 
   const handleMapClick = ({ latLng }: { latLng: [number, number] }) => {
     setMarkerPosition(latLng);
+    setCenter(latLng); // This is the fix: Center the map on the new marker position.
     onPositionChange({ lat: latLng[0], lng: latLng[1] });
   };
   
