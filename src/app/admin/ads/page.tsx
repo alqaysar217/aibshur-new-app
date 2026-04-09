@@ -356,7 +356,7 @@ export default function AdsPage() {
                                 <TabsContent value="destination" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                                      <FormField control={form.control} name="actionType" render={({ field }) => (
                                         <FormItem><FormLabel>نوع التفاعل عند النقر</FormLabel>
-                                            <Select onValueChange={value => { field.onChange(value); form.setValue('targetIds', []); setCustomSearch(''); }} value={field.value}>
+                                            <Select onValueChange={value => { field.onChange(value); form.setValue('targetIds', []); setCustomSearch(''); }} value={field.value} dir="rtl">
                                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر نوع التفاعل..." /></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="none" className="text-right justify-end">إعلان عادي (بدون رابط)</SelectItem>
