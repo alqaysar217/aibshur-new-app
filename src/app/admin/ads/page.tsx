@@ -18,18 +18,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Switch } from '@/components/ui/switch';
-import { Calendar } from '@/components/ui/calendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Megaphone, Link as LinkIcon, Image as ImageIcon, Store as StoreIcon, ShoppingBasket, HandHeart, CalendarIcon, SortAsc, Check, ChevronsUpDown, X } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Megaphone, Link as LinkIcon, Image as ImageIcon, Store as StoreIcon, ShoppingBasket, HandHeart, CalendarIcon, SortAsc, CheckCircle, XCircle, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 import type { Store } from '../stores/page';
 import type { Product } from '../products/page';
 import type { DonationCampaign } from '../donations/page';
+import type { Province } from '../governorates/page';
+
 
 // Zod Schema
 const adBannerSchema = z.object({
@@ -39,10 +40,10 @@ const adBannerSchema = z.object({
   isActive: z.boolean().default(true),
   expiryDate: z.date().optional().nullable(),
   actionType: z.enum(['none', 'store', 'product', 'campaign']),
-  targetId: z.string().optional().nullable(),
+  targetIds: z.array(z.string()).optional().default([]),
 }).superRefine((data, ctx) => {
-    if (data.actionType !== 'none' && !data.targetId) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['targetId'], message: 'يجب اختيار وجهة للإعلان' });
+    if (data.actionType !== 'none' && (!data.targetIds || data.targetIds.length === 0)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['targetIds'], message: 'يجب اختيار وجهة واحدة على الأقل' });
     }
 });
 
@@ -53,6 +54,16 @@ type AdBanner = Omit<AdBannerFormValues, 'expiryDate'> & {
   expiryDate?: Timestamp | null;
 };
 
+const defaultAdValues: AdBannerFormValues = {
+    name: '',
+    imageUrl: '',
+    displayOrder: 0,
+    isActive: true,
+    expiryDate: null,
+    actionType: 'none',
+    targetIds: [],
+};
+
 type TargetType = 'store' | 'product' | 'campaign';
 
 export default function AdsPage() {
@@ -60,13 +71,14 @@ export default function AdsPage() {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedBanner, setSelectedBanner] = useState<AdBanner | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [customSearch, setCustomSearch] = useState('');
     
     const { toast } = useToast();
     const firestore = useFirestore();
 
     const form = useForm<AdBannerFormValues>({
         resolver: zodResolver(adBannerSchema),
-        defaultValues: { name: '', imageUrl: '', displayOrder: 0, isActive: true, actionType: 'none' },
+        defaultValues: defaultAdValues,
     });
     
     // Data Fetching
@@ -74,14 +86,19 @@ export default function AdsPage() {
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]));
     const { data: campaigns, isLoading: isLoadingCampaigns } = useCollection<DonationCampaign>(useMemoFirebase(() => firestore ? collection(firestore, 'donationCampaigns') : null, [firestore]));
+    const { data: provinces, isLoading: isLoadingProvinces } = useCollection<Province>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
 
     // Memoized Maps for display
     const storesMap = useMemo(() => stores?.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) || {}, [stores]);
     const productsMap = useMemo(() => products?.reduce((acc, p) => ({ ...acc, [p.id]: p }), {}) || {}, [products]);
     const campaignsMap = useMemo(() => campaigns?.reduce((acc, c) => ({ ...acc, [c.id]: c }), {}) || {}, [campaigns]);
+    const provincesMap = useMemo(() => provinces?.reduce((acc, p) => ({ ...acc, [p.id]: p.province_name }), {}) || {}, [provinces]);
 
     const targetDataMap = { store: stores || [], product: products || [], campaign: campaigns || [] };
-    const targetNameMap = { store: storesMap, product: productsMap, campaign: campaignsMap };
+    
+    const filteredStores = useMemo(() =>(stores || []).filter(s => s.name.toLowerCase().includes(customSearch.toLowerCase())), [stores, customSearch]);
+    const filteredProducts = useMemo(() =>(products || []).filter(p => p.name.toLowerCase().includes(customSearch.toLowerCase())), [products, customSearch]);
+    const filteredCampaigns = useMemo(() =>(campaigns || []).filter(c => c.title.toLowerCase().includes(customSearch.toLowerCase())), [campaigns, customSearch]);
     
     const sortedBanners = useMemo(() => adBanners?.sort((a, b) => a.displayOrder - b.displayOrder) || [], [adBanners]);
 
@@ -89,14 +106,18 @@ export default function AdsPage() {
     const handleAddNew = () => {
         setIsEditing(false);
         setSelectedBanner(null);
-        form.reset({ name: '', imageUrl: '', displayOrder: (adBanners?.length || 0) + 1, isActive: true, actionType: 'none', targetId: null, expiryDate: null });
+        form.reset(defaultAdValues);
         setIsDialogOpen(true);
     };
 
     const handleEdit = (banner: AdBanner) => {
         setIsEditing(true);
         setSelectedBanner(banner);
-        form.reset({ ...banner, expiryDate: banner.expiryDate?.toDate() });
+        form.reset({ 
+            ...banner, 
+            expiryDate: banner.expiryDate?.toDate(),
+            targetIds: banner.targetIds || []
+        });
         setIsDialogOpen(true);
     };
 
@@ -113,15 +134,9 @@ export default function AdsPage() {
         }
     };
     
-    const handleStatusChange = (banner: AdBanner, isActive: boolean) => {
-        if (!firestore) return;
-        updateDocumentNonBlocking(doc(firestore, 'adBanners', banner.id), { isActive });
-        toast({ title: `تم ${isActive ? 'تفعيل' : 'تعطيل'} الإعلان` });
-    };
-
     const onSubmit = (values: AdBannerFormValues) => {
         if (!firestore) return;
-        const dataToSave = { ...values, targetId: values.actionType === 'none' ? null : values.targetId, updatedAt: serverTimestamp() };
+        const dataToSave = { ...values, targetIds: values.actionType === 'none' ? [] : values.targetIds, updatedAt: serverTimestamp() };
         if (isEditing && selectedBanner) {
             updateDocumentNonBlocking(doc(firestore, 'adBanners', selectedBanner.id), dataToSave);
             toast({ title: "تم تحديث الإعلان بنجاح" });
@@ -134,29 +149,75 @@ export default function AdsPage() {
     
     const actionType = form.watch('actionType');
 
-    const isLoading = isLoadingBanners || isLoadingStores || isLoadingProducts || isLoadingCampaigns;
+    const isLoading = isLoadingBanners || isLoadingStores || isLoadingProducts || isLoadingCampaigns || isLoadingProvinces;
     if (isLoading) return <AdsLoading />;
     
     const renderTarget = (ad: AdBanner) => {
-        if (ad.actionType === 'none' || !ad.targetId) return <Badge variant="secondary">إعلان عادي</Badge>;
-        let target, icon;
+        if (ad.actionType === 'none' || !ad.targetIds || ad.targetIds.length === 0) return <Badge variant="secondary">إعلان عادي</Badge>;
+        
+        const firstTargetId = ad.targetIds[0];
+        let target: any, icon;
         switch (ad.actionType) {
-            case 'store':
-                target = storesMap[ad.targetId];
-                icon = <StoreIcon className="h-4 w-4" />;
-                break;
-            case 'product':
-                target = productsMap[ad.targetId];
-                icon = <ShoppingBasket className="h-4 w-4" />;
-                break;
-            case 'campaign':
-                target = campaignsMap[ad.targetId];
-                icon = <HandHeart className="h-4 w-4" />;
-                break;
+            case 'store': target = storesMap[firstTargetId]; icon = <StoreIcon className="h-4 w-4" />; break;
+            case 'product': target = productsMap[firstTargetId]; icon = <ShoppingBasket className="h-4 w-4" />; break;
+            case 'campaign': target = campaignsMap[firstTargetId]; icon = <HandHeart className="h-4 w-4" />; break;
         }
-        if (!target) return <Badge variant="outline">غير معروف</Badge>;
-        return <div className="flex items-center gap-2"><Image src={target.imageUrl} alt={target.name || target.title} width={32} height={32} className="rounded-md object-cover" /> {target.name || target.title}</div>
+
+        if (!target) return <Badge variant="outline">وجهة غير معروفة</Badge>;
+
+        return (
+            <div className="flex items-center justify-center gap-2">
+                <Image src={target.imageUrl || target.mainImageUrl} alt={target.name || target.title} width={32} height={32} className="rounded-md object-cover" /> 
+                <span>{target.name || target.title}</span>
+                {ad.targetIds.length > 1 && <Badge variant="outline">+{ad.targetIds.length - 1} آخر</Badge>}
+            </div>
+        );
     }
+
+    const renderTableForSelection = () => {
+        const itemIds = form.watch('targetIds') || [];
+        
+        const handleCheckboxChange = (id: string, checked: boolean | 'indeterminate') => {
+            const currentIds = form.getValues('targetIds') || [];
+            const newIds = checked
+                ? [...currentIds, id]
+                : currentIds.filter(val => val !== id);
+            form.setValue('targetIds', newIds, { shouldValidate: true });
+        };
+    
+        switch(actionType) {
+            case 'store':
+                return filteredStores.map(item => (
+                    <TableRow key={item.id}>
+                        <TableCell className="text-center"><Checkbox checked={itemIds.includes(item.id)} onCheckedChange={(checked) => handleCheckboxChange(item.id, checked)} /></TableCell>
+                        <TableCell className="text-center"><Image src={item.imageUrl} alt={item.name} width={40} height={40} className="rounded-md object-cover" /></TableCell>
+                        <TableCell className="text-right font-medium">{item.name}</TableCell>
+                        <TableCell className="text-right">{provincesMap[item.provinceId]}</TableCell>
+                    </TableRow>
+                ));
+            case 'product':
+                return filteredProducts.map(item => (
+                    <TableRow key={item.id}>
+                        <TableCell className="text-center"><Checkbox checked={itemIds.includes(item.id)} onCheckedChange={(checked) => handleCheckboxChange(item.id, checked)} /></TableCell>
+                        <TableCell className="text-center"><Image src={item.mainImageUrl} alt={item.name} width={40} height={40} className="rounded-md object-cover" /></TableCell>
+                        <TableCell className="text-right font-medium">{item.name}</TableCell>
+                        <TableCell className="text-right">{storesMap[item.storeId]?.name}</TableCell>
+                    </TableRow>
+                ));
+            case 'campaign':
+                return filteredCampaigns.map(item => (
+                    <TableRow key={item.id}>
+                        <TableCell className="text-center"><Checkbox checked={itemIds.includes(item.id)} onCheckedChange={(checked) => handleCheckboxChange(item.id, checked)} /></TableCell>
+                        <TableCell className="text-center"><Image src={item.imageUrl} alt={item.title} width={40} height={40} className="rounded-md object-cover" /></TableCell>
+                        <TableCell className="text-right font-medium">{item.title}</TableCell>
+                        <TableCell className="text-right font-mono">{item.goalAmount.toLocaleString('en-US')} ر.ي</TableCell>
+                    </TableRow>
+                ));
+            default:
+                return null;
+        }
+    };
+    
 
     return (
         <>
@@ -192,7 +253,7 @@ export default function AdsPage() {
                                         <TableCell className="text-center">{ad.displayOrder}</TableCell>
                                         <TableCell className="text-center">
                                             <div className="flex flex-col items-center gap-1">
-                                                <Switch checked={ad.isActive} onCheckedChange={(val) => handleStatusChange(ad, val)} aria-label="تفعيل الإعلان" />
+                                                <Badge variant={ad.isActive ? 'default' : 'secondary'}>{ad.isActive ? 'نشط' : 'غير نشط'}</Badge>
                                                 {ad.expiryDate && new Date(ad.expiryDate.toDate()) < new Date() && !ad.isActive && (
                                                     <Badge variant="destructive" className="text-xs font-normal">منتهي</Badge>
                                                 )}
@@ -219,77 +280,113 @@ export default function AdsPage() {
                         <DialogDescription className="text-right">أدخل تفاصيل الإعلان ووجهته.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-                            <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>اسم الإعلان (داخلي)</FormLabel><FormControl><Input {...field} placeholder="مثال: عرض رمضان 2024" /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>رابط صورة الإعلان</FormLabel>
-                                    <div className="relative">
-                                        <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} dir="ltr" className="pl-4 pr-10" placeholder="https://..." /></FormControl>
-                                    </div>
-                                    {field.value && <Image src={field.value} alt="معاينة" width={200} height={100} className="rounded-lg object-cover mt-2 border p-1 mx-auto" unoptimized />}
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="displayOrder" render={({ field }) => (
-                                    <FormItem><FormLabel>ترتيب الظهور</FormLabel><div className="relative"><SortAsc className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input type="number" {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                                    <FormItem className="flex flex-col"><FormLabel>تاريخ الانتهاء (اختياري)</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant={"outline"} className={cn("w-full justify-start text-right font-normal", !field.value && "text-muted-foreground")}>
-                                                        <CalendarIcon className="ml-2 h-4 w-4" />
-                                                        {field.value ? format(field.value, "PPP", { locale: ar }) : <span>اختر تاريخاً</span>}
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar mode="single" selected={field.value ?? undefined} onSelect={field.onChange} initialFocus />
-                                            </PopoverContent>
-                                        </Popover><FormMessage />
-                                    </FormItem>
-                                )}/>
-                            </div>
-                            
-                            <FormField control={form.control} name="actionType" render={({ field }) => (
-                                <FormItem><FormLabel>نوع التفاعل عند النقر</FormLabel>
-                                    <Select onValueChange={value => { field.onChange(value); form.setValue('targetId', null); }} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="اختر نوع التفاعل..." /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="none">إعلان عادي (بدون رابط)</SelectItem>
-                                            <SelectItem value="store">ربط بمتجر</SelectItem>
-                                            <SelectItem value="product">ربط بمنتج</SelectItem>
-                                            <SelectItem value="campaign">ربط بحملة تبرع</SelectItem>
-                                        </SelectContent>
-                                    </Select><FormMessage /></FormItem>
-                            )} />
-
-                            {actionType !== 'none' && (
-                                <FormField control={form.control} name="targetId" render={({ field }) => (
-                                    <FormItem><FormLabel>اختر الوجهة</FormLabel>
-                                        <TargetSelector
-                                            targetType={actionType as TargetType}
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            options={targetDataMap[actionType as TargetType]}
-                                            optionsMap={targetNameMap[actionType as TargetType]}
-                                        />
-                                    <FormMessage /></FormItem>
-                                )} />
-                            )}
-                            
-                             <FormField control={form.control} name="isActive" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                    <div className="space-y-0.5"><FormLabel>تفعيل الإعلان</FormLabel><FormDescription>هل تريد عرض هذا الإعلان للمستخدمين؟</FormDescription></div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
-                             )} />
+                        <form onSubmit={form.handleSubmit(onSubmit)}>
+                             <Tabs defaultValue="basic" className="w-full" dir="rtl">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="basic">البيانات الأساسية</TabsTrigger>
+                                    <TabsTrigger value="destination">وجهة الإعلان</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="basic" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="name" render={({ field }) => (
+                                            <FormItem><FormLabel>اسم الإعلان (داخلي)</FormLabel><FormControl><Input {...field} placeholder="مثال: عرض رمضان 2024" /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="displayOrder" render={({ field }) => (
+                                            <FormItem><FormLabel>ترتيب الظهور</FormLabel><div className="relative"><SortAsc className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input type="number" {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
+                                        )} />
+                                     </div>
+                                      <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>رابط صورة الإعلان</FormLabel>
+                                            <div className="relative">
+                                                <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                                <FormControl><Input {...field} dir="ltr" className="pl-4 pr-10" placeholder="https://..." /></FormControl>
+                                            </div>
+                                            {field.value && <Image src={field.value} alt="معاينة" width={200} height={100} className="rounded-lg object-cover mt-2 border p-1 mx-auto" unoptimized />}
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                     <FormField
+                                        control={form.control}
+                                        name="expiryDate"
+                                        render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>تاريخ الانتهاء (اختياري)</FormLabel>
+                                            <FormControl>
+                                                <Input 
+                                                    type="date"
+                                                    value={field.value instanceof Date ? format(field.value, 'yyyy-MM-dd') : ''}
+                                                    onChange={(e) => {
+                                                        const date = new Date(e.target.value);
+                                                        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                                                        field.onChange(new Date(date.getTime() + userTimezoneOffset));
+                                                    }}
+                                                    className="w-full text-right"
+                                                    dir="rtl"
+                                                />
+                                            </FormControl>
+                                            <FormDescription>سيتم تعطيل الإعلان بعد هذا التاريخ.</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    <FormField control={form.control} name="isActive" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>حالة الإعلان</FormLabel>
+                                            <FormDescription>هل تريد عرض هذا الإعلان للمستخدمين؟</FormDescription>
+                                            <FormControl>
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)} className="h-11"><CheckCircle />نشط</Button>
+                                                    <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)} className="h-11"><XCircle />غير نشط</Button>
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )} />
+                                </TabsContent>
+                                <TabsContent value="destination" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+                                     <FormField control={form.control} name="actionType" render={({ field }) => (
+                                        <FormItem><FormLabel>نوع التفاعل عند النقر</FormLabel>
+                                            <Select onValueChange={value => { field.onChange(value); form.setValue('targetIds', []); setCustomSearch(''); }} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="اختر نوع التفاعل..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="none">إعلان عادي (بدون رابط)</SelectItem>
+                                                    <SelectItem value="store">ربط بمتجر</SelectItem>
+                                                    <SelectItem value="product">ربط بمنتج</SelectItem>
+                                                    <SelectItem value="campaign">ربط بحملة تبرع</SelectItem>
+                                                </SelectContent>
+                                            </Select><FormMessage /></FormItem>
+                                    )} />
+                                    {actionType !== 'none' && (
+                                        <div className="space-y-2 pt-4">
+                                            <div className="relative">
+                                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder={`ابحث عن ${actionType === 'store' ? 'متجر' : actionType === 'product' ? 'منتج' : 'حملة'}...`}
+                                                    className="pr-10"
+                                                    value={customSearch}
+                                                    onChange={(e) => setCustomSearch(e.target.value)}
+                                                />
+                                            </div>
+                                            <ScrollArea className="h-48 rounded-md border">
+                                                <Table dir="rtl">
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead className="w-12 text-center">تحديد</TableHead>
+                                                            <TableHead className="w-16 text-center">صورة</TableHead>
+                                                            <TableHead className="text-right">الاسم</TableHead>
+                                                            <TableHead className="text-right">تفاصيل إضافية</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {renderTableForSelection()}
+                                                    </TableBody>
+                                                </Table>
+                                            </ScrollArea>
+                                            <FormMessage>{form.formState.errors.targetIds?.message}</FormMessage>
+                                        </div>
+                                    )}
+                                </TabsContent>
+                            </Tabs>
 
                             <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
                                 <Button type="submit">حفظ الإعلان</Button>
@@ -310,56 +407,4 @@ export default function AdsPage() {
             </AlertDialog>
         </>
     );
-}
-
-// Sub-component for selecting target
-function TargetSelector({ targetType, value, onChange, options, optionsMap }: {
-    targetType: TargetType,
-    value: string | null | undefined,
-    onChange: (value: string) => void,
-    options: any[],
-    optionsMap: any,
-}) {
-    const [open, setOpen] = useState(false);
-    const selectedName = value ? (optionsMap[value]?.name || optionsMap[value]?.title) : '';
-
-    const typePlaceholders = {
-        store: "ابحث عن متجر...",
-        product: "ابحث عن منتج...",
-        campaign: "ابحث عن حملة...",
-    };
-    
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
-                    {value ? selectedName : `اختر ${targetType === 'store' ? 'متجراً' : targetType === 'product' ? 'منتجاً' : 'حملة'}...`}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                    <CommandInput placeholder={typePlaceholders[targetType]} />
-                    <CommandList>
-                        <CommandEmpty>لا توجد نتائج.</CommandEmpty>
-                        <CommandGroup>
-                            {options.map((item) => (
-                                <CommandItem
-                                    key={item.id}
-                                    value={item.id}
-                                    onSelect={(currentValue) => {
-                                        onChange(currentValue === value ? "" : currentValue);
-                                        setOpen(false);
-                                    }}
-                                >
-                                    <Check className={cn("mr-2 h-4 w-4", value === item.id ? "opacity-100" : "opacity-0")} />
-                                    {item.name || item.title}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    )
 }

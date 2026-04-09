@@ -154,9 +154,12 @@
           ],
           "description": "The type of action to perform when clicked."
         },
-        "targetId": {
-          "type": "string",
-          "description": "The ID of the target entity (Store, Product, or DonationCampaign) if actionType is not 'none'."
+        "targetIds": {
+          "type": "array",
+          "description": "The IDs of the target entities (Store, Product, or DonationCampaign) if actionType is not 'none'.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
