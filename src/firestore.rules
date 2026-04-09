@@ -62,7 +62,7 @@ service cloud.firestore {
      * or membership in an 'admins' collection. For now, any signed-in user is an admin.
      */
     function isAdmin() {
-        return isSignedIn();
+        return request.auth != null;
     }
 
 
@@ -98,28 +98,28 @@ service cloud.firestore {
       allow get, create, update, delete: if request.auth != null;
     }
     match /clients {
-      allow list: if request.auth != null;
+      allow list: if true;
     }
 
     match /drivers/{driverId} {
       allow get, create, update, delete: if request.auth != null;
     }
     match /drivers {
-      allow list: if request.auth != null;
+      allow list: if true;
     }
     
     match /storeOwners/{ownerId} {
       allow get, create, update, delete: if request.auth != null;
     }
     match /storeOwners {
-      allow list: if request.auth != null;
+      allow list: if true;
     }
 
     match /admins/{adminId} {
         allow get, create, update, delete: if request.auth != null;
     }
     match /admins {
-        allow list: if request.auth != null;
+        allow list: if true;
     }
 
     /**
