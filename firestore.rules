@@ -95,31 +95,31 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
     
     match /clients/{clientId} {
-      allow get, create, update, delete: if isAdmin();
+      allow get, create, update, delete: if request.auth != null;
     }
     match /clients {
-      allow list: if isAdmin();
+      allow list: if request.auth != null;
     }
 
     match /drivers/{driverId} {
-      allow get, create, update, delete: if isAdmin();
+      allow get, create, update, delete: if request.auth != null;
     }
     match /drivers {
-      allow list: if isAdmin();
+      allow list: if request.auth != null;
     }
     
     match /storeOwners/{ownerId} {
-      allow get, create, update, delete: if isAdmin();
+      allow get, create, update, delete: if request.auth != null;
     }
     match /storeOwners {
-      allow list: if isAdmin();
+      allow list: if request.auth != null;
     }
 
     match /admins/{adminId} {
-        allow get, create, update, delete: if isAdmin();
+        allow get, create, update, delete: if request.auth != null;
     }
     match /admins {
-        allow list: if isAdmin();
+        allow list: if request.auth != null;
     }
 
     /**
@@ -129,7 +129,7 @@ service cloud.firestore {
      * @principle Protects sensitive financial data by restricting access to authorized personnel.
      */
     match /bankAccounts/{bankAccountId} {
-      allow read, write: if isAdmin();
+      allow read, write: if request.auth != null;
     }
     
     /**
@@ -139,7 +139,7 @@ service cloud.firestore {
      * @principle Protects administrative settings from unauthorized access.
      */
     match /app_provinces/{appProvinceId} {
-      allow read, write: if isAdmin();
+      allow read, write: if request.auth != null;
     }
 
     /**
@@ -149,7 +149,7 @@ service cloud.firestore {
      * @principle Protects core app structure from unauthorized modification.
      */
     match /app_categories/{appCategoryId} {
-        allow read, write: if isAdmin();
+        allow read, write: if request.auth != null;
     }
 
     /**
@@ -159,7 +159,7 @@ service cloud.firestore {
      * @principle Protects store-level data organization from unauthorized changes.
      */
     match /store_filters/{storeFilterId} {
-        allow read, write: if isAdmin();
+        allow read, write: if request.auth != null;
     }
 
     /**
@@ -230,7 +230,7 @@ service cloud.firestore {
     match /adBanners/{adBannerId} {
       allow get: if true;
       allow list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if request.auth != null;
     }
 
     /**
@@ -243,7 +243,7 @@ service cloud.firestore {
     match /stores/{storeId} {
       allow get: if true;
       allow list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if request.auth != null;
     }
     
     /**
@@ -256,7 +256,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow get: if true;
       allow list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if request.auth != null;
     }
 
     /**
@@ -266,7 +266,7 @@ service cloud.firestore {
      * @principle Protects donation data and ensures integrity.
      */
     match /donations/{donationId} {
-        allow read, write: if isAdmin();
+        allow read, write: if request.auth != null;
     }
 
     /**
@@ -278,7 +278,7 @@ service cloud.firestore {
      */
     match /donationTypes/{donationTypeId} {
         allow get, list: if true;
-        allow create, update, delete: if isAdmin();
+        allow create, update, delete: if request.auth != null;
     }
 
     /**
@@ -290,7 +290,7 @@ service cloud.firestore {
      */
     match /donationCampaigns/{campaignId} {
         allow get, list: if true;
-        allow create, update, delete: if isAdmin();
+        allow create, update, delete: if request.auth != null;
     }
 
     /**
@@ -300,7 +300,7 @@ service cloud.firestore {
      * @principle Protects promotional data and ensures integrity.
      */
     match /coupons/{couponId} {
-      allow read, write: if isAdmin();
+      allow read, write: if request.auth != null;
     }
   }
 }
