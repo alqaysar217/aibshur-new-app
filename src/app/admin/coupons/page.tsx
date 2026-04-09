@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,22 +16,19 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, ChevronsUpDown, Check, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info, Power, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info, Power, CheckCircle, XCircle, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Store } from '../stores/page';
 import type { Product } from '../products/page';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Zod Schema
 const couponSchema = z.object({
@@ -81,68 +78,12 @@ const defaultFormValues: CouponFormValues = {
     isActive: true,
 };
 
-// Multi-Select Search Component Interface
-interface MultiSelectSearchProps<T extends {id: string, name: string}> {
-    options: T[];
-    selected: string[];
-    onSelect: (selected: string[]) => void;
-    placeholder: string;
-}
-
-function MultiSelectSearch<T extends {id: string, name: string}>({ options, selected, onSelect, placeholder }: MultiSelectSearchProps) {
-    const [open, setOpen] = useState(false);
-    const selectedItems = useMemo(() => options.filter(opt => selected.includes(opt.id)), [options, selected]);
-
-    const handleToggle = (id: string) => {
-        const newSelected = selected.includes(id)
-            ? selected.filter(sId => sId !== id)
-            : [...selected, id];
-        onSelect(newSelected);
-    };
-
-    return (
-        <div className="space-y-2">
-             <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
-                        <div className="flex flex-wrap gap-1">
-                            {selectedItems.length > 0 ? selectedItems.map(item => (
-                                <Badge key={item.id} variant="secondary">{item.name}</Badge>
-                            )) : "اختر..."}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                        <CommandInput placeholder={placeholder} />
-                        <CommandList>
-                            <CommandEmpty>لا توجد نتائج.</CommandEmpty>
-                            <CommandGroup>
-                                {options.map((option) => (
-                                    <CommandItem
-                                        key={option.id}
-                                        value={option.name}
-                                        onSelect={() => handleToggle(option.id)}
-                                    >
-                                        <Check className={cn("mr-2 h-4 w-4", selected.includes(option.id) ? "opacity-100" : "opacity-0")} />
-                                        {option.name}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </Command>
-                </PopoverContent>
-            </Popover>
-        </div>
-    );
-}
-
 export default function CouponsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [customSearch, setCustomSearch] = useState('');
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -154,10 +95,22 @@ export default function CouponsPage() {
     
     const scope = form.watch('scope');
     const discountType = form.watch('discountType');
+    const selectedStoreIds = form.watch('storeIds') || [];
+    const selectedProductIds = form.watch('productIds') || [];
+
 
     const { data: coupons, isLoading: isLoadingCoupons } = useCollection<Coupon>(useMemoFirebase(() => firestore ? collection(firestore, 'coupons') : null, [firestore]));
     const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]));
+
+    const filteredStores = useMemo(() =>
+        (stores || []).filter(s => s.name.toLowerCase().includes(customSearch.toLowerCase())),
+        [stores, customSearch]
+    );
+    const filteredProducts = useMemo(() =>
+        (products || []).filter(p => p.name.toLowerCase().includes(customSearch.toLowerCase())),
+        [products, customSearch]
+    );
 
     const activeCoupons = useMemo(() => coupons?.filter(c => c.isActive).length || 0, [coupons]);
     const totalUses = useMemo(() => coupons?.reduce((acc, c) => acc + (c.currentUses || 0), 0) || 0, [coupons]);
@@ -297,7 +250,9 @@ export default function CouponsPage() {
                                             <TableCell className="text-center font-semibold">{c.value}{c.discountType === 'percentage' ? '%' : ' ر.ي'}</TableCell>
                                             <TableCell className="text-center"><Badge variant="outline" className='gap-1.5'><ScopeIcon scope={c.scope}/> {c.scope}</Badge></TableCell>
                                             <TableCell className="text-center text-muted-foreground">{format(c.expiryDate.toDate(), "d MMMM yyyy", { locale: ar })}</TableCell>
-                                            <TableCell className="text-center"><Switch checked={c.isActive} onCheckedChange={(val) => handleStatusChange(c, val)} /></TableCell>
+                                            <TableCell className="text-center">
+                                                 <Badge variant={c.isActive ? 'default' : 'secondary'}>{c.isActive ? 'نشط' : 'غير نشط'}</Badge>
+                                            </TableCell>
                                             <TableCell className="text-center">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
@@ -344,13 +299,20 @@ export default function CouponsPage() {
                                                     {discountType === 'percentage' ? <Percent/> : <CircleDollarSign/>}
                                                     نوع الخصم
                                                 </FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                                                    <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
-                                                        <SelectItem value="fixed">مبلغ ثابت (ر.ي)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                <RadioGroup
+                                                    onValueChange={field.onChange}
+                                                    value={field.value}
+                                                    className="grid grid-cols-2 gap-2 pt-1"
+                                                >
+                                                    <FormItem className="flex items-center space-x-2 space-y-0 space-x-reverse">
+                                                        <FormControl><RadioGroupItem value="percentage" /></FormControl>
+                                                        <FormLabel className="font-normal">نسبة مئوية</FormLabel>
+                                                    </FormItem>
+                                                    <FormItem className="flex items-center space-x-2 space-y-0 space-x-reverse">
+                                                        <FormControl><RadioGroupItem value="fixed" /></FormControl>
+                                                        <FormLabel className="font-normal">مبلغ ثابت</FormLabel>
+                                                    </FormItem>
+                                                </RadioGroup>
                                                 <FormMessage/>
                                             </FormItem>
                                         )}/>
@@ -395,7 +357,11 @@ export default function CouponsPage() {
                                                                 ? format(field.value, 'yyyy-MM-dd') 
                                                                 : ''
                                                             }
-                                                            onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                            onChange={(e) => {
+                                                                const date = new Date(e.target.value);
+                                                                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                                                                field.onChange(new Date(date.getTime() + userTimezoneOffset));
+                                                            }}
                                                             className="w-full text-left"
                                                             dir="ltr"
                                                         />
@@ -443,33 +409,80 @@ export default function CouponsPage() {
                                 </TabsContent>
                                 <TabsContent value="scope" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                                    <FormField control={form.control} name="scope" render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="space-y-3">
                                             <FormLabel className="flex items-center gap-2"><ScopeIcon scope={scope}/>نطاق الكوبون</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="global">عام (على كل التطبيق)</SelectItem>
-                                                    <SelectItem value="stores">متاجر محددة</SelectItem>
-                                                    <SelectItem value="products">منتجات محددة</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage/>
+                                            <FormControl>
+                                                <RadioGroup
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        setCustomSearch('');
+                                                    }}
+                                                    value={field.value}
+                                                    className="space-y-2"
+                                                >
+                                                    <FormItem className="flex items-center space-x-3 space-y-0 space-x-reverse">
+                                                        <FormControl><RadioGroupItem value="global" /></FormControl>
+                                                        <FormLabel className="font-normal">عام (على كل التطبيق)</FormLabel>
+                                                    </FormItem>
+                                                    <FormItem className="flex items-center space-x-3 space-y-0 space-x-reverse">
+                                                        <FormControl><RadioGroupItem value="stores" /></FormControl>
+                                                        <FormLabel className="font-normal">متاجر محددة</FormLabel>
+                                                    </FormItem>
+                                                    <FormItem className="flex items-center space-x-3 space-y-0 space-x-reverse">
+                                                        <FormControl><RadioGroupItem value="products" /></FormControl>
+                                                        <FormLabel className="font-normal">منتجات محددة</FormLabel>
+                                                    </FormItem>
+                                                </RadioGroup>
+                                            </FormControl>
+                                            <FormMessage />
                                         </FormItem>
                                     )}/>
                                     
-                                    {scope !== 'global' && (
-                                        <FormItem>
-                                            <FormLabel>اختر {scope === 'stores' ? 'المتاجر' : 'المنتجات'}</FormLabel>
-                                            <MultiSelectSearch
-                                                options={scope === 'stores' ? (stores || []) : (products || [])}
-                                                selected={form.watch(scope === 'stores' ? 'storeIds' : 'productIds') || []}
-                                                onSelect={(newSelected) => {
-                                                    form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newSelected, { shouldValidate: true });
-                                                }}
-                                                placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
-                                            />
-                                             <FormMessage>{scope === 'stores' ? form.formState.errors.storeIds?.message : form.formState.errors.productIds?.message}</FormMessage>
-                                        </FormItem>
+                                    {(scope === 'stores' || scope === 'products') && (
+                                        <div className="space-y-2 pt-4">
+                                            <div className="relative">
+                                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder={`ابحث عن ${scope === 'stores' ? 'متجر' : 'منتج'}...`}
+                                                    className="pr-10"
+                                                    value={customSearch}
+                                                    onChange={(e) => setCustomSearch(e.target.value)}
+                                                />
+                                            </div>
+                                            <ScrollArea className="h-48 rounded-md border p-2">
+                                                <div className="space-y-1">
+                                                    {(scope === 'stores' ? filteredStores : filteredProducts).map(item => (
+                                                        <FormField
+                                                            key={item.id}
+                                                            control={form.control}
+                                                            name={scope === 'stores' ? 'storeIds' : 'productIds'}
+                                                            render={() => (
+                                                                <FormItem className="flex flex-row items-center space-x-3 space-y-0 space-x-reverse p-2 hover:bg-muted rounded-md transition-colors">
+                                                                    <FormControl>
+                                                                        <Checkbox
+                                                                            checked={(scope === 'stores' ? selectedStoreIds : selectedProductIds).includes(item.id)}
+                                                                            onCheckedChange={(checked) => {
+                                                                                const currentIds = scope === 'stores' ? selectedStoreIds : selectedProductIds;
+                                                                                const newIds = checked
+                                                                                    ? [...currentIds, item.id]
+                                                                                    : currentIds.filter(id => id !== item.id);
+                                                                                form.setValue(scope === 'stores' ? 'storeIds' : 'productIds', newIds, { shouldValidate: true });
+                                                                            }}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormLabel className="font-normal flex-1 cursor-pointer">
+                                                                        {item.name}
+                                                                    </FormLabel>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                {(scope === 'stores' && filteredStores.length === 0) && <p className="text-center text-sm text-muted-foreground py-4">لا توجد متاجر مطابقة.</p>}
+                                                {(scope === 'products' && filteredProducts.length === 0) && <p className="text-center text-sm text-muted-foreground py-4">لا توجد منتجات مطابقة.</p>}
+                                            </ScrollArea>
+                                            <FormMessage>{scope === 'stores' ? form.formState.errors.storeIds?.message : form.formState.errors.productIds?.message}</FormMessage>
+                                        </div>
                                     )}
                                 </TabsContent>
                             </Tabs>
