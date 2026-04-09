@@ -359,10 +359,10 @@ export default function AdsPage() {
                                             <Select onValueChange={value => { field.onChange(value); form.setValue('targetIds', []); setCustomSearch(''); }} value={field.value} dir="rtl">
                                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر نوع التفاعل..." /></SelectTrigger></FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="none" className="text-right justify-end">إعلان عادي (بدون رابط)</SelectItem>
-                                                    <SelectItem value="store" className="text-right justify-end">ربط بمتجر</SelectItem>
-                                                    <SelectItem value="product" className="text-right justify-end">ربط بمنتج</SelectItem>
-                                                    <SelectItem value="campaign" className="text-right justify-end">ربط بحملة تبرع</SelectItem>
+                                                    <SelectItem value="none">إعلان عادي (بدون رابط)</SelectItem>
+                                                    <SelectItem value="store">ربط بمتجر</SelectItem>
+                                                    <SelectItem value="product">ربط بمنتج</SelectItem>
+                                                    <SelectItem value="campaign">ربط بحملة تبرع</SelectItem>
                                                 </SelectContent>
                                             </Select><FormMessage /></FormItem>
                                     )} />
