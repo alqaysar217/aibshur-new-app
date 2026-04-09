@@ -82,6 +82,8 @@ export default function AdsPage() {
 
     const targetDataMap = { store: stores || [], product: products || [], campaign: campaigns || [] };
     const targetNameMap = { store: storesMap, product: productsMap, campaign: campaignsMap };
+    
+    const sortedBanners = useMemo(() => adBanners?.sort((a, b) => a.displayOrder - b.displayOrder) || [], [adBanners]);
 
     // Handlers
     const handleAddNew = () => {
@@ -135,8 +137,6 @@ export default function AdsPage() {
     const isLoading = isLoadingBanners || isLoadingStores || isLoadingProducts || isLoadingCampaigns;
     if (isLoading) return <AdsLoading />;
     
-    const sortedBanners = useMemo(() => adBanners?.sort((a, b) => a.displayOrder - b.displayOrder) || [], [adBanners]);
-
     const renderTarget = (ad: AdBanner) => {
         if (ad.actionType === 'none' || !ad.targetId) return <Badge variant="secondary">إعلان عادي</Badge>;
         let target, icon;
