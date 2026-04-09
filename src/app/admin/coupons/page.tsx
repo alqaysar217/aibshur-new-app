@@ -17,9 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Calendar } from "@/components/ui/calendar";
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, ChevronsUpDown, Check, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Info, Power, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -102,8 +100,8 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
 
     return (
         <div className="space-y-2">
-             <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
+             <DropdownMenu open={open} onOpenChange={setOpen}>
+                <DropdownMenuTrigger asChild>
                     <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-auto min-h-10">
                         <div className="flex flex-wrap gap-1">
                             {selectedItems.length > 0 ? selectedItems.map(item => (
@@ -112,8 +110,8 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
                         </div>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" >
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-popover-trigger-width] p-0" onCloseAutoFocus={(e) => e.preventDefault()}>
                     <Command>
                         <CommandInput placeholder={placeholder} />
                         <CommandList>
@@ -132,8 +130,8 @@ function MultiSelectSearch<T extends {id: string, name: string}>({ options, sele
                             </CommandGroup>
                         </CommandList>
                     </Command>
-                </PopoverContent>
-            </Popover>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 }
@@ -333,7 +331,10 @@ export default function CouponsPage() {
                                 <TabsContent value="basic" className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name="code" render={({ field }) => (
-                                            <FormItem><FormLabel className="flex items-center gap-2"><Tag/>كود الكوبون</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Tag/>كود الكوبون</FormLabel>
+                                                <FormControl><Input {...field} /></FormControl><FormMessage />
+                                            </FormItem>
                                         )}/>
                                         <FormField control={form.control} name="discountType" render={({ field }) => (
                                             <FormItem>
@@ -341,26 +342,41 @@ export default function CouponsPage() {
                                                     {discountType === 'percentage' ? <Percent/> : <CircleDollarSign/>}
                                                     نوع الخصم
                                                 </FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                                    <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
                                                         <SelectItem value="fixed">مبلغ ثابت (ر.ي)</SelectItem>
                                                     </SelectContent>
-                                                </Select><FormMessage/></FormItem>
+                                                </Select>
+                                                <FormMessage/>
+                                            </FormItem>
                                         )}/>
                                         <FormField control={form.control} name="value" render={({ field }) => (
-                                            <FormItem><FormLabel className="flex items-center gap-2"><CircleDollarSign/>قيمة الخصم</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><CircleDollarSign/>قيمة الخصم</FormLabel>
+                                                <FormControl><Input type="number" {...field} /></FormControl><FormMessage />
+                                            </FormItem>
                                         )}/>
                                         {discountType === 'percentage' && (
                                         <FormField control={form.control} name="maxDiscount" render={({ field }) => (
-                                            <FormItem><FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأعلى للخصم (ر.ي)</FormLabel><FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأعلى للخصم (ر.ي)</FormLabel>
+                                                <FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage />
+                                            </FormItem>
                                         )}/>
                                         )}
                                         <FormField control={form.control} name="minOrderAmount" render={({ field }) => (
-                                            <FormItem><FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأدنى للطلب (ر.ي)</FormLabel><FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><ArrowDownNarrowWide/>الحد الأدنى للطلب (ر.ي)</FormLabel>
+                                                <FormControl><Input type="number" {...field} placeholder="0 (يعني لا يوجد حد)" /></FormControl><FormMessage />
+                                            </FormItem>
                                         )}/>
                                         <FormField control={form.control} name="maxUses" render={({ field }) => (
-                                            <FormItem><FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Ticket/>إجمالي مرات الاستخدام</FormLabel>
+                                                <FormControl><Input type="number" {...field} /></FormControl><FormMessage />
+                                            </FormItem>
                                         )}/>
                                         <div className="md:col-span-2">
                                             <FormField
@@ -375,11 +391,9 @@ export default function CouponsPage() {
                                                                 value={
                                                                     field.value instanceof Date 
                                                                     ? format(field.value, 'yyyy-MM-dd') 
-                                                                    : typeof field.value === 'string' 
-                                                                    ? field.value.split('T')[0]
                                                                     : ''
                                                                 }
-                                                                onChange={(e) => field.onChange(e.target.value)}
+                                                                onChange={(e) => field.onChange(new Date(e.target.value))}
                                                                 className="w-full text-left"
                                                                 dir="ltr"
                                                             />
@@ -429,13 +443,16 @@ export default function CouponsPage() {
                                    <FormField control={form.control} name="scope" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2"><ScopeIcon scope={scope}/>نطاق الكوبون</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="global">عام (على كل التطبيق)</SelectItem>
                                                     <SelectItem value="stores">متاجر محددة</SelectItem>
                                                     <SelectItem value="products">منتجات محددة</SelectItem>
                                                 </SelectContent>
-                                            </Select><FormMessage/></FormItem>
+                                            </Select>
+                                            <FormMessage/>
+                                        </FormItem>
                                     )}/>
                                     
                                     {scope !== 'global' && (
@@ -474,3 +491,5 @@ export default function CouponsPage() {
         </>
     );
 }
+
+    
