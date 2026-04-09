@@ -94,17 +94,29 @@ service cloud.firestore {
     // Collection Rules
     //-------------------------------------------------------------------------
     
-    match /clients/{clientId} {
-      allow get, list, create, update, delete: if isAdmin();
+    match /clients {
+      allow list: if isAdmin();
+      match /{clientId} {
+        allow get, create, update, delete: if isAdmin();
+      }
     }
-    match /drivers/{driverId} {
-      allow get, list, create, update, delete: if isAdmin();
+    match /drivers {
+      allow list: if isAdmin();
+      match /{driverId} {
+        allow get, create, update, delete: if isAdmin();
+      }
     }
-    match /storeOwners/{ownerId} {
-      allow get, list, create, update, delete: if isAdmin();
+    match /storeOwners {
+      allow list: if isAdmin();
+      match /{ownerId} {
+        allow get, create, update, delete: if isAdmin();
+      }
     }
-    match /admins/{adminId} {
-      allow get, list, create, update, delete: if isAdmin();
+    match /admins {
+      allow list: if isAdmin();
+      match /{adminId} {
+        allow get, create, update, delete: if isAdmin();
+      }
     }
 
     /**
