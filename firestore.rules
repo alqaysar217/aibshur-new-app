@@ -94,10 +94,18 @@ service cloud.firestore {
     // Collection Rules
     //-------------------------------------------------------------------------
     
-    match /clients/{clientId} { allow read, write: if isAdmin(); }
-    match /drivers/{driverId} { allow read, write: if isAdmin(); }
-    match /storeOwners/{ownerId} { allow read, write: if isAdmin(); }
-    match /admins/{adminId} { allow read, write: if isAdmin(); }
+    match /clients/{clientId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+    match /drivers/{driverId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+    match /storeOwners/{ownerId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+    match /admins/{adminId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
 
     /**
      * @description Admin-only bank account data.
