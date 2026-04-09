@@ -19,17 +19,15 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, MoreHorizontal, Power, CheckCircle, XCircle, Search } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Ticket, Percent, CircleDollarSign, ArrowDownNarrowWide, CalendarIcon, Globe, Store as StoreIcon, ShoppingBasket, Activity, Tag, CheckCircle, XCircle, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Store } from '../stores/page';
 import type { Product } from '../products/page';
 import type { Province } from '../governorates/page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 
 // Zod Schema
 const couponSchema = z.object({
@@ -137,22 +135,6 @@ export default function CouponsPage() {
         });
         setIsDialogOpen(true);
     };
-    
-    const handleDuplicate = (coupon: Coupon) => {
-        setIsEditing(false);
-        setSelectedCoupon(null);
-        form.reset({
-            ...coupon,
-            code: `${coupon.code}-COPY`,
-            expiryDate: coupon.expiryDate?.toDate() || defaultDate,
-            minOrderAmount: coupon.minOrderAmount || 0,
-            maxDiscount: coupon.maxDiscount || 0,
-            storeIds: coupon.storeIds || [],
-            productIds: coupon.productIds || [],
-            isActive: true,
-        });
-        setIsDialogOpen(true);
-    }
 
     const handleDelete = (coupon: Coupon) => {
         setSelectedCoupon(coupon);
@@ -165,12 +147,6 @@ export default function CouponsPage() {
             toast({ title: "تم حذف الكوبون بنجاح" });
             setIsAlertOpen(false);
         }
-    };
-
-    const handleStatusChange = (coupon: Coupon, isActive: boolean) => {
-        if (!firestore) return;
-        updateDocumentNonBlocking(doc(firestore, 'coupons', coupon.id), { isActive });
-        toast({ title: `تم ${isActive ? 'تفعيل' : 'تعطيل'} الكوبون` });
     };
 
     const onSubmit = (values: CouponFormValues) => {
@@ -251,16 +227,16 @@ export default function CouponsPage() {
                                             <TableCell className="text-center font-semibold">{c.value}{c.discountType === 'percentage' ? '%' : ' ر.ي'}</TableCell>
                                             <TableCell className="text-center"><Badge variant="outline" className='gap-1.5'><ScopeIcon scope={c.scope}/> {c.scope}</Badge></TableCell>
                                             <TableCell className="text-center text-muted-foreground">{format(c.expiryDate.toDate(), "d MMMM yyyy", { locale: ar })}</TableCell>
-                                            <TableCell className="text-center"><Switch checked={c.isActive} onCheckedChange={(val) => handleStatusChange(c, val)} /></TableCell>
                                             <TableCell className="text-center">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal/></Button></DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleEdit(c)}><Edit/> تعديل</DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleDuplicate(c)}><PlusCircle/> تكرار</DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleDelete(c)} className="text-destructive"><Trash/> حذف</DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <Badge variant={c.isActive ? 'default' : 'secondary'}>
+                                                    {c.isActive ? 'نشط' : 'غير نشط'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <Button variant="outline" size="icon" onClick={() => handleEdit(c)}><Edit/></Button>
+                                                    <Button variant="outline" size="icon" onClick={() => handleDelete(c)} className="text-destructive hover:text-destructive border-destructive/50 hover:bg-destructive/10"><Trash/></Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -464,7 +440,7 @@ export default function CouponsPage() {
                                                                     <TableCell className="text-right font-medium">{item.name}</TableCell>
                                                                     {scope === 'stores' && <TableCell className="text-right">{provincesMap[(item as Store).provinceId]}</TableCell>}
                                                                     {scope === 'products' && <TableCell className="text-right">{storesMap[(item as Product).storeId]}</TableCell>}
-                                                                    {scope === 'products' && <TableCell className="text-right font-mono">{(item as Product).basePrice?.toLocaleString()} ر.ي</TableCell>}
+                                                                    {scope === 'products' && <TableCell className="text-right font-mono">{(item as Product).basePrice?.toLocaleString('en-US')} ر.ي</TableCell>}
                                                                 </TableRow>
                                                             )
                                                         })}
