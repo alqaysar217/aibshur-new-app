@@ -118,35 +118,53 @@
       ]
     },
     "AdBanner": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AdBanner",
+      "title": "Ad Banner",
       "type": "object",
-      "description": "Represents a promotional banner displayed on the home screen, often as part of a slider.",
+      "description": "Represents a promotional banner with a configurable action.",
       "properties": {
-        "id": {
+        "name": {
           "type": "string",
-          "description": "Unique identifier for the AdBanner entity."
+          "description": "An internal name for the ad banner for easy identification."
         },
         "imageUrl": {
           "type": "string",
-          "description": "URL to the image displayed in the banner.",
-          "format": "uri"
-        },
-        "targetUrl": {
-          "type": "string",
-          "description": "The URL or internal route to navigate to when the banner is clicked.",
-          "format": "uri"
+          "format": "uri",
+          "description": "URL to the image displayed in the banner."
         },
         "displayOrder": {
           "type": "number",
-          "description": "A numerical value indicating the order in which banners should be displayed, lower values appear first."
+          "description": "Order for displaying banners, lower values first."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the ad is currently active and visible."
+        },
+        "expiryDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional date when the ad should automatically become inactive."
+        },
+        "actionType": {
+          "type": "string",
+          "enum": [
+            "none",
+            "store",
+            "product",
+            "campaign"
+          ],
+          "description": "The type of action to perform when clicked."
+        },
+        "targetId": {
+          "type": "string",
+          "description": "The ID of the target entity (Store, Product, or DonationCampaign) if actionType is not 'none'."
         }
       },
       "required": [
-        "id",
+        "name",
         "imageUrl",
-        "targetUrl",
-        "displayOrder"
+        "displayOrder",
+        "isActive",
+        "actionType"
       ]
     },
     "Store": {
@@ -483,7 +501,7 @@
           "schema": {
             "$ref": "#/backend/entities/AdBanner"
           },
-          "description": "Contains promotional banner information for the home screen. This is a global, publicly readable collection. No denormalized authorization fields are required, as access is public."
+          "description": "Contains promotional banner information for the home screen. This data is managed by administrators, but is publicly readable."
         }
       },
       {

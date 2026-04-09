@@ -193,18 +193,16 @@ service cloud.firestore {
     }
 
     /**
-     * @description Publicly readable promotional banner data. Writes are disallowed.
+     * @description Publicly readable promotional banner data, admin-only writes.
      * @path /adBanners/{adBannerId}
-     * @allow (list) Anyone, authenticated or not, can list all ad banners.
-     * @deny (delete) No user can delete an existing ad banner document.
-     * @principle Makes global, non-sensitive data available for all users while protecting it from modification.
+     * @allow (get, list) Public read access for all users.
+     * @allow (create, update, delete) Admin-only write access.
+     * @principle Makes ad banner data available while protecting it from unauthorized modification.
      */
     match /adBanners/{adBannerId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     /**
