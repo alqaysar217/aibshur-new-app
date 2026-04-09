@@ -82,11 +82,21 @@ export default function AdsPage() {
     });
     
     // Data Fetching
-    const { data: adBanners, isLoading: isLoadingBanners } = useCollection<AdBanner>(useMemoFirebase(() => firestore ? collection(firestore, 'adBanners') : null, [firestore]));
-    const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
-    const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]));
-    const { data: campaigns, isLoading: isLoadingCampaigns } = useCollection<DonationCampaign>(useMemoFirebase(() => firestore ? collection(firestore, 'donationCampaigns') : null, [firestore]));
-    const { data: provinces, isLoading: isLoadingProvinces } = useCollection<Province>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
+    const adBannersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'adBanners') : null, [firestore]);
+    const { data: adBanners, isLoading: isLoadingBanners } = useCollection<AdBanner>(adBannersQuery);
+
+    const storesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]);
+    const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(storesQuery);
+    
+    const productsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+    const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsQuery);
+
+    const campaignsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'donationCampaigns') : null, [firestore]);
+    const { data: campaigns, isLoading: isLoadingCampaigns } = useCollection<DonationCampaign>(campaignsQuery);
+    
+    const provincesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]);
+    const { data: provinces, isLoading: isLoadingProvinces } = useCollection<Province>(provincesQuery);
+
 
     // Memoized Maps for display
     const storesMap = useMemo(() => stores?.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) || {}, [stores]);
@@ -349,10 +359,10 @@ export default function AdsPage() {
                                             <Select onValueChange={value => { field.onChange(value); form.setValue('targetIds', []); setCustomSearch(''); }} value={field.value}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر نوع التفاعل..." /></SelectTrigger></FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="none">إعلان عادي (بدون رابط)</SelectItem>
-                                                    <SelectItem value="store">ربط بمتجر</SelectItem>
-                                                    <SelectItem value="product">ربط بمنتج</SelectItem>
-                                                    <SelectItem value="campaign">ربط بحملة تبرع</SelectItem>
+                                                    <SelectItem value="none" className="text-right justify-end">إعلان عادي (بدون رابط)</SelectItem>
+                                                    <SelectItem value="store" className="text-right justify-end">ربط بمتجر</SelectItem>
+                                                    <SelectItem value="product" className="text-right justify-end">ربط بمنتج</SelectItem>
+                                                    <SelectItem value="campaign" className="text-right justify-end">ربط بحملة تبرع</SelectItem>
                                                 </SelectContent>
                                             </Select><FormMessage /></FormItem>
                                     )} />
