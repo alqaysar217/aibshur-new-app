@@ -35,7 +35,7 @@ import type { Province } from '../governorates/page';
 // Zod Schema
 const adBannerSchema = z.object({
   name: z.string().min(3, { message: "اسم الإعلان مطلوب (3 أحرف على الأقل)" }),
-  imageUrl: z.string().url({ message: "الرجاء إدخال رابط صورة صحيح" }),
+  imageUrl: z.string().min(1, { message: "الرجاء إدخال رابط أو مسار صحيح للصورة" }),
   displayOrder: z.coerce.number().min(0, { message: "ترتيب الظهور يجب أن يكون رقمًا موجبًا" }),
   isActive: z.boolean().default(true),
   expiryDate: z.date().optional().nullable(),
@@ -300,7 +300,7 @@ export default function AdsPage() {
                                             <FormLabel>رابط صورة الإعلان</FormLabel>
                                             <div className="relative">
                                                 <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                                <FormControl><Input {...field} dir="ltr" className="pl-4 pr-10" placeholder="https://..." /></FormControl>
+                                                <FormControl><Input {...field} dir="ltr" className="pl-4 pr-10" placeholder="https://... or /logo.png" /></FormControl>
                                             </div>
                                             {field.value && <Image src={field.value} alt="معاينة" width={200} height={100} className="rounded-lg object-cover mt-2 border p-1 mx-auto" unoptimized />}
                                             <FormMessage />
