@@ -197,11 +197,11 @@ export default function BankAccountsPage() {
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent className="sm:max-w-md [&>button]:right-auto [&>button]:left-4" dir="rtl">
-            <DialogHeader className="text-left">
-                <DialogTitle className="text-left">
+            <DialogHeader className="text-right">
+                <DialogTitle className="text-right">
                     {isEditing ? 'تعديل الحساب البنكي' : 'إضافة حساب بنكي جديد'}
                 </DialogTitle>
-                <DialogDescription className="text-left">
+                <DialogDescription className="text-right">
                     {isEditing ? 'قم بتحديث تفاصيل الحساب البنكي.' : 'أدخل تفاصيل الحساب البنكي الجديد.'}
                 </DialogDescription>
             </DialogHeader>
