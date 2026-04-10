@@ -225,7 +225,11 @@ export default function VipPage() {
         };
 
         if (values.paymentMethod === 'bank_transfer') {
-            subscriptionData.bankDetails = values.bankDetails;
+            subscriptionData.bankDetails = {
+                bankAccountId: values.bankDetails?.bankAccountId || '',
+                receiptNumber: values.bankDetails?.receiptNumber || '',
+                receiptImageUrl: values.bankDetails?.receiptImageUrl || '',
+            };
         }
 
         addDocumentNonBlocking(collection(firestore, 'vipSubscriptions'), subscriptionData);
@@ -272,7 +276,7 @@ export default function VipPage() {
 
     const confirmSubscriptionDelete = () => {
         if (!deleteSubState.data || !firestore) return;
-        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', deleteSubState.data.id), { status: 'deleted' });
+        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', deleteSubState.data.id), { status: 'deleted', isActive: false });
         toast({ title: "تم حذف الاشتراك بنجاح" });
         setDeleteSubState({ isOpen: false, data: null });
     };
@@ -361,8 +365,8 @@ export default function VipPage() {
                                     </div>
                                 </FormItem>
                                 {foundClient && (
-                                    <div className="p-3 bg-primary/10 rounded-lg text-sm space-y-1">
-                                        <p><strong>اسم العميل:</strong> {foundClient.name}</p>
+                                    <div className="p-3 bg-primary/10 rounded-lg text-sm space-y-2">
+                                        <div><strong>اسم العميل:</strong> {foundClient.name}</div>
                                         <div className="flex items-center gap-2">
                                             <strong>الحالة:</strong> 
                                             <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
@@ -393,15 +397,20 @@ export default function VipPage() {
                                     <div className="p-4 border rounded-lg space-y-4">
                                         <FormField control={subscriptionForm.control} name="bankDetails.bankAccountId" render={({ field }) => (
                                             <FormItem><FormLabel>اختر البنك</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر بنك..."/></SelectTrigger></FormControl>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر بنك..."/></SelectTrigger></FormControl>
                                                 <SelectContent>{(banks || []).map(b => <SelectItem key={b.id} value={b.id}>{b.bankName}</SelectItem>)}</SelectContent></Select><FormMessage/>
                                             </FormItem>
                                         )}/>
                                         <FormField control={subscriptionForm.control} name="bankDetails.receiptNumber" render={({ field }) => (
-                                            <FormItem><FormLabel>رقم السند</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>
+                                            <FormItem><FormLabel>رقم السند</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage/></FormItem>
                                         )}/>
                                         <FormField control={subscriptionForm.control} name="bankDetails.receiptImageUrl" render={({ field }) => (
-                                            <FormItem><FormLabel>رابط صورة السند (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://..." dir="ltr" /></FormControl><FormMessage/></FormItem>
+                                            <FormItem>
+                                                <FormLabel>رابط صورة السند (اختياري)</FormLabel>
+                                                <FormControl><Input {...field} value={field.value || ''} placeholder="https://..." dir="ltr" /></FormControl>
+                                                {field.value && <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1"><Image src={field.value} alt="معاينة" width={80} height={80} className="rounded-md object-contain" unoptimized/></div>}
+                                                <FormMessage/>
+                                            </FormItem>
                                         )}/>
                                     </div>
                                 )}
@@ -576,7 +585,7 @@ export default function VipPage() {
             </DialogContent>
         </Dialog>
         
-        <AlertDialog open={alertState.isOpen} onOpenChange={(isOpen) => setAlertState({ isOpen, data: isOpen ? alertState.data : null })}>
+        <AlertDialog open={alertState.isOpen} onOpenChange={(isOpen) => setAlertState(prev => ({ ...prev, isOpen }))}>
              <AlertDialogContent dir="rtl">
                 <AlertDialogHeader className="text-right">
                     <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
@@ -616,7 +625,12 @@ export default function VipPage() {
                                     <FormItem><FormLabel>رقم السند</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage/></FormItem>
                                 )}/>
                                  <FormField control={subscriptionEditForm.control} name="bankDetails.receiptImageUrl" render={({ field }) => (
-                                    <FormItem><FormLabel>رابط صورة السند (اختياري)</FormLabel><FormControl><Input {...field} value={field.value ?? ''} placeholder="https://..." dir="ltr" /></FormControl><FormMessage/></FormItem>
+                                    <FormItem>
+                                        <FormLabel>رابط صورة السند (اختياري)</FormLabel>
+                                        <FormControl><Input {...field} value={field.value ?? ''} placeholder="https://..." dir="ltr" /></FormControl>
+                                        {field.value && <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1"><Image src={field.value} alt="معاينة" width={80} height={80} className="rounded-md object-contain" unoptimized/></div>}
+                                        <FormMessage/>
+                                    </FormItem>
                                 )}/>
                             </div>
                         )}
@@ -663,35 +677,35 @@ export default function VipPage() {
                         <div className="space-y-4 pt-2 text-sm">
                             <Card>
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات العميل</CardTitle></CardHeader>
-                                <CardContent>
-                                    <p><strong>الاسم:</strong> {client?.name || 'غير معروف'}</p>
-                                    <p><strong>الرقم:</strong> {client?.phone || 'غير معروف'}</p>
+                                <CardContent className="space-y-2">
+                                    <div><strong>الاسم:</strong> {client?.name || 'غير معروف'}</div>
+                                    <div><strong>الرقم:</strong> {client?.phone || 'غير معروف'}</div>
                                 </CardContent>
                             </Card>
                              <Card>
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الباقة</CardTitle></CardHeader>
-                                <CardContent>
-                                    <p><strong>الباقة:</strong> {pkg?.name || 'باقة محذوفة'}</p>
-                                    <p><strong>السعر:</strong> {pkg ? `${pkg.price.toLocaleString()} ر.ي` : 'N/A'}</p>
+                                <CardContent className="space-y-2">
+                                    <div><strong>الباقة:</strong> {pkg?.name || 'باقة محذوفة'}</div>
+                                    <div><strong>السعر:</strong> {pkg ? `${pkg.price.toLocaleString()} ر.ي` : 'N/A'}</div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الاشتراك</CardTitle></CardHeader>
-                                <CardContent>
-                                    <p><strong>تاريخ التفعيل:</strong> {format(sub.activationDate.toDate(), 'd MMMM yyyy', { locale: ar })}</p>
-                                    <p><strong>تاريخ الانتهاء:</strong> {format(sub.expiryDate.toDate(), 'd MMMM yyyy', { locale: ar })}</p>
-                                    {sub.deactivatedAt && <p className="text-yellow-600"><strong>تاريخ إلغاء التفعيل:</strong> {format(sub.deactivatedAt.toDate(), 'd MMMM yyyy', { locale: ar })}</p>}
-                                    <p><strong>الحالة:</strong> <Badge variant={sub.isActive ? 'default' : 'secondary'}>{sub.isActive ? 'فعال' : 'غير فعال'}</Badge></p>
+                                <CardContent className="space-y-2">
+                                    <div><strong>تاريخ التفعيل:</strong> {format(sub.activationDate.toDate(), 'd MMMM yyyy', { locale: ar })}</div>
+                                    <div><strong>تاريخ الانتهاء:</strong> {format(sub.expiryDate.toDate(), 'd MMMM yyyy', { locale: ar })}</div>
+                                    {sub.deactivatedAt && <div className="text-yellow-600"><strong>تاريخ إلغاء التفعيل:</strong> {format(sub.deactivatedAt.toDate(), 'd MMMM yyyy', { locale: ar })}</div>}
+                                    <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={sub.isActive ? 'default' : 'secondary'}>{sub.isActive ? 'فعال' : 'غير فعال'}</Badge></div>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الدفع</CardTitle></CardHeader>
-                                <CardContent>
-                                    <p><strong>طريقة الدفع:</strong> {sub.paymentMethod === 'cash' ? 'كاش' : sub.paymentMethod === 'wallet' ? 'محفظة' : 'تحويل بنكي'}</p>
+                                <CardContent className="space-y-2">
+                                    <div><strong>طريقة الدفع:</strong> {sub.paymentMethod === 'cash' ? 'كاش' : sub.paymentMethod === 'wallet' ? 'محفظة' : 'تحويل بنكي'}</div>
                                     {sub.paymentMethod === 'bank_transfer' && sub.bankDetails && (
-                                        <div className="mt-2 space-y-1 border-t pt-2">
-                                            <p><strong>البنك:</strong> {banksMap[sub.bankDetails.bankAccountId || ''] || 'غير محدد'}</p>
-                                            <p><strong>رقم السند:</strong> {sub.bankDetails.receiptNumber || 'لم يحدد'}</p>
+                                        <div className="mt-2 space-y-2 border-t pt-2">
+                                            <div><strong>البنك:</strong> {banksMap[sub.bankDetails.bankAccountId || ''] || 'غير محدد'}</div>
+                                            <div><strong>رقم السند:</strong> {sub.bankDetails.receiptNumber || 'لم يحدد'}</div>
                                             {sub.bankDetails.receiptImageUrl && (
                                                 <div>
                                                     <strong>صورة السند:</strong>
