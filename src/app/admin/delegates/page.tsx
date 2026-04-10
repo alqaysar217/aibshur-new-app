@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { collection, doc, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
@@ -70,6 +70,7 @@ export default function DelegateRequestsPage() {
     const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
     const [isRejectAlertOpen, setIsRejectAlertOpen] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+    const seededRef = useRef(false);
 
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -78,8 +79,9 @@ export default function DelegateRequestsPage() {
     const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
 
     useEffect(() => {
-        // Seed the database only if it's completely empty
-        if (!isLoading && drivers && drivers.length === 0) {
+        // Seed the database only if it's completely empty and not already attempted.
+        if (!isLoading && drivers && drivers.length === 0 && !seededRef.current) {
+            seededRef.current = true; // Prevent re-seeding in the same session
             mockDrivers.forEach(driver => {
                 addDocumentNonBlocking(collection(firestore, 'drivers'), { ...driver, createdAt: serverTimestamp() });
             });
