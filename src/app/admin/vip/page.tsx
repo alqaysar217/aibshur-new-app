@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck, Image as ImageIcon, ListChecks, FileEdit, MoreVertical } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck, Image as ImageIcon, ListChecks, FileEdit, MoreVertical, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Client } from '../users/page';
@@ -89,6 +89,8 @@ type VipSubscription = {
     receiptImageUrl?: string;
   };
   isActive: boolean;
+  status?: 'active' | 'deleted';
+  deactivatedAt?: Timestamp;
 };
 
 // Component
@@ -97,6 +99,7 @@ export default function VipPage() {
     const [alertState, setAlertState] = useState<{isOpen: boolean, data: VipPackage | null}>({isOpen: false, data: null});
     const [editSubState, setEditSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
     const [deleteSubState, setDeleteSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
+    const [detailsSubState, setDetailsSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
     const [clientSearch, setClientSearch] = useState('');
     const [foundClient, setFoundClient] = useState<Client | null>(null);
     const [subFilters, setSubFilters] = useState({ searchTerm: '', status: 'all' });
@@ -120,7 +123,16 @@ export default function VipPage() {
             }
         } 
     });
-    const subscriptionEditForm = useForm<z.infer<typeof subscriptionEditSchema>>();
+    const subscriptionEditForm = useForm<z.infer<typeof subscriptionEditSchema>>({
+        resolver: zodResolver(subscriptionEditSchema),
+        defaultValues: {
+             bankDetails: {
+                bankAccountId: '',
+                receiptNumber: '',
+                receiptImageUrl: ''
+            }
+        }
+    });
 
     // Data fetching
     const { data: packages, isLoading: l1 } = useCollection<VipPackage>(useMemoFirebase(() => firestore ? collection(firestore, 'vipPackages') : null, [firestore]));
@@ -132,6 +144,7 @@ export default function VipPage() {
     // Memos
     const clientsMap = useMemo(() => clients?.reduce((acc, c) => ({ ...acc, [c.id]: c }), {}) || {}, [clients]);
     const packagesMap = useMemo(() => packages?.reduce((acc, p) => ({ ...acc, [p.id]: p }), {}) || {}, [packages]);
+    const banksMap = useMemo(() => banks?.reduce((acc, b) => ({ ...acc, [b.id]: b.bankName }), {}) || {}, [banks]);
     const activePackages = useMemo(() => (packages || []).filter(p => p.isActive), [packages]);
     const paymentMethod = subscriptionForm.watch('paymentMethod');
     const editPaymentMethod = subscriptionEditForm.watch('paymentMethod');
@@ -139,8 +152,9 @@ export default function VipPage() {
      const sortedAndFilteredSubscriptions = useMemo(() => {
         return (subscriptions || [])
             .filter(sub => {
+                if (sub.status === 'deleted') return false;
                 const client = clientsMap[sub.clientId];
-                const matchesSearch = !subFilters.searchTerm || (client && client.name.toLowerCase().includes(subFilters.searchTerm.toLowerCase()));
+                const matchesSearch = !subFilters.searchTerm || (client && (client.name.toLowerCase().includes(subFilters.searchTerm.toLowerCase()) || client.phone.includes(subFilters.searchTerm)));
                 const matchesStatus = subFilters.status === 'all' || (subFilters.status === 'active' && sub.isActive) || (subFilters.status === 'inactive' && !sub.isActive);
                 return matchesSearch && matchesStatus;
             })
@@ -207,6 +221,7 @@ export default function VipPage() {
             expiryDate: Timestamp.fromDate(expiryDate),
             paymentMethod: values.paymentMethod,
             isActive: true,
+            status: 'active',
         };
 
         if (values.paymentMethod === 'bank_transfer') {
@@ -225,7 +240,7 @@ export default function VipPage() {
     
     const onSubscriptionEditSubmit = (values: z.infer<typeof subscriptionEditSchema>) => {
         if (!firestore || !editSubState.data) return;
-        const dataToUpdate = {
+        const dataToUpdate: Partial<VipSubscription> = {
             ...values,
             expiryDate: Timestamp.fromDate(values.expiryDate),
         };
@@ -250,17 +265,21 @@ export default function VipPage() {
     const handleOpenDeleteDialog = (sub: VipSubscription) => {
         setDeleteSubState({ isOpen: true, data: sub });
     };
+    
+    const handleOpenDetailsDialog = (sub: VipSubscription) => {
+        setDetailsSubState({ isOpen: true, data: sub });
+    };
 
     const confirmSubscriptionDelete = () => {
         if (!deleteSubState.data || !firestore) return;
-        deleteDocumentNonBlocking(doc(firestore, 'vipSubscriptions', deleteSubState.data.id));
+        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', deleteSubState.data.id), { status: 'deleted' });
         toast({ title: "تم حذف الاشتراك بنجاح" });
         setDeleteSubState({ isOpen: false, data: null });
     };
 
     const handleDeactivateSubscription = (subId: string) => {
         if (!firestore) return;
-        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', subId), { isActive: false });
+        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', subId), { isActive: false, deactivatedAt: serverTimestamp() });
         toast({ variant: 'destructive', title: 'تم إلغاء تفعيل الاشتراك' });
     }
 
@@ -346,9 +365,7 @@ export default function VipPage() {
                                         <p><strong>اسم العميل:</strong> {foundClient.name}</p>
                                         <div className="flex items-center gap-2">
                                             <strong>الحالة:</strong> 
-                                             <div className="flex items-center gap-2">
-                                                <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
-                                            </div>
+                                            <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
                                         </div>
                                     </div>
                                 )}
@@ -383,7 +400,9 @@ export default function VipPage() {
                                         <FormField control={subscriptionForm.control} name="bankDetails.receiptNumber" render={({ field }) => (
                                             <FormItem><FormLabel>رقم السند</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>
                                         )}/>
-                                        <FormItem><FormLabel>صورة السند</FormLabel><FormControl><Input type="file" /></FormControl></FormItem>
+                                        <FormField control={subscriptionForm.control} name="bankDetails.receiptImageUrl" render={({ field }) => (
+                                            <FormItem><FormLabel>رابط صورة السند (اختياري)</FormLabel><FormControl><Input {...field} placeholder="https://..." dir="ltr" /></FormControl><FormMessage/></FormItem>
+                                        )}/>
                                     </div>
                                 )}
                             </CardContent>
@@ -399,7 +418,7 @@ export default function VipPage() {
                         <CardTitle>سجل الاشتراكات</CardTitle>
                         <CardDescription>عرض وتصفية وإدارة جميع اشتراكات العملاء.</CardDescription>
                          <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                           <Input placeholder="ابحث باسم العميل..." value={subFilters.searchTerm} onChange={e => setSubFilters(f => ({...f, searchTerm: e.target.value}))} className="w-full sm:w-64" />
+                           <Input placeholder="ابحث باسم العميل أو رقمه..." value={subFilters.searchTerm} onChange={e => setSubFilters(f => ({...f, searchTerm: e.target.value}))} className="w-full sm:w-64" />
                            <Select value={subFilters.status} onValueChange={status => setSubFilters(f => ({...f, status: status as 'all'|'active'|'inactive'}))}>
                              <SelectTrigger className="w-full sm:w-48"><SelectValue/></SelectTrigger>
                              <SelectContent>
@@ -434,6 +453,7 @@ export default function VipPage() {
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></Button></DropdownMenuTrigger>
                                                 <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => handleOpenDetailsDialog(sub)}><FileText className="ml-2"/> عرض التفاصيل</DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => handleOpenEditDialog(sub)}><FileEdit className="ml-2"/> تعديل</DropdownMenuItem>
                                                     {sub.isActive && <DropdownMenuItem onClick={() => handleDeactivateSubscription(sub.id)} className="text-yellow-600 focus:text-yellow-600"><XCircle className="ml-2"/> إلغاء التفعيل</DropdownMenuItem>}
                                                     <DropdownMenuItem onClick={() => handleOpenDeleteDialog(sub)} className="text-destructive focus:text-destructive"><Trash className="ml-2"/> حذف</DropdownMenuItem>
@@ -450,7 +470,7 @@ export default function VipPage() {
         </Tabs>
 
         {/* Package Dialog */}
-        <Dialog open={dialogState.isOpen} onOpenChange={(isOpen) => setDialogState({ isOpen, data: null })}>
+        <Dialog open={dialogState.isOpen} onOpenChange={(isOpen) => setDialogState({ isOpen, data: isOpen ? dialogState.data : null })}>
             <DialogContent className="sm:max-w-2xl" dir="rtl">
                 <DialogHeader className="text-right">
                     <DialogTitle>{dialogState.data ? 'تعديل باقة' : 'إضافة باقة جديدة'}</DialogTitle>
@@ -556,7 +576,7 @@ export default function VipPage() {
             </DialogContent>
         </Dialog>
         
-        <AlertDialog open={alertState.isOpen} onOpenChange={(isOpen) => setAlertState({isOpen, data: null})}>
+        <AlertDialog open={alertState.isOpen} onOpenChange={(isOpen) => setAlertState({ isOpen, data: isOpen ? alertState.data : null })}>
              <AlertDialogContent dir="rtl">
                 <AlertDialogHeader className="text-right">
                     <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
@@ -569,7 +589,7 @@ export default function VipPage() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={editSubState.isOpen} onOpenChange={(isOpen) => setEditSubState({isOpen, data: null})}>
+        <Dialog open={editSubState.isOpen} onOpenChange={(isOpen) => setEditSubState({ isOpen, data: isOpen ? editSubState.data : null })}>
             <DialogContent dir="rtl">
                  <DialogHeader className="text-right">
                     <DialogTitle>تعديل الاشتراك</DialogTitle>
@@ -595,6 +615,9 @@ export default function VipPage() {
                                 <FormField control={subscriptionEditForm.control} name="bankDetails.receiptNumber" render={({ field }) => (
                                     <FormItem><FormLabel>رقم السند</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage/></FormItem>
                                 )}/>
+                                 <FormField control={subscriptionEditForm.control} name="bankDetails.receiptImageUrl" render={({ field }) => (
+                                    <FormItem><FormLabel>رابط صورة السند (اختياري)</FormLabel><FormControl><Input {...field} value={field.value ?? ''} placeholder="https://..." dir="ltr" /></FormControl><FormMessage/></FormItem>
+                                )}/>
                             </div>
                         )}
                          <FormField control={subscriptionEditForm.control} name="isActive" render={({ field }) => (
@@ -614,11 +637,11 @@ export default function VipPage() {
             </DialogContent>
         </Dialog>
 
-        <AlertDialog open={deleteSubState.isOpen} onOpenChange={(isOpen) => setDeleteSubState({isOpen, data: null})}>
+        <AlertDialog open={deleteSubState.isOpen} onOpenChange={(isOpen) => setDeleteSubState({ isOpen, data: isOpen ? deleteSubState.data : null })}>
             <AlertDialogContent dir="rtl">
                 <AlertDialogHeader className="text-right">
                     <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                    <AlertDialogDescription>هل أنت متأكد من حذف هذا الاشتراك بشكل دائم؟</AlertDialogDescription>
+                    <AlertDialogDescription>هل أنت متأكد من حذف هذا الاشتراك؟ سيتم تغيير حالته إلى "محذوف" وإخفاؤه من القائمة.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-row-reverse gap-2 sm:justify-start">
                     <AlertDialogAction onClick={confirmSubscriptionDelete}>نعم، قم بالحذف</AlertDialogAction>
@@ -626,6 +649,64 @@ export default function VipPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={detailsSubState.isOpen} onOpenChange={(isOpen) => setDetailsSubState({ isOpen, data: isOpen ? detailsSubState.data : null })}>
+            <DialogContent className="max-w-lg [&>button]:right-auto [&>button]:left-4" dir="rtl">
+                <DialogHeader className="text-right">
+                    <DialogTitle>تفاصيل الاشتراك</DialogTitle>
+                </DialogHeader>
+                {detailsSubState.data && (() => {
+                    const sub = detailsSubState.data;
+                    const client = clientsMap[sub.clientId];
+                    const pkg = packagesMap[sub.packageId];
+                    return (
+                        <div className="space-y-4 pt-2 text-sm">
+                            <Card>
+                                <CardHeader className="pb-2"><CardTitle className="text-base">بيانات العميل</CardTitle></CardHeader>
+                                <CardContent>
+                                    <p><strong>الاسم:</strong> {client?.name || 'غير معروف'}</p>
+                                    <p><strong>الرقم:</strong> {client?.phone || 'غير معروف'}</p>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الباقة</CardTitle></CardHeader>
+                                <CardContent>
+                                    <p><strong>الباقة:</strong> {pkg?.name || 'باقة محذوفة'}</p>
+                                    <p><strong>السعر:</strong> {pkg ? `${pkg.price.toLocaleString()} ر.ي` : 'N/A'}</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الاشتراك</CardTitle></CardHeader>
+                                <CardContent>
+                                    <p><strong>تاريخ التفعيل:</strong> {format(sub.activationDate.toDate(), 'd MMMM yyyy', { locale: ar })}</p>
+                                    <p><strong>تاريخ الانتهاء:</strong> {format(sub.expiryDate.toDate(), 'd MMMM yyyy', { locale: ar })}</p>
+                                    {sub.deactivatedAt && <p className="text-yellow-600"><strong>تاريخ إلغاء التفعيل:</strong> {format(sub.deactivatedAt.toDate(), 'd MMMM yyyy', { locale: ar })}</p>}
+                                    <p><strong>الحالة:</strong> <Badge variant={sub.isActive ? 'default' : 'secondary'}>{sub.isActive ? 'فعال' : 'غير فعال'}</Badge></p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الدفع</CardTitle></CardHeader>
+                                <CardContent>
+                                    <p><strong>طريقة الدفع:</strong> {sub.paymentMethod === 'cash' ? 'كاش' : sub.paymentMethod === 'wallet' ? 'محفظة' : 'تحويل بنكي'}</p>
+                                    {sub.paymentMethod === 'bank_transfer' && sub.bankDetails && (
+                                        <div className="mt-2 space-y-1 border-t pt-2">
+                                            <p><strong>البنك:</strong> {banksMap[sub.bankDetails.bankAccountId || ''] || 'غير محدد'}</p>
+                                            <p><strong>رقم السند:</strong> {sub.bankDetails.receiptNumber || 'لم يحدد'}</p>
+                                            {sub.bankDetails.receiptImageUrl && (
+                                                <div>
+                                                    <strong>صورة السند:</strong>
+                                                    <Image src={sub.bankDetails.receiptImageUrl} alt="إيصال" width={100} height={100} className="mt-1 rounded-md border"/>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    );
+                })()}
+            </DialogContent>
+        </Dialog>
         </>
     );
 }
