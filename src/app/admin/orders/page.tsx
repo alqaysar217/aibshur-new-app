@@ -112,6 +112,17 @@ export default function OrdersPage() {
 
     const activeDelegates = useMemo(() => (delegates || []).filter(d => d.is_active), [delegates]);
 
+    const uniqueStores = useMemo(() => {
+        if (!orders) return [];
+        const storeMap = new Map<string, string>();
+        orders.forEach(order => {
+            if (!storeMap.has(order.storeId)) {
+                storeMap.set(order.storeId, order.storeName);
+            }
+        });
+        return Array.from(storeMap.entries());
+    }, [orders]);
+
     const filteredOrders = useMemo(() => {
         if (!orders) return [];
         let currentOrders: Order[];
@@ -192,17 +203,6 @@ export default function OrdersPage() {
     if (isLoading) {
         return <OrdersLoading />;
     }
-    
-    const uniqueStores = useMemo(() => {
-        if (!orders) return [];
-        const storeMap = new Map<string, string>();
-        orders.forEach(order => {
-            if (!storeMap.has(order.storeId)) {
-                storeMap.set(order.storeId, order.storeName);
-            }
-        });
-        return Array.from(storeMap.entries());
-    }, [orders]);
 
 
     return (
