@@ -1,8 +1,8 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import { collection, doc, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { collection, doc, Timestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -41,52 +41,18 @@ type Attachment = {
     url: string;
 };
 
-const mockDrivers: Omit<Driver, 'id'>[] = [
-    // 5 Pending (New Set)
-    { name: 'بدر صالح', phone: '772345678', email: 'bader.saleh@example.com', address: 'سيئون - وسط المدينة', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate16/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id16front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id16back/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-29T10:00:00Z')) },
-    { name: 'أمل عبدالله', phone: '732345678', email: 'amal.abdullah@example.com', address: 'صنعاء - السبعين', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate17/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport17/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-28T15:30:00Z')) },
-    { name: 'سامي علي', phone: '712345678', email: 'sami.ali@example.com', address: 'عدن - خور مكسر', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate18/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id18front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id18back/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-27T09:00:00Z')) },
-    { name: 'سلوى محمد', phone: '777222333', email: 'salwa.mohammed@example.com', address: 'إب - جبلة', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate19/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport19/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-26T14:00:00Z')) },
-    { name: 'جمال قاسم', phone: '733222333', email: 'jamal.qasim@example.com', address: 'ذمار - عنس', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate20/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id20front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id20back/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-25T11:00:00Z')) },
-
-    // 5 Active (New Set)
-    { name: 'ليلى ناصر', phone: '777999111', email: 'laila.naser@example.com', address: 'تعز - القاهرة', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate21/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id21front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id21back/800/500', is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-24T11:00:00Z')) },
-    { name: 'ماجد حسين', phone: '711999111', email: 'majed.hussein@example.com', address: 'المكلا - فوه', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate22/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport22/800/500', is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-23T10:00:00Z')) },
-    { name: 'ريم خالد', phone: '733999111', email: 'reem.khalid@example.com', address: 'صنعاء - شعوب', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate23/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id23front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id23back/800/500', is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-22T18:00:00Z')) },
-    { name: 'فهد ياسر', phone: '777111999', email: 'fahad.yasser@example.com', address: 'عدن - التواهي', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate24/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport24/800/500', is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-21T12:00:00Z')) },
-    { name: 'عائشة عمر', phone: '711111999', email: 'aisha.omar@example.com', address: 'تعز - صالة', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate25/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id25front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id25back/800/500', is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-20T09:30:00Z')) },
-
-    // 5 Rejected (New Set)
-    { name: 'حسن محمود', phone: '733555666', email: 'hasan.mahmoud@example.com', address: 'الحديدة - الحوك', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate26/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport26/800/500', is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-19T18:00:00Z')) },
-    { name: 'دينا إبراهيم', phone: '777555666', email: 'dina.ibrahim@example.com', address: 'صعدة - سحار', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate27/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id27front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id27back/800/500', is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-18T16:00:00Z')) },
-    { name: 'وليد أحمد', phone: '733666555', email: 'waleed.ahmed@example.com', address: 'المهرة - حوف', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate28/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport28/800/500', is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-17T13:00:00Z')) },
-    { name: 'عبير مصطفى', phone: '711666555', email: 'abeer.mustafa@example.com', address: 'أبين - لودر', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate29/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id29front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id29back/800/500', is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-16T10:00:00Z')) },
-    { name: 'زكريا سعيد', phone: '777666555', email: 'zakaria.saeed@example.com', address: 'شبوة - نصاب', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate30/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport30/800/500', is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-15T19:00:00Z')) },
-];
-
 export default function DelegateRequestsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'rejected'>('pending');
     const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
     const [isRejectAlertOpen, setIsRejectAlertOpen] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-    const seededRef = useRef(false);
 
     const { toast } = useToast();
     const firestore = useFirestore();
 
     const driversQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers') : null, [firestore]);
     const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
-
-    useEffect(() => {
-        // Seed the database only if it's completely empty and not already attempted.
-        if (!isLoading && drivers && drivers.length === 0 && !seededRef.current) {
-            seededRef.current = true; // Prevent re-seeding in the same session
-            mockDrivers.forEach(driver => {
-                addDocumentNonBlocking(collection(firestore, 'drivers'), { ...driver, createdAt: serverTimestamp() });
-            });
-        }
-    }, [drivers, isLoading, firestore]);
 
     const { pendingApplications, activeDrivers, rejectedDrivers } = useMemo(() => {
         const pending: Driver[] = [];
