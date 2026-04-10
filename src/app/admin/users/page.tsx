@@ -100,7 +100,7 @@ type Driver = z.infer<typeof driverSchema> & { id: string };
 type StoreOwner = z.infer<typeof storeOwnerSchema> & { id: string };
 type Admin = z.infer<typeof adminSchema> & { id: string };
 type AnyUser = Client | Driver | StoreOwner | Admin;
-type UserType = 'clients' | 'drivers' | 'storeOwners' | 'admins';
+type UserType = 'clients' | 'drivers_v2' | 'storeOwners' | 'admins';
 
 // Constants
 const dashboardPages = [
@@ -178,7 +178,7 @@ const adminDefaultValues: z.infer<typeof adminSchema> = {
 
 const defaultValuesMap = {
     clients: clientDefaultValues,
-    drivers: driverDefaultValues,
+    drivers_v2: driverDefaultValues,
     storeOwners: storeOwnerDefaultValues,
     admins: adminDefaultValues,
 };
@@ -188,7 +188,7 @@ export default function UsersPage() {
     const [activeTab, setActiveTab] = useState<UserType>('clients');
     const [dialogState, setDialogState] = useState<{ isOpen: boolean; isEditing: boolean; data: AnyUser | null }>({ isOpen: false, isEditing: false, data: null });
     const [alertState, setAlertState] = useState<{ isOpen: boolean; data: AnyUser | null }>({ isOpen: false, data: null });
-    const [searchTerms, setSearchTerms] = useState({ clients: '', drivers: '', storeOwners: '', admins: '' });
+    const [searchTerms, setSearchTerms] = useState({ clients: '', drivers_v2: '', storeOwners: '', admins: '' });
     
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -198,11 +198,11 @@ export default function UsersPage() {
     const driverForm = useForm<z.infer<typeof driverSchema>>({ resolver: zodResolver(driverSchema), defaultValues: driverDefaultValues });
     const storeOwnerForm = useForm<z.infer<typeof storeOwnerSchema>>({ resolver: zodResolver(storeOwnerSchema), defaultValues: storeOwnerDefaultValues });
     const adminForm = useForm<z.infer<typeof adminSchema>>({ resolver: zodResolver(adminSchema), defaultValues: adminDefaultValues });
-    const forms = { clients: clientForm, drivers: driverForm, storeOwners: storeOwnerForm, admins: adminForm };
+    const forms = { clients: clientForm, drivers_v2: driverForm, storeOwners: storeOwnerForm, admins: adminForm };
 
     // Data Fetching
     const { data: clients, isLoading: l1 } = useCollection<Client>(useMemoFirebase(() => firestore && collection(firestore, 'clients'), [firestore]));
-    const { data: drivers, isLoading: l2 } = useCollection<Driver>(useMemoFirebase(() => firestore && collection(firestore, 'drivers'), [firestore]));
+    const { data: drivers, isLoading: l2 } = useCollection<Driver>(useMemoFirebase(() => firestore && collection(firestore, 'drivers_v2'), [firestore]));
     const { data: storeOwners, isLoading: l3 } = useCollection<StoreOwner>(useMemoFirebase(() => firestore && collection(firestore, 'storeOwners'), [firestore]));
     const { data: admins, isLoading: l4 } = useCollection<Admin>(useMemoFirebase(() => firestore && collection(firestore, 'admins'), [firestore]));
     const { data: provinces, isLoading: l5 } = useCollection<AppProvince>(useMemoFirebase(() => firestore && collection(firestore, 'app_provinces'), [firestore]));
@@ -215,7 +215,7 @@ export default function UsersPage() {
     const storesMap = useMemo(() => stores?.reduce((acc, s) => ({ ...acc, [s.id]: s.name }), {}) || {}, [stores]);
     const filteredData = useMemo(() => ({
         clients: (clients || []).filter(u => u.name.includes(searchTerms.clients) || u.phone.includes(searchTerms.clients)),
-        drivers: (drivers || []).filter(u => u.name.includes(searchTerms.drivers) || u.phone.includes(searchTerms.drivers)),
+        drivers_v2: (drivers || []).filter(u => u.name.includes(searchTerms.drivers_v2) || u.phone.includes(searchTerms.drivers_v2)),
         storeOwners: (storeOwners || []).filter(u => u.name.includes(searchTerms.storeOwners) || u.phone.includes(searchTerms.storeOwners)),
         admins: (admins || []).filter(u => u.name.includes(searchTerms.admins) || u.phone.includes(searchTerms.admins)),
     }), [clients, drivers, storeOwners, admins, searchTerms]);
@@ -280,7 +280,7 @@ export default function UsersPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                      <div className="relative flex-grow w-full sm:flex-grow-0 sm:w-72">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder={`ابحث عن ${userType === 'clients' ? 'عميل' : userType === 'drivers' ? 'مندوب' : 'مستخدم'}...`} className="pr-10" value={searchTerms[userType]} onChange={e => setSearchTerms(s => ({...s, [userType]: e.target.value}))} />
+                        <Input placeholder={`ابحث عن ${userType === 'clients' ? 'عميل' : userType === 'drivers_v2' ? 'مندوب' : 'مستخدم'}...`} className="pr-10" value={searchTerms[userType]} onChange={e => setSearchTerms(s => ({...s, [userType]: e.target.value}))} />
                     </div>
                     <Button onClick={handleAddNew} className="w-full sm:w-auto"><PlusCircle /> إضافة جديد</Button>
                 </div>
@@ -335,7 +335,7 @@ export default function UsersPage() {
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                  </form></Form>;
             }
-            case 'drivers': {
+            case 'drivers_v2': {
                 const idType = driverForm.watch('idType');
                 return <Form {...driverForm}><form onSubmit={driverForm.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-2">
                     <FormField name="name" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><User />الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
@@ -431,13 +431,13 @@ export default function UsersPage() {
                     </div>
                     <TabsList className="w-full sm:w-auto">
                         <TabsTrigger value="clients" className="flex-1 sm:flex-initial gap-2"><User/>العملاء</TabsTrigger>
-                        <TabsTrigger value="drivers" className="flex-1 sm:flex-initial gap-2"><UserCheck/>المناديب</TabsTrigger>
+                        <TabsTrigger value="drivers_v2" className="flex-1 sm:flex-initial gap-2"><UserCheck/>المناديب</TabsTrigger>
                         <TabsTrigger value="storeOwners" className="flex-1 sm:flex-initial gap-2"><Briefcase/>أصحاب المتاجر</TabsTrigger>
                         <TabsTrigger value="admins" className="flex-1 sm:flex-initial gap-2"><UserCog/>الإدارة</TabsTrigger>
                     </TabsList>
                 </div>
                 <TabsContent value="clients">{renderTable('clients', filteredData.clients, [{key: 'name', header: 'الاسم'}, {key: 'phone', header: 'الهاتف'}, {key: 'governorateId', header: 'المحافظة', render: (u) => provincesMap[(u as Client).governorateId] || '—' }, statusColumn, actionColumn])}</TabsContent>
-                <TabsContent value="drivers">{renderTable('drivers', filteredData.drivers, [{key: 'name', header: 'الاسم'}, {key: 'phone', header: 'الهاتف'}, {key: 'email', header: 'البريد الإلكتروني'}, statusColumn, actionColumn])}</TabsContent>
+                <TabsContent value="drivers_v2">{renderTable('drivers_v2', filteredData.drivers_v2, [{key: 'name', header: 'الاسم'}, {key: 'phone', header: 'الهاتف'}, {key: 'email', header: 'البريد الإلكتروني'}, statusColumn, actionColumn])}</TabsContent>
                 <TabsContent value="storeOwners">{renderTable('storeOwners', filteredData.storeOwners, [{key: 'name', header: 'الاسم'}, {key: 'phone', header: 'الهاتف'}, {key: 'storeId', header: 'المتجر', render: (u) => storesMap[(u as StoreOwner).storeId] || '—' }, statusColumn, actionColumn])}</TabsContent>
                 <TabsContent value="admins">{renderTable('admins', filteredData.admins, [{key: 'name', header: 'الاسم'}, {key: 'phone', header: 'الهاتف'}, {key: 'address', header: 'العنوان'}, statusColumn, actionColumn])}</TabsContent>
             </Tabs>
