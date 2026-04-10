@@ -17,6 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Search, Eye, Check, X, MessageSquare, CreditCard, BookUser } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 // Modified Driver type to include status and createdAt
 type Driver = {
@@ -101,7 +103,11 @@ export default function DelegateRequestsPage() {
         if (!firestore) return;
         const driverRef = doc(firestore, 'drivers', driver.id);
         updateDocumentNonBlocking(driverRef, { status: 'active', is_active: true });
-        toast({ title: "تم القبول", description: `تم قبول المندوب ${driver.name} وتفعيل حسابه.` });
+        
+        const message = encodeURIComponent(`مرحباً ${driver.name}، يسعدنا إخبارك بقبول طلب انضمامك لفريق مناديب أبشر! يمكنك الآن تسجيل الدخول إلى تطبيق المناديب والبدء في استقبال الطلبات. بالتوفيق!`);
+        window.open(`https://wa.me/${driver.phone}?text=${message}`, '_blank');
+        
+        toast({ title: "تم القبول", description: `تم قبول المندوب ${driver.name} وإرسال رسالة ترحيب.` });
     };
 
     const handleReject = (driver: Driver) => {
@@ -113,10 +119,14 @@ export default function DelegateRequestsPage() {
         if (!selectedDriver || !firestore) return;
         const driverRef = doc(firestore, 'drivers', selectedDriver.id);
         updateDocumentNonBlocking(driverRef, { status: 'rejected', is_active: false });
+
+        const message = encodeURIComponent(`مرحباً ${selectedDriver.name}، نشكرك على اهتمامك بالانضمام لفريق أبشر. نعتذر لإبلاغك بعدم قبول طلبك في الوقت الحالي. نتمنى لك كل التوفيق.`);
+        window.open(`https://wa.me/${selectedDriver.phone}?text=${message}`, '_blank');
+        
         toast({
             variant: "destructive",
             title: "تم الرفض",
-            description: `تم رفض طلب المندوب ${selectedDriver.name}.`,
+            description: `تم رفض طلب المندوب ${selectedDriver.name} وإرسال رسالة اعتذار.`,
         });
         setIsRejectAlertOpen(false);
         setSelectedDriver(null);
@@ -200,10 +210,48 @@ export default function DelegateRequestsPage() {
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <Button variant="outline" size="sm" onClick={() => handleViewAttachments(app)}><Eye/> عرض المرفقات</Button>
-                                                    <Button variant="outline" size="sm" onClick={() => openWhatsApp(app)} className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800"><MessageSquare/> واتساب</Button>
-                                                    <Button variant="default" size="sm" onClick={() => handleAccept(app)}><Check/> قبول</Button>
-                                                    <Button variant="destructive" size="sm" onClick={() => handleReject(app)}><X/> رفض</Button>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" size="icon" onClick={() => handleViewAttachments(app)}>
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>عرض المرفقات</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" size="icon" onClick={() => openWhatsApp(app)} className="text-green-600 border-green-600/20 hover:bg-green-50 hover:text-green-700">
+                                                                    <MessageSquare className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>تواصل مبدئي عبر واتساب</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" size="icon" onClick={() => handleAccept(app)} className="text-primary border-primary/20 hover:bg-primary/10 hover:text-primary">
+                                                                    <Check className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>قبول وإرسال رسالة</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" size="icon" onClick={() => handleReject(app)} className="text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive">
+                                                                    <X className="h-4 w-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>رفض وإرسال رسالة</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -249,7 +297,7 @@ export default function DelegateRequestsPage() {
                     <AlertDialogHeader className="text-right">
                         <AlertDialogTitle>تأكيد الرفض</AlertDialogTitle>
                         <AlertDialogDescription>
-                            هل أنت متأكد من رفض طلب المندوب "{selectedDriver?.name}"؟ سيتم تغيير حالته إلى "مرفوض" ولا يمكن التراجع عن هذا الإجراء.
+                            هل أنت متأكد من رفض طلب المندوب "{selectedDriver?.name}"؟ سيتم تغيير حالته إلى "مرفوض" وإرسال رسالة اعتذار.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex-row-reverse sm:justify-start gap-2">
