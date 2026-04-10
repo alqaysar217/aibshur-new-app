@@ -4,7 +4,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, doc, query, where, Timestamp, runTransaction } from 'firebase/firestore';
-import { useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -158,8 +158,9 @@ export default function LoyaltyPage() {
     // Handlers
     const onRulesSubmit = (values: LoyaltyRule) => {
         if (!firestore) return;
-        updateDocumentNonBlocking(doc(firestore, 'loyaltyRules', 'main_rules'), values);
-        toast({ title: 'تم تحديث قواعد الولاء بنجاح' });
+        // Use set with merge to handle both creation and update, preventing permission errors on non-existent documents.
+        setDocumentNonBlocking(doc(firestore, 'loyaltyRules', 'main_rules'), values, { merge: true });
+        toast({ title: 'تم حفظ قواعد الولاء بنجاح' });
     };
 
     const handleRequestAction = (request: PointRequest, type: 'approve' | 'reject') => {
@@ -191,7 +192,7 @@ export default function LoyaltyPage() {
                     transaction.update(requestRef, { status: newStatus, processedAt: serverTimestamp() });
                 });
             } else {
-                 await updateDocumentNonBlocking(requestRef, { status: newStatus, processedAt: serverTimestamp() });
+                 await setDocumentNonBlocking(requestRef, { status: newStatus, processedAt: serverTimestamp() }, { merge: true });
             }
              toast({ title: `تم ${type === 'approve' ? 'قبول' : 'رفض'} الطلب بنجاح` });
         } catch (error: any) {
