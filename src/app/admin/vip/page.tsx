@@ -678,8 +678,8 @@ export default function VipPage() {
                             <Card>
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الاشتراك</CardTitle></CardHeader>
                                 <CardContent className="space-y-2">
-                                    <div><strong>تاريخ التفعيل:</strong> {format(sub.activationDate.toDate(), 'd MMMM yyyy', { locale: ar })}</div>
-                                    <div><strong>تاريخ الانتهاء:</strong> {format(sub.expiryDate.toDate(), 'd MMMM yyyy', { locale: ar })}</div>
+                                    <div><strong>تاريخ التفعيل:</strong> {sub.activationDate ? format(sub.activationDate.toDate(), 'd MMMM yyyy', { locale: ar }) : 'غير محدد'}</div>
+                                    <div><strong>تاريخ الانتهاء:</strong> {sub.expiryDate ? format(sub.expiryDate.toDate(), 'd MMMM yyyy', { locale: ar }) : 'غير محدد'}</div>
                                     {sub.deactivatedAt && <div className="text-yellow-600"><strong>تاريخ إلغاء التفعيل:</strong> {format(sub.deactivatedAt.toDate(), 'd MMMM yyyy', { locale: ar })}</div>}
                                     <div className="flex items-center gap-2"><strong>الحالة:</strong> <Badge variant={sub.isActive ? 'default' : 'secondary'}>{sub.isActive ? 'فعال' : 'غير فعال'}</Badge></div>
                                 </CardContent>
