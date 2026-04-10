@@ -443,119 +443,112 @@ export default function OrdersPage() {
             </Tabs>
 
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
+                <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
                          <div className="flex justify-between items-start">
-                            {selectedOrder && <span className="flex items-center gap-1.5 text-sm text-muted-foreground"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
                             <div className="flex items-center gap-4 text-sm">
                                 {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
                             </div>
+                            {selectedOrder && <span className="flex items-center gap-1.5 text-sm text-muted-foreground"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
                         </div>
                         <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
                     </DialogHeader>
                     {selectedOrder && (
-                    <div className="grid md:grid-cols-2 gap-x-6 gap-y-4 flex-1 overflow-y-auto p-1 pr-4">
-                        {/* LEFT COLUMN */}
-                        <div className="space-y-4">
-                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><User/>بيانات العميل</CardTitle></CardHeader>
-                                <CardContent className="text-sm space-y-2">
-                                    <p><strong>الاسم:</strong> {selectedOrder.clientName}</p>
-                                    <p className="flex items-center justify-between"><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span> <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4"/></Button></p>
-                                    <p><strong>العنوان:</strong> {selectedOrder.address.description}</p>
-                                </CardContent>
-                            </Card>
-                            
-                             {selectedOrder.address.addressType === 'other' && selectedOrder.address.receiverName && (
-                                <Card>
-                                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact/>بيانات المستلم</CardTitle></CardHeader>
-                                    <CardContent className="text-sm space-y-2">
-                                        <p><strong>الاسم:</strong> {selectedOrder.address.receiverName}</p>
-                                        {selectedOrder.address.receiverPhone && <p><strong>الهاتف:</strong> {selectedOrder.address.receiverPhone}</p>}
-                                    </CardContent>
-                                </Card>
-                            )}
+                    <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
+                        {/* Group 1: Client & Delivery */}
+                        <Card>
+                           <CardHeader><CardTitle className="text-base flex items-center gap-2"><User/>بيانات العميل</CardTitle></CardHeader>
+                           <CardContent className="text-sm space-y-2">
+                               <p><strong>الاسم:</strong> {selectedOrder.clientName}</p>
+                               <p className="flex items-center justify-between"><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span> <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4"/></Button></p>
+                               <p><strong>العنوان:</strong> {selectedOrder.address.description}</p>
+                           </CardContent>
+                        </Card>
 
-                            {selectedOrder.notes && <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText/>ملاحظات الطلب</CardTitle></CardHeader>
-                                <CardContent className="text-sm"><p>{selectedOrder.notes}</p></CardContent>
-                            </Card>}
-                            
-                            {selectedOrder.delegateId && (
-                                <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike/>بيانات المندوب</CardTitle></CardHeader>
-                                <CardContent className="text-sm space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar>
-                                            <AvatarImage src={selectedOrder.delegatePhotoUrl} alt={selectedOrder.delegateName}/>
-                                            <AvatarFallback>{selectedOrder.delegateName?.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p><strong>الاسم:</strong> {selectedOrder.delegateName}</p>
-                                            <p><strong>الهاتف:</strong> {(mockDelegatesMap as any)[selectedOrder.delegateId]?.phone}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            )}
-                            
-                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin/>موقع التوصيل</CardTitle></CardHeader>
-                                <CardContent>
-                                    <LocationMapViewer
-                                        mainPosition={{ lat: selectedOrder.address.latitude, lng: selectedOrder.address.longitude }}
-                                        secondaryPosition={selectedOrder.status === 'dispatched' ? selectedOrder.delegatePosition : undefined}
-                                    />
-                                </CardContent>
-                            </Card>
+                        {selectedOrder.address.addressType === 'other' && selectedOrder.address.receiverName && (
+                           <Card>
+                               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact/>بيانات المستلم</CardTitle></CardHeader>
+                               <CardContent className="text-sm space-y-2">
+                                   <p><strong>الاسم:</strong> {selectedOrder.address.receiverName}</p>
+                                   {selectedOrder.address.receiverPhone && <p><strong>الهاتف:</strong> {selectedOrder.address.receiverPhone}</p>}
+                               </CardContent>
+                           </Card>
+                        )}
 
-                            {selectedOrder.cancellationReason && <Card className="border-destructive/50 bg-destructive/10">
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
-                                <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
-                            </Card>}
-                        </div>
+                        {selectedOrder.delegateId && (
+                           <Card>
+                           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike/>بيانات المندوب</CardTitle></CardHeader>
+                           <CardContent className="text-sm space-y-2">
+                               <div className="flex items-center gap-3">
+                                   <Avatar>
+                                       <AvatarImage src={selectedOrder.delegatePhotoUrl} alt={selectedOrder.delegateName}/>
+                                       <AvatarFallback>{selectedOrder.delegateName?.charAt(0)}</AvatarFallback>
+                                   </Avatar>
+                                   <div>
+                                       <p><strong>الاسم:</strong> {selectedOrder.delegateName}</p>
+                                       <p><strong>الهاتف:</strong> {(mockDelegatesMap as any)[selectedOrder.delegateId]?.phone}</p>
+                                   </div>
+                               </div>
+                           </CardContent>
+                       </Card>
+                        )}
+                        
+                        <Card>
+                           <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin/>موقع التوصيل</CardTitle></CardHeader>
+                           <CardContent>
+                               <LocationMapViewer
+                                   mainPosition={{ lat: selectedOrder.address.latitude, lng: selectedOrder.address.longitude }}
+                                   secondaryPosition={selectedOrder.status === 'dispatched' ? selectedOrder.delegatePosition : undefined}
+                               />
+                           </CardContent>
+                        </Card>
 
-                        {/* RIGHT COLUMN */}
-                        <div className="space-y-4">
+                        <Separator className="my-4" />
+
+                        {/* Group 2: Order & Financials */}
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center gap-3">
+                                    <Image src={selectedOrder.storeImage} alt={selectedOrder.storeName} width={40} height={40} className="rounded-md object-cover border" />
+                                    <CardTitle className="text-base">{selectedOrder.storeName}</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[50px] text-center">الكمية</TableHead><TableHead className="w-[80px] text-center">السعر</TableHead><TableHead className="text-left w-[90px]">الإجمالي</TableHead></TableRow></TableHeader>
+                                    <TableBody>{selectedOrder.items.map(item => (
+                                        <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell dir="ltr" className="text-center">{item.price.toLocaleString()}</TableCell><TableCell className="text-left" dir="ltr">{(item.price * item.quantity).toLocaleString()}</TableCell></TableRow>
+                                    ))}</TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign/>الملخص المالي</CardTitle></CardHeader>
+                            <CardContent className="space-y-2 text-sm">
+                                <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedOrder.financials.subtotal.toLocaleString()}&nbsp;ر.ي</span></div>
+                                {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedOrder.financials.discount.toLocaleString()}&nbsp;ر.ي</span></div>}
+                                <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedOrder.financials.deliveryFee.toLocaleString()}&nbsp;ر.ي</span></div>
+                                <Separator/>
+                                <div className="flex justify-between font-bold text-base"><span>الإجمالي النهائي</span><span dir="ltr">{selectedOrder.financials.total.toLocaleString()}&nbsp;ر.ي</span></div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                           <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard/>الدفع</CardTitle></CardHeader>
+                           <CardContent className="text-sm space-y-2">
+                               <p><strong>الطريقة:</strong> {translatePaymentMethod(selectedOrder.payment.method)}</p>
+                               <p><strong>الحالة:</strong> {translatePaymentStatus(selectedOrder.payment.status)}</p>
+                               {selectedOrder.payment.receiptImageUrl && <Image src={selectedOrder.payment.receiptImageUrl} alt="إيصال" width={100} height={100} className="rounded-md border mt-2"/>}
+                           </CardContent>
+                        </Card>
+
+                        {(selectedOrder.status === 'delivered' || selectedOrder.notes || selectedOrder.cancellationReason) && (
+                            <Separator className="my-4" />
+                        )}
+
+                        {selectedOrder.status === 'delivered' && (
                             <Card>
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <Image src={selectedOrder.storeImage} alt={selectedOrder.storeName} width={40} height={40} className="rounded-md object-cover border" />
-                                        <CardTitle className="text-base">{selectedOrder.storeName}</CardTitle>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[50px] text-center">الكمية</TableHead><TableHead className="w-[80px] text-center">السعر</TableHead><TableHead className="text-left w-[90px]">الإجمالي</TableHead></TableRow></TableHeader>
-                                        <TableBody>{selectedOrder.items.map(item => (
-                                            <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell dir="ltr" className="text-center">{item.price.toLocaleString()}</TableCell><TableCell className="text-left" dir="ltr">{(item.price * item.quantity).toLocaleString()}</TableCell></TableRow>
-                                        ))}</TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign/>الملخص المالي</CardTitle></CardHeader>
-                                <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedOrder.financials.subtotal.toLocaleString()}&nbsp;ر.ي</span></div>
-                                    {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedOrder.financials.discount.toLocaleString()}&nbsp;ر.ي</span></div>}
-                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedOrder.financials.deliveryFee.toLocaleString()}&nbsp;ر.ي</span></div>
-                                    <Separator/>
-                                    <div className="flex justify-between font-bold text-base"><span>الإجمالي النهائي</span><span dir="ltr">{selectedOrder.financials.total.toLocaleString()}&nbsp;ر.ي</span></div>
-                                </CardContent>
-                            </Card>
-
-                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard/>الدفع</CardTitle></CardHeader>
-                                <CardContent className="text-sm space-y-2">
-                                    <p><strong>الطريقة:</strong> {translatePaymentMethod(selectedOrder.payment.method)}</p>
-                                    <p><strong>الحالة:</strong> {translatePaymentStatus(selectedOrder.payment.status)}</p>
-                                    {selectedOrder.payment.receiptImageUrl && <Image src={selectedOrder.payment.receiptImageUrl} alt="إيصال" width={100} height={100} className="rounded-md border mt-2"/>}
-                                </CardContent>
-                            </Card>
-
-                            {selectedOrder.status === 'delivered' && (
-                                <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Star/>التقييم والإكرامية</CardTitle></CardHeader>
                                 <CardContent className="space-y-3 text-sm">
                                     {selectedOrder.rating ? (
@@ -573,9 +566,22 @@ export default function OrdersPage() {
                                         {selectedOrder.financials.tip > 0 && <p><strong>طريقة الدفع:</strong> {selectedOrder.tipPayment ? translatePaymentMethod(selectedOrder.tipPayment.method) : 'غير محدد'}</p>}
                                     </div>
                                 </CardContent>
-                                </Card>
-                            )}
-                        </div>
+                            </Card>
+                        )}
+                        
+                        {selectedOrder.notes && (
+                            <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText/>ملاحظات الطلب</CardTitle></CardHeader>
+                                <CardContent className="text-sm"><p>{selectedOrder.notes}</p></CardContent>
+                            </Card>
+                        )}
+
+                        {selectedOrder.cancellationReason && (
+                            <Card className="border-destructive/50 bg-destructive/10">
+                               <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
+                               <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
+                           </Card>
+                        )}
                     </div>
                     )}
                     <DialogFooter className="gap-2 flex-row-reverse sm:justify-start">
@@ -633,3 +639,4 @@ export default function OrdersPage() {
         </div>
     );
 }
+
