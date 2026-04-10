@@ -1,4 +1,3 @@
-// This is a new file.
 'use client';
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
@@ -20,6 +19,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
