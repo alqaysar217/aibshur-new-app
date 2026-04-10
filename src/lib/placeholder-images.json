@@ -185,6 +185,12 @@
       "description": "A placeholder map for order tracking",
       "imageUrl": "https://picsum.photos/seed/map/800/400",
       "imageHint": "city map"
+    },
+    {
+      "id": "delegate-avatar",
+      "description": "Avatar for a delivery delegate",
+      "imageUrl": "https://picsum.photos/seed/delegate1/100/100",
+      "imageHint": "delivery person"
     }
   ]
 }
