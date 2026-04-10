@@ -277,11 +277,11 @@ export default function DelegateRequestsPage() {
                     )}
                     
                     <ScrollArea className="max-h-[50vh] p-1">
-                        <div className="space-y-6 py-4 pr-2">
+                        <div className="grid grid-cols-2 gap-4 py-4 pr-2">
                             {attachments.map((att, index) => (
                                 <div key={index}>
-                                    <h3 className="font-semibold mb-2">{att.label}</h3>
-                                    <div className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border">
+                                    <h3 className="font-semibold mb-2 text-sm">{att.label}</h3>
+                                    <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden border">
                                         <Image src={att.url} alt={att.label} fill className="object-contain" unoptimized/>
                                     </div>
                                 </div>
