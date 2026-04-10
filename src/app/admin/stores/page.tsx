@@ -91,7 +91,7 @@ export default function StoresPage() {
         resolver: zodResolver(storeSchema),
         defaultValues: {
             name: '', imageUrl: '', rating: 0, deliveryTime: '25-35',
-            latitude: 15.3694, longitude: 44.1910, is_active: true,
+            latitude: 14.5424, longitude: 49.1333, is_active: true,
             workingHours: defaultWorkingHours,
         },
     });
@@ -126,7 +126,7 @@ export default function StoresPage() {
         form.reset({
             name: '', imageUrl: '', rating: 0, deliveryTime: '25-35',
             provinceId: undefined, categoryId: undefined,
-            latitude: 15.3694, longitude: 44.1910, is_active: true,
+            latitude: 14.5424, longitude: 49.1333, is_active: true,
             workingHours: defaultWorkingHours,
         });
         setIsDialogOpen(true);

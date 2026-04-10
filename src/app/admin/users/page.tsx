@@ -133,8 +133,8 @@ const clientDefaultValues: z.infer<typeof clientSchema> = {
     addressType: 'home',
     receiverName: '',
     receiverPhone: '',
-    latitude: 15.3694,
-    longitude: 44.1910,
+    latitude: 14.5424,
+    longitude: 49.1333,
     is_active: true
 };
 
@@ -147,8 +147,8 @@ const driverDefaultValues: z.infer<typeof driverSchema> = {
     personalPhotoUrl: '',
     idFrontPhotoUrl: '',
     idBackPhotoUrl: '',
-    latitude: 15.3694,
-    longitude: 44.1910,
+    latitude: 14.5424,
+    longitude: 49.1333,
     is_active: true
 };
 
@@ -316,7 +316,7 @@ export default function UsersPage() {
                         <FormField name="receiverName" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><User />اسم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                         <FormField name="receiverPhone" control={currentForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Phone />رقم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                     </div>}
-                    <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>الموقع على الخريطة</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Client).latitude, lng: (dialogState.data as Client).longitude } : { lat: clientDefaultValues.latitude, lng: clientDefaultValues.longitude }} onPositionChange={({ lat, lng }) => { clientForm.setValue('latitude', lat, {shouldValidate: true}); clientForm.setValue('longitude', lng, {shouldValidate: true}); }} /><div className="grid grid-cols-2 gap-2 pt-2"><FormField name="latitude" control={clientForm.control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /><FormField name="longitude" control={clientForm.control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /></div></FormItem>
+                    <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>الموقع على الخريطة</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Client).latitude, lng: (dialogState.data as Client).longitude } : undefined} onPositionChange={({ lat, lng }) => { clientForm.setValue('latitude', lat, {shouldValidate: true}); clientForm.setValue('longitude', lng, {shouldValidate: true}); }} /><div className="grid grid-cols-2 gap-2 pt-2"><FormField name="latitude" control={clientForm.control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /><FormField name="longitude" control={clientForm.control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /></div></FormItem>
                     <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                  </form></Form>;
@@ -332,7 +332,7 @@ export default function UsersPage() {
                     <FormField name="personalPhotoUrl" control={driverForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>صورة شخصية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
                     <FormField name="idFrontPhotoUrl" control={driverForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>{idType === 'card' ? 'صورة الهوية الأمامية (رابط)' : 'صورة الجواز (رابط)'}</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />
                     {idType === 'card' && <FormField name="idBackPhotoUrl" control={driverForm.control} render={({ field }) => <FormItem><FormLabel className="flex items-center gap-2"><Paperclip/>صورة الهوية الخلفية (رابط)</FormLabel><FormControl><Input {...field} /></FormControl><ImagePreview url={field.value}/><FormMessage /></FormItem>} />}
-                    <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>الموقع على الخريطة</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Driver).latitude, lng: (dialogState.data as Driver).longitude } : { lat: driverDefaultValues.latitude, lng: driverDefaultValues.longitude }} onPositionChange={({ lat, lng }) => { driverForm.setValue('latitude', lat, {shouldValidate: true}); driverForm.setValue('longitude', lng, {shouldValidate: true}); }} /><div className="grid grid-cols-2 gap-2 pt-2"><FormField name="latitude" control={driverForm.control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /><FormField name="longitude" control={driverForm.control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /></div></FormItem>
+                    <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>الموقع على الخريطة</FormLabel><MapPicker initialPosition={dialogState.data ? { lat: (dialogState.data as Driver).latitude, lng: (dialogState.data as Driver).longitude } : undefined} onPositionChange={({ lat, lng }) => { driverForm.setValue('latitude', lat, {shouldValidate: true}); driverForm.setValue('longitude', lng, {shouldValidate: true}); }} /><div className="grid grid-cols-2 gap-2 pt-2"><FormField name="latitude" control={driverForm.control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /><FormField name="longitude" control={driverForm.control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input disabled {...field} /></FormControl><FormMessage /></FormItem>} /></div></FormItem>
                     <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                 </form></Form>;

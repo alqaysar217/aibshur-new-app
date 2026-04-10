@@ -7,26 +7,38 @@ interface MapPickerProps {
   initialPosition?: { lat: number; lng: number };
 }
 
+// Mukalla coordinates
+const MUKALLA_COORDS: [number, number] = [14.5424, 49.1333];
+
 export const MapPicker: React.FC<MapPickerProps> = ({ onPositionChange, initialPosition }) => {
-  const [center, setCenter] = useState<[number, number]>(
-    initialPosition ? [initialPosition.lat, initialPosition.lng] : [15.3694, 44.1910]
+  // The position of the marker. This is the source of truth for the selected location.
+  const [markerPosition, setMarkerPosition] = useState<[number, number]>(
+    initialPosition && initialPosition.lat && initialPosition.lng 
+      ? [initialPosition.lat, initialPosition.lng] 
+      : MUKALLA_COORDS
   );
-  const [markerPosition, setMarkerPosition] = useState<[number, number]>(center);
+
+  // The center of the map view. We initialize it to the marker's position.
+  const [viewCenter, setViewCenter] = useState<[number, number]>(markerPosition);
   const [zoom, setZoom] = useState(13);
 
-  // When initialPosition prop changes (e.g. editing an existing store)
+  // If the initialPosition prop changes from the parent, reset the component's state.
   useEffect(() => {
-    if (initialPosition) {
-      const newPos: [number, number] = [initialPosition.lat, initialPosition.lng];
-      setCenter(newPos);
-      setMarkerPosition(newPos);
-      setZoom(15);
-    }
+    const newPos: [number, number] = 
+      initialPosition && initialPosition.lat && initialPosition.lng
+        ? [initialPosition.lat, initialPosition.lng]
+        : MUKALLA_COORDS;
+    
+    setMarkerPosition(newPos);
+    setViewCenter(newPos);
+    setZoom(15);
   }, [initialPosition]);
 
+  // When the user clicks the map...
   const handleMapClick = ({ latLng }: { latLng: [number, number] }) => {
+    // 1. Update the marker's position.
     setMarkerPosition(latLng);
-    setCenter(latLng); // This is the fix: Center the map on the new marker position.
+    // 2. Propagate the change to the parent form.
     onPositionChange({ lat: latLng[0], lng: latLng[1] });
   };
   
@@ -42,17 +54,20 @@ export const MapPicker: React.FC<MapPickerProps> = ({ onPositionChange, initialP
   return (
     <div className="h-[350px] w-full rounded-lg overflow-hidden border">
         <Map
-            center={center}
+            // The center prop sets the *initial* center, but also updates if the state changes.
+            center={viewCenter}
             zoom={zoom}
-            onClick={handleMapClick}
+            // Let the user pan and zoom. `onBoundsChanged` will update our view state.
             onBoundsChanged={({ center, zoom }) => { 
-                setCenter(center) 
+                setViewCenter(center) 
                 setZoom(zoom) 
             }}
+            // When the map is clicked, we update the marker.
+            onClick={handleMapClick}
         >
             <Marker 
                 width={40} 
-                anchor={markerPosition} 
+                anchor={markerPosition} // The marker is always at the selected position.
                 color="#1FAF9A"
             />
         </Map>
