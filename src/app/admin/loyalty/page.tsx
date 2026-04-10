@@ -89,16 +89,6 @@ type LoyaltyLog = {
 
 const arabicDays = { saturday: "السبت", sunday: "الأحد", monday: "الإثنين", tuesday: "الثلاثاء", wednesday: "الأربعاء", thursday: "الخميس", friday: "الجمعة" };
 
-const defaultRuleValues: LoyaltyRule = {
-    strategy: 'order_value',
-    basePointsRatio: 1000,
-    valueThreshold: 0,
-    valueMultiplier: 1,
-    conversionRate: 0.5,
-    dayMultipliers: [],
-};
-
-
 export default function LoyaltyPage() {
     const [alertState, setAlertState] = useState<{ isOpen: boolean, data: PointRequest | null, type: 'approve' | 'reject' | null }>({ isOpen: false, data: null, type: null });
     const [searchTerm, setSearchTerm] = useState('');
@@ -131,7 +121,16 @@ export default function LoyaltyPage() {
     // Forms
     const rulesForm = useForm<LoyaltyRule>({
       resolver: zodResolver(loyaltyRuleSchema),
-      defaultValues: defaultRuleValues
+      defaultValues: {
+        strategy: 'order_value',
+        basePointsRatio: 1000,
+        valueThreshold: 0,
+        valueMultiplier: 1,
+        ordersForPoints: 5,
+        pointsPerOrderSet: 10,
+        conversionRate: 0.5,
+        dayMultipliers: [],
+      }
     });
     const { fields, append, remove } = useFieldArray({ control: rulesForm.control, name: "dayMultipliers" });
     const manualConversionForm = useForm<z.infer<typeof manualConversionSchema>>({
