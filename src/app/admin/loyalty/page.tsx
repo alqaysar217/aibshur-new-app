@@ -12,14 +12,14 @@ import LoyaltyLoading from './loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Star, Scale, Inbox, History, Search, User, Phone, Check, X, Calendar, Filter, Wand2 } from 'lucide-react';
+import { PlusCircle, Trash, Star, Scale, Inbox, History, Search, Check, X, Calendar, Filter, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -34,11 +34,24 @@ const dayMultiplierSchema = z.object({
   multiplier: z.coerce.number().min(1, "المضاعف يجب أن يكون 1 أو أكثر"),
 });
 
-const loyaltyRuleSchema = z.object({
-  pointsRatio: z.coerce.number().min(1, "يجب تحديد قيمة أكبر من صفر"),
-  conversionRate: z.coerce.number().min(0.01, "يجب تحديد قيمة أكبر من صفر"),
-  dayMultipliers: z.array(dayMultiplierSchema),
-});
+const loyaltyRuleSchema = z.discriminatedUnion("strategy", [
+  z.object({
+    strategy: z.literal("order_value"),
+    basePointsRatio: z.coerce.number().min(1, "يجب تحديد قيمة أكبر من صفر (مثال: 1000)"),
+    valueThreshold: z.coerce.number().min(0, "لا يمكن أن يكون سالبًا").optional(),
+    valueMultiplier: z.coerce.number().min(1, "يجب أن يكون 1 أو أكثر").optional(),
+    conversionRate: z.coerce.number().min(0.01, "يجب تحديد قيمة أكبر من صفر"),
+    dayMultipliers: z.array(dayMultiplierSchema),
+  }),
+  z.object({
+    strategy: z.literal("order_count"),
+    ordersForPoints: z.coerce.number().min(1, "يجب أن يكون عدد الطلبات 1 أو أكثر"),
+    pointsPerOrderSet: z.coerce.number().min(1, "يجب أن تكون النقاط 1 أو أكثر"),
+    conversionRate: z.coerce.number().min(0.01, "يجب تحديد قيمة أكبر من صفر"),
+    dayMultipliers: z.array(dayMultiplierSchema),
+  }),
+]);
+
 
 const manualConversionSchema = z.object({
     clientId: z.string(),
@@ -76,6 +89,14 @@ type LoyaltyLog = {
 
 const arabicDays = { saturday: "السبت", sunday: "الأحد", monday: "الإثنين", tuesday: "الثلاثاء", wednesday: "الأربعاء", thursday: "الخميس", friday: "الجمعة" };
 
+const defaultRuleValues: LoyaltyRule = {
+    strategy: 'order_value',
+    basePointsRatio: 1000,
+    conversionRate: 0.5,
+    dayMultipliers: [],
+};
+
+
 export default function LoyaltyPage() {
     const [alertState, setAlertState] = useState<{ isOpen: boolean, data: PointRequest | null, type: 'approve' | 'reject' | null }>({ isOpen: false, data: null, type: null });
     const [searchTerm, setSearchTerm] = useState('');
@@ -108,21 +129,15 @@ export default function LoyaltyPage() {
     // Forms
     const rulesForm = useForm<LoyaltyRule>({
       resolver: zodResolver(loyaltyRuleSchema),
-      defaultValues: {
-        pointsRatio: 1000,
-        conversionRate: 0.5,
-        dayMultipliers: [],
-      }
+      defaultValues: defaultRuleValues
     });
     const { fields, append, remove } = useFieldArray({ control: rulesForm.control, name: "dayMultipliers" });
     const manualConversionForm = useForm<z.infer<typeof manualConversionSchema>>({
       resolver: zodResolver(manualConversionSchema),
-      defaultValues: {
-        clientId: '',
-        points: 0,
-        notes: ''
-      }
+      defaultValues: { clientId: '', points: 0, notes: '' }
     });
+
+    const strategy = rulesForm.watch('strategy');
 
     // Effects
     useEffect(() => { if (rules) rulesForm.reset(rules); }, [rules, rulesForm]);
@@ -242,23 +257,93 @@ export default function LoyaltyPage() {
                     <Form {...rulesForm}>
                         <form onSubmit={rulesForm.handleSubmit(onRulesSubmit)}>
                             <Card>
-                                <CardHeader><CardTitle>قواعد احتساب وصرف النقاط</CardTitle></CardHeader>
+                                <CardHeader>
+                                    <CardTitle>محرك قواعد احتساب وصرف النقاط</CardTitle>
+                                    <CardDescription>اختر الاستراتيجية المناسبة لعملك واضبط الإعدادات.</CardDescription>
+                                </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <div className="grid sm:grid-cols-2 gap-4">
-                                        <FormField control={rulesForm.control} name="pointsRatio" render={({field}) => <FormItem><FormLabel>معدل اكتساب النقاط</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormDescription>كل كم ريال يساوي 1 نقطة. مثال: 1000</FormDescription><FormMessage/></FormItem>} />
-                                        <FormField control={rulesForm.control} name="conversionRate" render={({field}) => <FormItem><FormLabel>سعر صرف النقطة</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormDescription>كل 1 نقطة تساوي كم ريال. مثال: 0.5</FormDescription><FormMessage/></FormItem>} />
-                                    </div>
-                                    <div>
-                                        <FormLabel>مضاعفات الأيام الخاصة</FormLabel>
-                                        <div className="space-y-2 mt-2">
-                                            {fields.map((item, index) => (
-                                                <div key={item.id} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                                                    <FormField control={rulesForm.control} name={`dayMultipliers.${index}.day`} render={({field}) => <FormItem className="flex-1"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{Object.entries(arabicDays).map(([key, val]) => <SelectItem key={key} value={key}>{val}</SelectItem>)}</SelectContent></Select></FormItem>}/>
-                                                    <FormField control={rulesForm.control} name={`dayMultipliers.${index}.multiplier`} render={({field}) => <FormItem><FormControl><Input type="number" {...field} placeholder="المضاعف (e.g. 2)" /></FormControl></FormItem>}/>
-                                                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash className="text-destructive"/></Button>
+                                    <FormField
+                                        control={rulesForm.control}
+                                        name="strategy"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>اختر استراتيجية اكتساب النقاط:</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup
+                                                    onValueChange={field.onChange}
+                                                    defaultValue={field.value}
+                                                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                    >
+                                                    <FormItem className="flex items-center space-x-3 space-y-0 space-x-reverse">
+                                                        <FormControl>
+                                                            <Card className={cn("p-4 flex-1 cursor-pointer", field.value === 'order_value' && "border-primary ring-2 ring-primary")}>
+                                                                <RadioGroupItem value="order_value" id="order_value" className="sr-only"/>
+                                                                <FormLabel htmlFor="order_value" className="font-bold cursor-pointer">
+                                                                    على أساس قيمة الطلب
+                                                                    <p className="font-normal text-muted-foreground text-sm mt-1">
+                                                                        مكافأة العملاء بناءً على قيمة مشترياتهم.
+                                                                    </p>
+                                                                </FormLabel>
+                                                            </Card>
+                                                        </FormControl>
+                                                    </FormItem>
+                                                    <FormItem className="flex items-center space-x-3 space-y-0 space-x-reverse">
+                                                         <FormControl>
+                                                            <Card className={cn("p-4 flex-1 cursor-pointer", field.value === 'order_count' && "border-primary ring-2 ring-primary")}>
+                                                                <RadioGroupItem value="order_count" id="order_count" className="sr-only"/>
+                                                                <FormLabel htmlFor="order_count" className="font-bold cursor-pointer">
+                                                                    على أساس عدد الطلبات
+                                                                     <p className="font-normal text-muted-foreground text-sm mt-1">
+                                                                        مكافأة ولاء العملاء بناءً على تكرار طلباتهم.
+                                                                    </p>
+                                                                </FormLabel>
+                                                            </Card>
+                                                        </FormControl>
+                                                    </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    
+                                    <div className="space-y-4 rounded-lg border p-4">
+                                        <h3 className="font-semibold">إعدادات الاستراتيجية المختارة</h3>
+                                        {strategy === 'order_value' && (
+                                            <div className="space-y-4">
+                                                <FormField control={rulesForm.control} name="basePointsRatio" render={({field}) => <FormItem><FormLabel>المعدل الأساسي للنقاط</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>كل كم ريال يساوي 1 نقطة. (مثال: 1000)</FormDescription><FormMessage/></FormItem>} />
+                                                <div className="space-y-2">
+                                                    <FormLabel>مضاعف قيمة الطلب (اختياري)</FormLabel>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <FormField control={rulesForm.control} name="valueThreshold" render={({field}) => <FormItem><FormLabel className="text-xs">إذا تجاوز الطلب (ريال)</FormLabel><FormControl><Input type="number" {...field} placeholder="مثال: 5000"/></FormControl><FormMessage/></FormItem>} />
+                                                        <FormField control={rulesForm.control} name="valueMultiplier" render={({field}) => <FormItem><FormLabel className="text-xs">اضرب النقاط في</FormLabel><FormControl><Input type="number" {...field} placeholder="مثال: 2"/></FormControl><FormMessage/></FormItem>} />
+                                                    </div>
                                                 </div>
-                                            ))}
-                                            <Button type="button" variant="outline" size="sm" onClick={() => append({day: 'friday', multiplier: 2})}><PlusCircle/>إضافة يوم</Button>
+                                            </div>
+                                        )}
+                                        {strategy === 'order_count' && (
+                                            <div className="grid sm:grid-cols-2 gap-4">
+                                                <FormField control={rulesForm.control} name="ordersForPoints" render={({field}) => <FormItem><FormLabel>عدد الطلبات لاكتساب النقاط</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>بعد كل كم طلب يحصل على نقاط؟ (مثال: 5)</FormDescription><FormMessage/></FormItem>} />
+                                                <FormField control={rulesForm.control} name="pointsPerOrderSet" render={({field}) => <FormItem><FormLabel>النقاط المكتسبة</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>كم نقطة يكتسبها؟ (مثال: 10)</FormDescription><FormMessage/></FormItem>} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="space-y-4 rounded-lg border p-4">
+                                        <h3 className="font-semibold">الإعدادات العامة</h3>
+                                        <FormField control={rulesForm.control} name="conversionRate" render={({field}) => <FormItem><FormLabel>سعر صرف النقطة</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormDescription>كل 1 نقطة تساوي كم ريال. (مثال: 0.5)</FormDescription><FormMessage/></FormItem>} />
+                                        <div>
+                                            <FormLabel>مضاعفات الأيام الخاصة</FormLabel>
+                                            <div className="space-y-2 mt-2">
+                                                {fields.map((item, index) => (
+                                                    <div key={item.id} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                                                        <FormField control={rulesForm.control} name={`dayMultipliers.${index}.day`} render={({field}) => <FormItem className="flex-1"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{Object.entries(arabicDays).map(([key, val]) => <SelectItem key={key} value={key}>{val}</SelectItem>)}</SelectContent></Select></FormItem>}/>
+                                                        <FormField control={rulesForm.control} name={`dayMultipliers.${index}.multiplier`} render={({field}) => <FormItem><FormControl><Input type="number" {...field} placeholder="المضاعف (e.g. 2)" /></FormControl></FormItem>}/>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash className="text-destructive"/></Button>
+                                                    </div>
+                                                ))}
+                                                <Button type="button" variant="outline" size="sm" onClick={() => append({day: 'friday', multiplier: 2})}><PlusCircle/>إضافة يوم</Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -300,7 +385,7 @@ export default function LoyaltyPage() {
                                         <div className="p-3 bg-primary/10 rounded-lg text-sm space-y-2">
                                             <div className="font-bold">العميل: {foundClient.name}</div>
                                             <div>الرصيد الحالي: <span className="font-bold">{userWallet?.pointsBalance?.toLocaleString() || 0} نقطة</span></div>
-                                            {rules && <div>تساوي تقريباً: <span className="font-bold">{( (userWallet?.pointsBalance || 0) * rules.conversionRate ).toLocaleString()} ر.ي</span></div>}
+                                            {rules && rules.strategy === 'order_value' && <div>تساوي تقريباً: <span className="font-bold">{( (userWallet?.pointsBalance || 0) * rules.conversionRate ).toLocaleString()} ر.ي</span></div>}
                                         </div>
                                     )}
                                     {foundClient && (<>

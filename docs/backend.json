@@ -995,11 +995,32 @@
     "LoyaltyRule": {
       "title": "Loyalty Rule",
       "type": "object",
-      "description": "Defines the rules for calculating and converting loyalty points.",
+      "description": "Defines the dynamic rules for calculating and converting loyalty points based on different strategies.",
       "properties": {
-        "pointsRatio": {
-          "type": "number",
-          "description": "Amount of money (e.g., YER) that equals one point."
+        "strategy": {
+            "type": "string",
+            "enum": ["order_value", "order_count"],
+            "description": "The strategy used for awarding points."
+        },
+        "basePointsRatio": {
+            "type": "number",
+            "description": "For 'order_value' strategy: The amount of money (e.g., YER) that equals one point."
+        },
+        "valueThreshold": {
+            "type": "number",
+            "description": "For 'order_value' strategy: The order value threshold to trigger the multiplier."
+        },
+        "valueMultiplier": {
+            "type": "number",
+            "description": "For 'order_value' strategy: The multiplier to apply when the threshold is met."
+        },
+        "ordersForPoints": {
+            "type": "number",
+            "description": "For 'order_count' strategy: The number of orders required to earn points."
+        },
+        "pointsPerOrderSet": {
+            "type": "number",
+            "description": "For 'order_count' strategy: The number of points awarded after completing the set number of orders."
         },
         "conversionRate": {
           "type": "number",
@@ -1033,10 +1054,7 @@
           }
         }
       },
-      "required": [
-        "pointsRatio",
-        "conversionRate"
-      ]
+      "required": ["strategy", "conversionRate"]
     },
     "UserWallet": {
       "title": "User Wallet",
