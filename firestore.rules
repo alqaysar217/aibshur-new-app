@@ -10,207 +10,100 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isExistingDoc() {
-      return resource != null;
-    }
-
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
     
     function isAdmin() {
+        // For prototyping, any signed-in user is considered an admin for the dashboard.
         return isSignedIn();
     }
 
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDoc();
-    }
-    
-    function hasValidProfileDataOnCreate(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    function hasValidProfileDataOnUpdate() {
-      return request.resource.data.id == resource.data.id;
-    }
-
     //-------------------------------------------------------------------------
-    // User Role & Admin Collections
+    // Admin Collections (Full CRUD for Admins)
     //-------------------------------------------------------------------------
 
     match /clients/{clientId} {
-      allow get, create, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /clients {
-      allow list: if isAdmin();
-    }
-
     match /drivers_v2/{driverId} {
-      allow get, create, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /drivers_v2 {
-      allow list: if isAdmin();
-    }
-    
     match /storeOwners/{ownerId} {
-      allow get, create, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /storeOwners {
-      allow list: if isAdmin();
-    }
-
     match /admins/{adminId} {
-      allow get, create, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /admins {
-      allow list: if isAdmin();
-    }
-
     match /bankAccounts/{bankAccountId} {
       allow read, write: if isAdmin();
     }
-    match /bankAccounts {
-      allow list: if isAdmin();
-    }
-    
     match /app_provinces/{appProvinceId} {
       allow read, write: if isAdmin();
     }
-     match /app_provinces {
-      allow list: if isAdmin();
-    }
-
     match /app_categories/{appCategoryId} {
-        allow read, write: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /app_categories {
-        allow list: if isAdmin();
-    }
-
     match /store_filters/{storeFilterId} {
-        allow read, write: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /store_filters {
-        allow list: if isAdmin();
-    }
-    
     match /vipPackages/{packageId} {
       allow read, write: if isAdmin();
     }
-    match /vipPackages {
-      allow list: if isAdmin();
-    }
-    
     match /vipSubscriptions/{subscriptionId} {
       allow read, write: if isAdmin();
     }
-    match /vipSubscriptions {
-      allow list: if isAdmin();
-    }
-
-    match /adBanners/{adBannerId} {
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /stores/{storeId} {
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /products/{productId} {
-      allow create, update, delete: if isAdmin();
-    }
-
     match /donations/{donationId} {
-        allow read, write: if isAdmin();
+      allow read, write: if isAdmin();
     }
-    match /donations {
-        allow list: if isAdmin();
-    }
-
-    match /donationTypes/{donationTypeId} {
-        allow create, update, delete: if isAdmin();
-    }
-
-    match /donationCampaigns/{campaignId} {
-        allow create, update, delete: if isAdmin();
-    }
-    
     match /coupons/{couponId} {
       allow read, write: if isAdmin();
     }
-    match /coupons {
-      allow list: if isAdmin();
+
+    //-------------------------------------------------------------------------
+    // Public Read / Admin Write Collections
+    //-------------------------------------------------------------------------
+    
+    match /adBanners/{adBannerId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /stores/{storeId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /products/{productId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /donationTypes/{donationTypeId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
+    match /donationCampaigns/{campaignId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
     }
 
     //-------------------------------------------------------------------------
-    // Publicly Readable Data
+    // Public Read Collections (No Writes)
     //-------------------------------------------------------------------------
 
     match /governorates/{governorateId} {
-      allow get: if true;
-      allow create, update, delete: if false;
+      allow read: if true;
+      allow write: if false;
     }
-    match /governorates {
-      allow list: if true;
-    }
-    
     match /storeCategories/{storeCategoryId} {
-      allow get: if true;
-      allow create, update, delete: if false;
-    }
-    match /storeCategories {
-      allow list: if true;
-    }
-
-    match /adBanners/{adBannerId} {
-      allow get: if true;
-    }
-    match /adBanners {
-      allow list: if true;
-    }
-
-    match /stores/{storeId} {
-      allow get: if true;
-    }
-    match /stores {
-       allow list: if true;
+      allow read: if true;
+      allow write: if false;
     }
     
-    match /products/{productId} {
-      allow get: if true;
-    }
-     match /products {
-      allow list: if true;
-    }
-
-    match /donationTypes/{donationTypeId} {
-        allow get: if true;
-    }
-    match /donationTypes {
-        allow list: if true;
-    }
-
-    match /donationCampaigns/{campaignId} {
-        allow get: if true;
-    }
-     match /donationCampaigns {
-        allow list: if true;
-    }
-
     //-------------------------------------------------------------------------
     // User-Specific Private Data
     //-------------------------------------------------------------------------
 
-    match /users/{userId} {
-      allow read, write: if false;
-      
-      match /profile/{profileId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidProfileDataOnCreate(userId);
-        allow update: if isExistingOwner(userId) && hasValidProfileDataOnUpdate();
-        allow delete: if isExistingOwner(userId);
-      }
+    match /users/{userId}/profile/{profileId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }
