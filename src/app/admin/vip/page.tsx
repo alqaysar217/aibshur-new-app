@@ -258,9 +258,12 @@ export default function VipPage() {
                                     </div>
                                 </FormItem>
                                 {foundClient && (
-                                    <div className="p-3 bg-primary/10 rounded-lg text-sm">
+                                    <div className="p-3 bg-primary/10 rounded-lg text-sm space-y-1">
                                         <p><strong>اسم العميل:</strong> {foundClient.name}</p>
-                                        <p><strong>الحالة:</strong> <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge></p>
+                                        <div className="flex items-center gap-2">
+                                            <strong>الحالة:</strong> 
+                                            <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
+                                        </div>
                                     </div>
                                 )}
                                 <FormField control={subscriptionForm.control} name="packageId" render={({ field }) => (
