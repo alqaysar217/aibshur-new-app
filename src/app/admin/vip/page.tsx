@@ -19,9 +19,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck, Image as ImageIcon, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Client } from '../users/page';
@@ -348,35 +347,130 @@ export default function VipPage() {
                     <DialogDescription>أدخل تفاصيل الباقة والمميزات التي تقدمها.</DialogDescription>
                 </DialogHeader>
                 <Form {...packageForm}>
-                    <form onSubmit={packageForm.handleSubmit(onPackageSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <form onSubmit={packageForm.handleSubmit(onPackageSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={packageForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>اسم الباقة</FormLabel><FormControl><Input {...field}/></FormControl><FormMessage/></FormItem>)}/>
-                            <FormField control={packageForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>نوع الباقة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر النوع..."/></SelectTrigger></FormControl><SelectContent><SelectItem value="bronze">برونزية</SelectItem><SelectItem value="silver">فضية</SelectItem><SelectItem value="gold">ذهبية</SelectItem></SelectContent></Select><FormMessage/></FormItem>)}/>
-                            <FormField control={packageForm.control} name="price" render={({ field }) => (<FormItem><FormLabel>السعر (ر.ي)</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormMessage/></FormItem>)}/>
-                            <FormField control={packageForm.control} name="duration" render={({ field }) => (<FormItem><FormLabel>المدة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر المدة..."/></SelectTrigger></FormControl><SelectContent><SelectItem value="monthly">شهرية</SelectItem><SelectItem value="quarterly">ربع سنوية (3 أشهر)</SelectItem><SelectItem value="yearly">سنوية</SelectItem></SelectContent></Select><FormMessage/></FormItem>)}/>
+                            <FormField control={packageForm.control} name="name" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>اسم الباقة</FormLabel>
+                                    <div className="relative">
+                                        <Tag className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input {...field} className="pr-10"/></FormControl>
+                                    </div>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}/>
+                            <FormField control={packageForm.control} name="type" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>نوع الباقة</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <div className="flex items-center gap-2">
+                                                    <Gem className="h-5 w-5 text-muted-foreground" />
+                                                    <SelectValue placeholder="اختر النوع..."/>
+                                                </div>
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="bronze">برونزية</SelectItem>
+                                            <SelectItem value="silver">فضية</SelectItem>
+                                            <SelectItem value="gold">ذهبية</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}/>
+                            <FormField control={packageForm.control} name="price" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>السعر (ر.ي)</FormLabel>
+                                    <div className="relative">
+                                        <CircleDollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <FormControl><Input type="number" {...field} className="pr-10"/></FormControl>
+                                    </div>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}/>
+                            <FormField control={packageForm.control} name="duration" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>المدة</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                                                    <SelectValue placeholder="اختر المدة..."/>
+                                                </div>
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="monthly">شهرية</SelectItem>
+                                            <SelectItem value="quarterly">ربع سنوية (3 أشهر)</SelectItem>
+                                            <SelectItem value="yearly">سنوية</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}/>
                         </div>
-                         <FormField control={packageForm.control} name="imageUrl" render={({ field }) => (<FormItem><FormLabel>رابط صورة الباقة (اختياري)</FormLabel><FormControl><Input {...field}/></FormControl><FormMessage/></FormItem>)}/>
+                        <FormField control={packageForm.control} name="imageUrl" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>رابط صورة الباقة (اختياري)</FormLabel>
+                                <div className="relative">
+                                    <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                    <FormControl><Input {...field} dir="ltr" className="pr-10" placeholder="https://... or /image.png"/></FormControl>
+                                </div>
+                                {field.value && (
+                                    <div className="mt-2 flex justify-center rounded-lg border border-dashed border-input p-2">
+                                        <Image src={field.value} alt="معاينة الباقة" width={80} height={80} className="rounded-md object-contain" unoptimized/>
+                                    </div>
+                                )}
+                                <FormMessage/>
+                            </FormItem>
+                        )}/>
                         
                         <div>
-                            <FormLabel>مميزات الباقة</FormLabel>
+                            <FormLabel className="flex items-center gap-2 mb-2"><ListChecks /> مميزات الباقة</FormLabel>
                             <div className="space-y-2 pt-2">
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="flex gap-2 items-center">
-                                        <FormField control={packageForm.control} name={`features.${index}.value`} render={({ field }) => (
-                                            <FormItem className="flex-grow"><FormControl><Input {...field} placeholder={`ميزة #${index + 1}`}/></FormControl><FormMessage/></FormItem>
+                                        <FormField control={packageForm.control} name={`features.${index}.value`} render={({ field: itemField }) => (
+                                            <FormItem className="flex-grow">
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Input {...itemField} placeholder={`ميزة #${index + 1}`} className="pr-10"/>
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage/>
+                                            </FormItem>
                                         )}/>
-                                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}><Trash/></Button>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:text-destructive shrink-0"><Trash/></Button>
                                     </div>
                                 ))}
                                 <Button type="button" variant="outline" className="w-full" onClick={() => append({ value: '' })}>إضافة ميزة</Button>
                                 <FormMessage>{packageForm.formState.errors.features?.message || packageForm.formState.errors.features?.root?.message}</FormMessage>
                             </div>
                         </div>
-                        <FormField control={packageForm.control} name="isActive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-end gap-2 pt-4"><FormLabel>الباقة فعالة</FormLabel><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)}/>
+
+                        <FormField
+                            control={packageForm.control}
+                            name="isActive"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>حالة الباقة</FormLabel>
+                                    <FormControl>
+                                        <div className="grid grid-cols-2 gap-2 pt-2">
+                                            <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)} className="h-11"><CheckCircle />فعالة</Button>
+                                            <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)} className="h-11"><XCircle />معطلة</Button>
+                                        </div>
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
                         
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                        <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
                             <Button type="submit">حفظ</Button>
+                            <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
                         </DialogFooter>
                     </form>
                 </Form>
