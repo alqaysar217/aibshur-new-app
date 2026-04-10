@@ -1233,7 +1233,10 @@
           "properties": {
             "description": { "type": "string" },
             "latitude": { "type": "number" },
-            "longitude": { "type": "number" }
+            "longitude": { "type": "number" },
+            "addressType": { "type": "string", "enum": ["home", "work", "other"] },
+            "receiverName": { "type": "string" },
+            "receiverPhone": { "type": "string" }
           },
           "required": ["description", "latitude", "longitude"]
         },
@@ -1249,12 +1252,23 @@
           "required": ["createdAt"]
         },
         "cancellationReason": { "type": "string" },
+        "notes": { "type": "string" },
         "rating": {
           "type": "object",
           "properties": {
             "store": { "type": "number" },
             "delegate": { "type": "number" },
             "comment": { "type": "string" }
+          }
+        },
+        "tipPayment": {
+          "type": "object",
+          "description": "Details about the tip payment, if any.",
+          "properties": {
+            "method": { "type": "string", "enum": ["cash", "wallet", "bank_transfer"] },
+            "bankAccountId": { "type": "string" },
+            "receiptNumber": { "type": "string" },
+            "receiptImageUrl": { "type": "string", "format": "uri" }
           }
         }
       },

@@ -2,9 +2,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 
 // Components
 import OrdersLoading from './loading';
@@ -17,17 +14,21 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { format, formatDistanceToNow, differenceInMinutes } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import type { DateRange } from "react-day-picker";
 import { 
-    AlertTriangle, BadgeDollarSign, Bike, Building, Calendar, Check, CheckCircle, ChevronDown, Circle, Clock, Contact, CookingPot,
-    CreditCard, FileText, HandCoins, Hourglass, Link as LinkIcon, ListFilter, Mail, MapPin, MessageCircle, MoreVertical,
-    Package, Phone, Search, ShoppingCart, Star, Store, User, Wallet, X, XCircle, UserCheck
+    AlertTriangle, BadgeDollarSign, Bike, Building, Calendar as CalendarIcon, Check, CheckCircle, ChevronDown, Circle, Clock, Contact, CookingPot,
+    CreditCard, FileDown, FileText, HandCoins, Hourglass, Link as LinkIcon, ListFilter, Mail, MapPin, MessageCircle, MoreVertical,
+    Package, Phone, Search, ShoppingCart, Star, Store, User, UserCheck, Wallet, X, XCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Types
 import type { Driver } from '../delegates/page';
@@ -47,23 +48,28 @@ interface Order {
     storeName: string;
     delegateId?: string;
     delegateName?: string;
+    delegatePhotoUrl?: string;
     status: OrderStatus;
     items: { productId: string; productName: string; quantity: number; price: number; }[];
     financials: { subtotal: number; deliveryFee: number; discount: number; tip: number; total: number; };
     payment: { method: PaymentMethod; status: PaymentStatus; receiptImageUrl?: string; };
-    address: { description: string; latitude: number; longitude: number; };
+    address: { description: string; latitude: number; longitude: number; addressType?: 'home' | 'work' | 'other'; receiverName?: string; receiverPhone?: string; };
     timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; };
     cancellationReason?: string;
+    notes?: string;
     rating?: { store: number; delegate: number; comment: string; };
+    tipPayment?: { method: PaymentMethod; bankAccountId?: string; receiptNumber?: string; receiptImageUrl?: string; };
     delegatePosition?: { lat: number; lng: number };
 }
 
 // Mock Delegates
-const mockDelegates: (Omit<Driver, 'id'> & {id: string, position: {lat: number, lng: number}} )[] = [
-    { id: 'del1', name: 'أحمد علي', phone: '771111111', is_active: true, email: 'ahmed@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: '', idType: 'card', position: { lat: 14.5450, lng: 49.1350 } },
-    { id: 'del2', name: 'خالد صالح', phone: '772222222', is_active: true, email: 'khalid@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: '', idType: 'card', position: { lat: 14.5390, lng: 49.1300 } },
-    { id: 'del3', name: 'ياسر محمد', phone: '773333333', is_active: true, email: 'yasser@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: '', idType: 'card', position: { lat: 14.5480, lng: 49.1290 } },
+const mockDelegates: (Omit<Driver, 'id'> & {id: string, personalPhotoUrl: string, position: {lat: number, lng: number}} )[] = [
+    { id: 'del1', name: 'أحمد علي', phone: '771111111', is_active: true, email: 'ahmed@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: 'https://picsum.photos/seed/del1/100/100', idType: 'card', position: { lat: 14.5450, lng: 49.1350 } },
+    { id: 'del2', name: 'خالد صالح', phone: '772222222', is_active: true, email: 'khalid@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: 'https://picsum.photos/seed/del2/100/100', idType: 'card', position: { lat: 14.5390, lng: 49.1300 } },
+    { id: 'del3', name: 'ياسر محمد', phone: '773333333', is_active: true, email: 'yasser@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: 'https://picsum.photos/seed/del3/100/100', idType: 'card', position: { lat: 14.5480, lng: 49.1290 } },
 ];
+const mockDelegatesMap = mockDelegates.reduce((acc, d) => ({ ...acc, [d.id]: d }), {});
+
 
 // Mock Orders
 const mockOrders: Order[] = [
@@ -72,11 +78,12 @@ const mockOrders: Order[] = [
         clientId: 'C01', clientName: 'عبدالله الحضرمي', clientPhone: '777123456',
         storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
         status: 'incoming',
-        items: [{ productId: 'P01', productName: 'مندي دجاج', quantity: 2, price: 2500 }],
-        financials: { subtotal: 5000, deliveryFee: 500, discount: 0, tip: 0, total: 5500 },
+        items: [{ productId: 'P01', productName: 'مندي دجاج', quantity: 2, price: 2500 }, {productId: 'P02', productName: 'بيبسي', quantity: 2, price: 300}],
+        financials: { subtotal: 5600, deliveryFee: 500, discount: 0, tip: 0, total: 6100 },
         payment: { method: 'cash', status: 'pending' },
-        address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333 },
+        address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333, addressType: 'home' },
         timestamps: { createdAt: new Date(Date.now() - 5 * 60 * 1000) }, // 5 mins ago
+        notes: 'الرجاء عدم استخدام الجرس، الطفل نائم.'
     },
     {
         id: 'ORD002',
@@ -94,7 +101,7 @@ const mockOrders: Order[] = [
         clientId: 'C03', clientName: 'سالم بن محفوظ', clientPhone: '777888999',
         storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
         status: 'dispatched',
-        delegateId: 'del1', delegateName: 'أحمد علي',
+        delegateId: 'del1', delegateName: 'أحمد علي', delegatePhotoUrl: mockDelegates[0].personalPhotoUrl,
         items: [{ productId: 'P03', productName: 'فحسة', quantity: 1, price: 2800 }],
         financials: { subtotal: 2800, deliveryFee: 400, discount: 0, tip: 0, total: 3200 },
         payment: { method: 'cash', status: 'pending' },
@@ -107,13 +114,14 @@ const mockOrders: Order[] = [
         clientId: 'C04', clientName: 'نورة باوزير', clientPhone: '774445556',
         storeId: 'S03', storeName: 'صيدلية الشفاء',
         status: 'delivered',
-        delegateId: 'del2', delegateName: 'خالد صالح',
+        delegateId: 'del2', delegateName: 'خالد صالح', delegatePhotoUrl: mockDelegates[1].personalPhotoUrl,
         items: [{ productId: 'P04', productName: 'بندول اكسترا', quantity: 1, price: 500 }],
-        financials: { subtotal: 500, deliveryFee: 200, discount: 0, tip: 0, total: 700 },
+        financials: { subtotal: 500, deliveryFee: 200, discount: 0, tip: 500, total: 1200 },
         payment: { method: 'wallet', status: 'paid' },
         address: { description: 'المكلا، الشرج، مقابل بوابة الميناء', latitude: 14.5380, longitude: 49.1280 },
         timestamps: { createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), confirmedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000), dispatchedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 25 * 60 * 1000), deliveredAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000) },
-        rating: { store: 5, delegate: 4, comment: "خدمة ممتازة وسريعة" },
+        rating: { store: 5, delegate: 4, comment: "خدمة ممتازة وسريعة، المندوب كان محترفًا جدًا ووصل قبل الوقت المتوقع." },
+        tipPayment: { method: 'wallet' },
     },
     {
         id: 'ORD005',
@@ -126,6 +134,17 @@ const mockOrders: Order[] = [
         address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333 },
         timestamps: { createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), cancelledAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000) },
         cancellationReason: 'العميل لم يرد على الاتصال.',
+    },
+    {
+        id: 'ORD006',
+        clientId: 'C05', clientName: 'مكتبة الأندلس', clientPhone: '775555555',
+        storeId: 'S02', storeName: 'سوبر ماركت العالمية',
+        status: 'incoming',
+        items: [{ productId: 'P05', productName: 'مياه معدنية', quantity: 10, price: 150 }],
+        financials: { subtotal: 1500, deliveryFee: 300, discount: 0, tip: 0, total: 1800 },
+        payment: { method: 'cash', status: 'pending' },
+        address: { description: 'المكلا، فوة', latitude: 14.5678, longitude: 49.1111, addressType: 'other', receiverName: 'محمد علي', receiverPhone: '771231234'},
+        timestamps: { createdAt: new Date(Date.now() - 2 * 60 * 1000) },
     },
 ];
 
@@ -172,7 +191,7 @@ export default function OrdersPage() {
     const [isAssignOpen, setIsAssignOpen] = useState(false);
     const [isCancelOpen, setIsCancelOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<string>("incoming");
-    const [filters, setFilters] = useState({ searchTerm: '', storeId: 'all' });
+    const [filters, setFilters] = useState({ searchTerm: '', storeId: 'all', date: undefined as DateRange | undefined });
     const { toast } = useToast();
 
     useEffect(() => {
@@ -204,10 +223,14 @@ export default function OrdersPage() {
             default: currentOrders = [];
         }
         
-        return currentOrders.filter(o =>
-            (o.id.toLowerCase().includes(filters.searchTerm.toLowerCase()) || o.clientPhone.includes(filters.searchTerm)) &&
-            (filters.storeId === 'all' || o.storeId === filters.storeId)
-        ).sort((a, b) => b.timestamps.createdAt.getTime() - a.timestamps.createdAt.getTime());
+        return currentOrders.filter(o => {
+            const matchesSearch = (o.id.toLowerCase().includes(filters.searchTerm.toLowerCase()) || o.clientPhone.includes(filters.searchTerm));
+            const matchesStore = (filters.storeId === 'all' || o.storeId === filters.storeId);
+            const orderDate = o.timestamps.createdAt;
+            const matchesDate = !filters.date || (filters.date.from && orderDate >= filters.date.from && filters.date.to && orderDate <= filters.date.to);
+            return matchesSearch && matchesStore && matchesDate;
+        }).sort((a, b) => b.timestamps.createdAt.getTime() - a.timestamps.createdAt.getTime());
+
     }, [orders, activeTab, filters]);
 
     const handleViewDetails = (order: Order) => {
@@ -257,7 +280,8 @@ export default function OrdersPage() {
         if (selectedOrder) {
             updateOrderStatus(selectedOrder.id, 'preparing', { 
                 delegateId: delegate.id,
-                delegateName: delegate.name 
+                delegateName: delegate.name,
+                delegatePhotoUrl: (delegate as any).personalPhotoUrl,
             });
         }
         setIsAssignOpen(false);
@@ -268,6 +292,44 @@ export default function OrdersPage() {
     const getTimeSinceOrder = (date: Date) => {
         return formatDistanceToNow(date, { addSuffix: true, locale: ar });
     };
+
+    const translatePaymentMethod = (method: PaymentMethod) => {
+        const map = { cash: 'نقداً عند الاستلام', wallet: 'محفظة إلكترونية', bank_transfer: 'تحويل بنكي' };
+        return map[method] || method;
+    }
+    const translatePaymentStatus = (status: PaymentStatus) => {
+        const map = { pending: 'قيد الانتظار', paid: 'مدفوع', refunded: 'مسترجع' };
+        return map[status] || status;
+    }
+
+    const generateConfirmationMessage = (order: Order) => {
+        const productLines = order.items.map(item => `- ${item.productName} (x${item.quantity})`).join('\n');
+        return encodeURIComponent(
+    `مرحباً ${order.clientName}،
+    لدينا طلب جديد لك من متجر ${order.storeName} برقم #${order.id.substring(0, 6)}.
+    التفاصيل:
+    ${productLines}
+    الإجمالي: ${order.financials.total.toLocaleString('en-US')} ر.ي
+    هل تؤكد الطلب؟`
+        );
+    };
+    
+    const handleSendWhatsApp = (order: Order) => {
+        const message = generateConfirmationMessage(order);
+        window.open(`https://wa.me/${order.clientPhone}?text=${message}`, '_blank');
+    }
+    
+    const handleSendSMS = (order: Order) => {
+        const message = generateConfirmationMessage(order);
+        window.open(`sms:${order.clientPhone}?body=${message}`, '_blank');
+    }
+    
+    const handleExport = () => {
+        toast({
+            title: "قيد التطوير",
+            description: "سيتم إضافة ميزة تصدير البيانات قريباً.",
+        });
+    }
     
     if (isLoading) {
         return <OrdersLoading />;
@@ -294,8 +356,8 @@ export default function OrdersPage() {
                 <div className="mt-4">
                     <Card>
                         <CardHeader>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <Input placeholder="ابحث برقم الطلب أو هاتف العميل..." value={filters.searchTerm} onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))} className="w-full sm:w-64" />
+                            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                                <Input placeholder="ابحث برقم الطلب أو هاتف العميل..." value={filters.searchTerm} onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))} className="w-full sm:w-auto sm:flex-grow" />
                                 <Select value={filters.storeId} onValueChange={v => setFilters(f => ({ ...f, storeId: v }))}>
                                     <SelectTrigger className="w-full sm:w-48"><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -303,6 +365,43 @@ export default function OrdersPage() {
                                         {uniqueStores.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        id="date"
+                                        variant={"outline"}
+                                        className={cn(
+                                          "w-full sm:w-64 justify-start text-left font-normal",
+                                          !filters.date && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="ml-2 h-4 w-4" />
+                                        {filters.date?.from ? (
+                                          filters.date.to ? (
+                                            <>
+                                              {format(filters.date.from, "LLL dd, y")} -{" "}
+                                              {format(filters.date.to, "LLL dd, y")}
+                                            </>
+                                          ) : (
+                                            format(filters.date.from, "LLL dd, y")
+                                          )
+                                        ) : (
+                                          <span>اختر تاريخ</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={filters.date?.from}
+                                        selected={filters.date}
+                                        onSelect={(date) => setFilters(f => ({...f, date}))}
+                                        numberOfMonths={2}
+                                      />
+                                    </PopoverContent>
+                                </Popover>
+                                <Button onClick={handleExport} variant="outline"><FileDown/> تصدير</Button>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -325,7 +424,7 @@ export default function OrdersPage() {
                                                 <TableCell className="text-center">{order.clientName}</TableCell>
                                                 <TableCell className="text-center">{order.storeName}</TableCell>
                                                 <TableCell className="text-center"><OrderStatusBadge status={order.status} /></TableCell>
-                                                <TableCell className="text-center font-semibold">{order.financials.total.toLocaleString('en-US')} ر.ي</TableCell>
+                                                <TableCell className="text-center font-semibold" dir="ltr">{order.financials.total.toLocaleString()}&nbsp;ر.ي</TableCell>
                                                 <TableCell className="text-center">
                                                     <Button variant="outline" size="sm" onClick={() => handleViewDetails(order)}>عرض التفاصيل</Button>
                                                 </TableCell>
@@ -342,39 +441,64 @@ export default function OrdersPage() {
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                        <DialogTitle className="text-2xl font-bold">تفاصيل الطلب: {selectedOrder?.id.substring(0, 8)}</DialogTitle>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
-                            {selectedOrder && <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
+                         <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
+                                {selectedOrder && <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
+                            </div>
+                             <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
                         </div>
                     </DialogHeader>
                     {selectedOrder && (
                     <div className="grid md:grid-cols-2 gap-6 flex-1 overflow-y-auto p-1 pr-4">
                         <div className="space-y-4">
+                            {/* Customer & Address */}
                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><User/>بيانات العميل</CardTitle></CardHeader>
                                 <CardContent className="text-sm space-y-2">
                                     <p><strong>الاسم:</strong> {selectedOrder.clientName}</p>
                                     <p className="flex items-center justify-between"><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span> <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4"/></Button></p>
+                                    <p><strong>العنوان:</strong> {selectedOrder.address.description}</p>
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2">
-                                    {selectedOrder.status === 'dispatched' ? <Bike/> : <MapPin/> }
-                                    {selectedOrder.status === 'dispatched' ? 'تتبع الطلب' : 'عنوان التوصيل'}
-                                </CardTitle></CardHeader>
-                                <CardContent>
-                                    <p className="text-sm mb-2">{selectedOrder.address.description}</p>
-                                    <LocationMapViewer
-                                        mainPosition={{ lat: selectedOrder.address.latitude, lng: selectedOrder.address.longitude }}
-                                        secondaryPosition={selectedOrder.status === 'dispatched' ? selectedOrder.delegatePosition : undefined}
-                                    />
-                                </CardContent>
-                            </Card>
-                            {selectedOrder.delegateId && <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike/>بيانات المندوب</CardTitle></CardHeader>
-                                <CardContent className="text-sm"><p><strong>الاسم:</strong> {selectedOrder.delegateName}</p></CardContent>
+                            
+                            {/* Receiver Info */}
+                             {selectedOrder.address.addressType === 'other' && selectedOrder.address.receiverName && (
+                                <Card>
+                                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact/>بيانات المستلم</CardTitle></CardHeader>
+                                    <CardContent className="text-sm space-y-2">
+                                        <p><strong>الاسم:</strong> {selectedOrder.address.receiverName}</p>
+                                        {selectedOrder.address.receiverPhone && <p><strong>الهاتف:</strong> {selectedOrder.address.receiverPhone}</p>}
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Order Notes */}
+                            {selectedOrder.notes && <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText/>ملاحظات الطلب</CardTitle></CardHeader>
+                                <CardContent className="text-sm"><p>{selectedOrder.notes}</p></CardContent>
                             </Card>}
+
+                            {/* Delegate Info */}
+                            {selectedOrder.delegateId && (
+                                <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike/>بيانات المندوب</CardTitle></CardHeader>
+                                <CardContent className="text-sm space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar>
+                                            <AvatarImage src={selectedOrder.delegatePhotoUrl} alt={selectedOrder.delegateName}/>
+                                            <AvatarFallback>{selectedOrder.delegateName?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p><strong>الاسم:</strong> {selectedOrder.delegateName}</p>
+                                            <p><strong>الهاتف:</strong> {(mockDelegatesMap as any)[selectedOrder.delegateId]?.phone}</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            )}
+                            
+                            {/* Cancellation Reason */}
                             {selectedOrder.cancellationReason && <Card className="border-destructive/50 bg-destructive/10">
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
                                 <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
@@ -382,45 +506,85 @@ export default function OrdersPage() {
                         </div>
 
                         <div className="space-y-4">
-                            <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Store/>بيانات المتجر</CardTitle></CardHeader>
-                                <CardContent className="text-sm"><p><strong>الاسم:</strong> {selectedOrder.storeName}</p></CardContent>
+                             {/* Map */}
+                             <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin/>موقع التوصيل</CardTitle></CardHeader>
+                                <CardContent>
+                                    <LocationMapViewer
+                                        mainPosition={{ lat: selectedOrder.address.latitude, lng: selectedOrder.address.longitude }}
+                                        secondaryPosition={selectedOrder.status === 'dispatched' ? selectedOrder.delegatePosition : undefined}
+                                    />
+                                </CardContent>
                             </Card>
+
+                            {/* Order Items */}
                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShoppingCart/>محتويات الطلب</CardTitle></CardHeader>
                                 <CardContent>
                                     <Table>
-                                        <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية</TableHead><TableHead className="text-left">الإجمالي</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[60px]">الكمية</TableHead><TableHead className="w-[80px]">السعر</TableHead><TableHead className="text-left w-[90px]">الإجمالي</TableHead></TableRow></TableHeader>
                                         <TableBody>{selectedOrder.items.map(item => (
-                                            <TableRow key={item.productId}><TableCell>{item.productName}</TableCell><TableCell>{item.quantity}</TableCell><TableCell className="text-left">{(item.price * item.quantity).toLocaleString('en-US')}</TableCell></TableRow>
+                                            <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell dir="ltr">{item.price.toLocaleString()}</TableCell><TableCell className="text-left" dir="ltr">{(item.price * item.quantity).toLocaleString()}</TableCell></TableRow>
                                         ))}</TableBody>
                                     </Table>
                                 </CardContent>
                             </Card>
+
+                            {/* Financials */}
                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign/>الملخص المالي</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span>قيمة المنتجات</span><span>{selectedOrder.financials.subtotal.toLocaleString('en-US')} ر.ي</span></div>
-                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span>{selectedOrder.financials.deliveryFee.toLocaleString('en-US')} ر.ي</span></div>
-                                    {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span>-{selectedOrder.financials.discount.toLocaleString('en-US')} ر.ي</span></div>}
-                                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>الإجمالي</span><span>{selectedOrder.financials.total.toLocaleString('en-US')} ر.ي</span></div>
+                                    <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedOrder.financials.subtotal.toLocaleString()}&nbsp;ر.ي</span></div>
+                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedOrder.financials.deliveryFee.toLocaleString()}&nbsp;ر.ي</span></div>
+                                    {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedOrder.financials.discount.toLocaleString()}&nbsp;ر.ي</span></div>}
+                                    {selectedOrder.financials.tip > 0 && <div className="flex justify-between text-primary"><span>إكرامية للمندوب</span><span dir="ltr">{selectedOrder.financials.tip.toLocaleString()}&nbsp;ر.ي</span></div>}
+                                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>الإجمالي النهائي</span><span dir="ltr">{selectedOrder.financials.total.toLocaleString()}&nbsp;ر.ي</span></div>
                                 </CardContent>
                             </Card>
-                            <Card>
+
+                            {/* Payment */}
+                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard/>الدفع</CardTitle></CardHeader>
                                 <CardContent className="text-sm space-y-2">
-                                    <p><strong>الطريقة:</strong> {selectedOrder.payment.method}</p>
-                                    <p><strong>الحالة:</strong> {selectedOrder.payment.status}</p>
+                                    <p><strong>الطريقة:</strong> {translatePaymentMethod(selectedOrder.payment.method)}</p>
+                                    <p><strong>الحالة:</strong> {translatePaymentStatus(selectedOrder.payment.status)}</p>
                                     {selectedOrder.payment.receiptImageUrl && <Image src={selectedOrder.payment.receiptImageUrl} alt="إيصال" width={100} height={100} className="rounded-md border mt-2"/>}
                                 </CardContent>
                             </Card>
+
+                             {/* Rating and Tip details for delivered orders */}
+                            {selectedOrder.status === 'delivered' && (
+                                <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Star/>التقييم والإكرامية</CardTitle></CardHeader>
+                                <CardContent className="space-y-3 text-sm">
+                                    {selectedOrder.rating ? (
+                                    <>
+                                        <div className="flex items-center gap-4">
+                                            <span>تقييم المندوب:</span>
+                                            <div className="flex items-center gap-1">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={cn("h-5 w-5", i < selectedOrder.rating!.delegate ? "text-amber-400 fill-amber-400" : "text-gray-300")}/>)}</div>
+                                        </div>
+                                        <p className="border-t pt-2 text-muted-foreground">"{selectedOrder.rating.comment}"</p>
+                                    </>
+                                    ) : <p className="text-muted-foreground">لم يتم تقييم الطلب بعد.</p>}
+                                    {selectedOrder.financials.tip > 0 && (
+                                        <div className="border-t pt-3 mt-3">
+                                            <p><strong>الإكرامية:</strong> <span className="font-bold text-primary">{selectedOrder.financials.tip.toLocaleString()} ر.ي</span></p>
+                                            <p><strong>طريقة الدفع:</strong> {selectedOrder.tipPayment ? translatePaymentMethod(selectedOrder.tipPayment.method) : 'غير محدد'}</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                                </Card>
+                            )}
                         </div>
                     </div>
                     )}
                     <DialogFooter className="gap-2 flex-row-reverse sm:justify-start">
                         {selectedOrder?.status === 'incoming' && <>
-                            <Button onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}><Check/> تأكيد الطلب</Button>
-                            <Button variant="destructive" onClick={() => handleCancel(selectedOrder)}><X/> إلغاء</Button>
+                             <Button onClick={() => handleSendWhatsApp(selectedOrder)} variant="outline" className="text-green-600 border-green-500 hover:bg-green-50 hover:text-green-700"><MessageCircle/> واتساب</Button>
+                             <Button onClick={() => handleSendSMS(selectedOrder)} variant="outline"><Mail/> SMS</Button>
+                             <div className="border-r mx-2 h-8 self-center"></div>
+                             <Button onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}><Check/> تأكيد نهائي</Button>
+                             <Button variant="destructive" onClick={() => handleCancel(selectedOrder)}><X/> إلغاء</Button>
                         </>}
                         {selectedOrder?.status === 'confirmed' && <>
                             <Button onClick={() => handleAssign(selectedOrder)}>إسناد لمندوب</Button>
@@ -447,9 +611,15 @@ export default function OrdersPage() {
                     <div className="space-y-2 max-h-80 overflow-y-auto">
                         {activeDelegates.map(delegate => (
                             <Card key={delegate.id} className="p-3 flex justify-between items-center cursor-pointer hover:bg-muted" onClick={() => confirmAssignDelegate(delegate)}>
-                                <div>
-                                    <p className="font-semibold">{delegate.name}</p>
-                                    <p className="text-sm text-muted-foreground">{delegate.phone}</p>
+                                <div className="flex items-center gap-3">
+                                    <Avatar>
+                                        <AvatarImage src={delegate.personalPhotoUrl} alt={delegate.name}/>
+                                        <AvatarFallback>{delegate.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{delegate.name}</p>
+                                        <p className="text-sm text-muted-foreground">{delegate.phone}</p>
+                                    </div>
                                 </div>
                                 <UserCheck className="text-primary"/>
                             </Card>

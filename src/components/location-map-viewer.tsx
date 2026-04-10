@@ -1,7 +1,7 @@
 'use client';
 import { Map, Marker, Overlay } from 'pigeon-maps';
 import { useEffect, useState } from 'react';
-import { User, Bike, MapPin } from 'lucide-react';
+import { User, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LocationMapViewerProps {
@@ -14,11 +14,14 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true) }, []);
   
-  const center: [number, number] = secondaryPosition
+  const initialCenter: [number, number] = secondaryPosition
     ? [ (mainPosition.lat + secondaryPosition.lat) / 2, (mainPosition.lng + secondaryPosition.lng) / 2 ]
     : [mainPosition.lat, mainPosition.lng];
     
-  const zoom = secondaryPosition ? 13 : 15;
+  const initialZoom = secondaryPosition ? 13 : 15;
+
+  const [center, setCenter] = useState(initialCenter);
+  const [zoom, setZoom] = useState(initialZoom);
 
   if (!isClient) {
     return <div className={cn("h-full w-full bg-muted rounded-lg flex items-center justify-center", className)}><p>جارٍ تحميل الخريطة...</p></div>
@@ -29,8 +32,10 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
       <Map
         center={center}
         zoom={zoom}
-        mouseEvents={false}
-        touchEvents={false}
+        onBoundsChanged={({ center, zoom }) => {
+          setCenter(center);
+          setZoom(zoom);
+        }}
       >
         {secondaryPosition && (
             <Overlay
