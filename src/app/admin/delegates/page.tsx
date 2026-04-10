@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { doc, Timestamp } from 'firebase/firestore';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -47,8 +47,8 @@ export default function DelegateRequestsPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const driversQuery = useMemoFirebase(() => firestore ? doc(firestore, 'drivers') : null, [firestore]);
-    const { data: drivers, isLoading } = useCollection<Driver>(collection(firestore, 'drivers'));
+    const driversQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers') : null, [firestore]);
+    const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
 
     const pendingApplications = useMemo(() => {
         if (!drivers) return [];
