@@ -93,13 +93,16 @@ type VipSubscription = {
   deactivatedAt?: Timestamp;
 };
 
+// Modal Management State
+type ModalType = 'addPackage' | 'editPackage' | 'deletePackage' | 'editSub' | 'deleteSub' | 'detailsSub';
+
 // Component
 export default function VipPage() {
-    const [dialogState, setDialogState] = useState<{isOpen: boolean, data: VipPackage | null}>({isOpen: false, data: null});
-    const [alertState, setAlertState] = useState<{isOpen: boolean, data: VipPackage | null}>({isOpen: false, data: null});
-    const [editSubState, setEditSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
-    const [deleteSubState, setDeleteSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
-    const [detailsSubState, setDetailsSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
+    const [modalState, setModalState] = useState<{
+        type: ModalType | null;
+        data: VipPackage | VipSubscription | null;
+    }>({ type: null, data: null });
+
     const [clientSearch, setClientSearch] = useState('');
     const [foundClient, setFoundClient] = useState<Client | null>(null);
     const [subFilters, setSubFilters] = useState({ searchTerm: '', status: 'all' });
@@ -116,21 +119,13 @@ export default function VipPage() {
             clientId: '',
             packageId: '',
             paymentMethod: 'cash',
-            bankDetails: {
-                bankAccountId: '',
-                receiptNumber: '',
-                receiptImageUrl: ''
-            }
+            bankDetails: { bankAccountId: '', receiptNumber: '', receiptImageUrl: '' }
         } 
     });
     const subscriptionEditForm = useForm<z.infer<typeof subscriptionEditSchema>>({
         resolver: zodResolver(subscriptionEditSchema),
         defaultValues: {
-             bankDetails: {
-                bankAccountId: '',
-                receiptNumber: '',
-                receiptImageUrl: ''
-            }
+             bankDetails: { bankAccountId: '', receiptNumber: '', receiptImageUrl: '' }
         }
     });
 
@@ -162,34 +157,43 @@ export default function VipPage() {
     }, [subscriptions, clientsMap, subFilters]);
     
     // Handlers
-    const handleOpenDialog = (data: VipPackage | null = null) => {
-        if (data) {
-            packageForm.reset({ ...data, isActive: data.isActive ?? true });
-        } else {
+    const handleModalOpen = (type: ModalType, data: VipPackage | VipSubscription | null = null) => {
+        if (type === 'addPackage') {
             packageForm.reset({ name: '', type: 'bronze', price: 0, duration: 'monthly', features: [{ value: '' }], imageUrl: '', isActive: true });
+        } else if (type === 'editPackage' && data) {
+            packageForm.reset({ ...(data as VipPackage), isActive: (data as VipPackage).isActive ?? true });
+        } else if (type === 'editSub' && data) {
+            subscriptionEditForm.reset({
+                expiryDate: (data as VipSubscription).expiryDate.toDate(),
+                paymentMethod: (data as VipSubscription).paymentMethod,
+                bankDetails: (data as VipSubscription).bankDetails || { bankAccountId: '', receiptNumber: '', receiptImageUrl: '' },
+                isActive: (data as VipSubscription).isActive,
+            });
         }
-        setDialogState({ isOpen: true, data });
+        setModalState({ type, data });
     };
-
-    const handleDelete = (pkg: VipPackage) => setAlertState({ isOpen: true, data: pkg });
     
-    const confirmDelete = () => {
-        if (!alertState.data || !firestore) return;
-        deleteDocumentNonBlocking(doc(firestore, 'vipPackages', alertState.data.id));
-        toast({ title: "تم حذف الباقة بنجاح" });
-        setAlertState({ isOpen: false, data: null });
+    const handleModalClose = () => {
+        setModalState({ type: null, data: null });
     };
-
+    
     const onPackageSubmit = (values: z.infer<typeof packageSchema>) => {
         if (!firestore) return;
-        if (dialogState.data) { // Editing
-            updateDocumentNonBlocking(doc(firestore, 'vipPackages', dialogState.data.id), { ...values });
+        if (modalState.type === 'editPackage' && modalState.data) {
+            updateDocumentNonBlocking(doc(firestore, 'vipPackages', modalState.data.id), { ...values });
             toast({ title: "تم تحديث الباقة" });
-        } else { // Creating
+        } else {
             addDocumentNonBlocking(collection(firestore, 'vipPackages'), { ...values });
             toast({ title: "تمت إضافة الباقة" });
         }
-        setDialogState({ isOpen: false, data: null });
+        handleModalClose();
+    };
+
+    const confirmDeletePackage = () => {
+        if (modalState.type !== 'deletePackage' || !modalState.data || !firestore) return;
+        deleteDocumentNonBlocking(doc(firestore, 'vipPackages', modalState.data.id));
+        toast({ title: "تم حذف الباقة بنجاح" });
+        handleModalClose();
     };
 
     const handleClientSearch = () => {
@@ -224,11 +228,11 @@ export default function VipPage() {
             status: 'active',
         };
 
-        if (values.paymentMethod === 'bank_transfer') {
+        if (values.paymentMethod === 'bank_transfer' && values.bankDetails) {
             subscriptionData.bankDetails = {
-                bankAccountId: values.bankDetails?.bankAccountId || '',
-                receiptNumber: values.bankDetails?.receiptNumber || '',
-                receiptImageUrl: values.bankDetails?.receiptImageUrl || '',
+                bankAccountId: values.bankDetails.bankAccountId || '',
+                receiptNumber: values.bankDetails.receiptNumber || '',
+                receiptImageUrl: values.bankDetails.receiptImageUrl || '',
             };
         }
 
@@ -243,7 +247,7 @@ export default function VipPage() {
     };
     
     const onSubscriptionEditSubmit = (values: z.infer<typeof subscriptionEditSchema>) => {
-        if (!firestore || !editSubState.data) return;
+        if (modalState.type !== 'editSub' || !modalState.data || !firestore) return;
         const dataToUpdate: Partial<VipSubscription> = {
             ...values,
             expiryDate: Timestamp.fromDate(values.expiryDate),
@@ -251,34 +255,16 @@ export default function VipPage() {
         if (values.paymentMethod !== 'bank_transfer') {
             dataToUpdate.bankDetails = {};
         }
-        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', editSubState.data.id), dataToUpdate);
+        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', modalState.data.id), dataToUpdate);
         toast({ title: 'تم تحديث الاشتراك بنجاح' });
-        setEditSubState({ isOpen: false, data: null });
-    };
-
-    const handleOpenEditDialog = (sub: VipSubscription) => {
-        subscriptionEditForm.reset({
-            expiryDate: sub.expiryDate.toDate(),
-            paymentMethod: sub.paymentMethod,
-            bankDetails: sub.bankDetails || { bankAccountId: '', receiptNumber: '', receiptImageUrl: '' },
-            isActive: sub.isActive,
-        });
-        setEditSubState({ isOpen: true, data: sub });
-    };
-
-    const handleOpenDeleteDialog = (sub: VipSubscription) => {
-        setDeleteSubState({ isOpen: true, data: sub });
-    };
-    
-    const handleOpenDetailsDialog = (sub: VipSubscription) => {
-        setDetailsSubState({ isOpen: true, data: sub });
+        handleModalClose();
     };
 
     const confirmSubscriptionDelete = () => {
-        if (!deleteSubState.data || !firestore) return;
-        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', deleteSubState.data.id), { status: 'deleted', isActive: false });
+        if (modalState.type !== 'deleteSub' || !modalState.data || !firestore) return;
+        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', modalState.data.id), { status: 'deleted', isActive: false });
         toast({ title: "تم حذف الاشتراك بنجاح" });
-        setDeleteSubState({ isOpen: false, data: null });
+        handleModalClose();
     };
 
     const handleDeactivateSubscription = (subId: string) => {
@@ -315,7 +301,7 @@ export default function VipPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>قائمة الباقات</CardTitle>
-                            <Button onClick={() => handleOpenDialog()}><PlusCircle/>إضافة باقة</Button>
+                            <Button onClick={() => handleModalOpen('addPackage')}><PlusCircle/>إضافة باقة</Button>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -341,8 +327,8 @@ export default function VipPage() {
                                         </ul>
                                     </CardContent>
                                     <CardFooter className="gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleOpenDialog(pkg)}><Edit/>تعديل</Button>
-                                        <Button variant="destructive" size="sm" onClick={() => handleDelete(pkg)}><Trash/>حذف</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleModalOpen('editPackage', pkg)}><Edit/>تعديل</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleModalOpen('deletePackage', pkg)}><Trash/>حذف</Button>
                                     </CardFooter>
                                 </Card>
                             ))}
@@ -375,7 +361,7 @@ export default function VipPage() {
                                 )}
                                 <FormField control={subscriptionForm.control} name="packageId" render={({ field }) => (
                                     <FormItem><FormLabel>اختر الباقة</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl" disabled={!foundClient}>
+                                        <Select onValueChange={field.onChange} value={field.value} dir="rtl" disabled={!foundClient}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="اختر باقة..." /></SelectTrigger></FormControl>
                                             <SelectContent>{activePackages.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.price.toLocaleString()} ر.ي</SelectItem>)}</SelectContent>
                                         </Select><FormMessage/>
@@ -462,10 +448,10 @@ export default function VipPage() {
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></Button></DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => handleOpenDetailsDialog(sub)}><FileText className="ml-2"/> عرض التفاصيل</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(sub)}><FileEdit className="ml-2"/> تعديل</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleModalOpen('detailsSub', sub)}><FileText className="ml-2"/> عرض التفاصيل</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleModalOpen('editSub', sub)}><FileEdit className="ml-2"/> تعديل</DropdownMenuItem>
                                                     {sub.isActive && <DropdownMenuItem onClick={() => handleDeactivateSubscription(sub.id)} className="text-yellow-600 focus:text-yellow-600"><XCircle className="ml-2"/> إلغاء التفعيل</DropdownMenuItem>}
-                                                    <DropdownMenuItem onClick={() => handleOpenDeleteDialog(sub)} className="text-destructive focus:text-destructive"><Trash className="ml-2"/> حذف</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleModalOpen('deleteSub', sub)} className="text-destructive focus:text-destructive"><Trash className="ml-2"/> حذف</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -479,10 +465,10 @@ export default function VipPage() {
         </Tabs>
 
         {/* Package Dialog */}
-        <Dialog open={dialogState.isOpen} onOpenChange={(isOpen) => setDialogState({ isOpen, data: isOpen ? dialogState.data : null })}>
+        <Dialog open={modalState.type === 'addPackage' || modalState.type === 'editPackage'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
             <DialogContent className="sm:max-w-2xl" dir="rtl">
                 <DialogHeader className="text-right">
-                    <DialogTitle>{dialogState.data ? 'تعديل باقة' : 'إضافة باقة جديدة'}</DialogTitle>
+                    <DialogTitle>{modalState.type === 'editPackage' ? 'تعديل باقة' : 'إضافة باقة جديدة'}</DialogTitle>
                     <DialogDescription>أدخل تفاصيل الباقة والمميزات التي تقدمها.</DialogDescription>
                 </DialogHeader>
                 <Form {...packageForm}>
@@ -565,15 +551,15 @@ export default function VipPage() {
                         </div>
                         
                         <FormField control={packageForm.control} name="isActive" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>حالة الباقة</FormLabel>
-                                    <FormControl>
-                                        <div className="grid grid-cols-2 gap-2 pt-2">
-                                            <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)} className="h-11"><CheckCircle />فعالة</Button>
-                                            <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)} className="h-11"><XCircle />معطلة</Button>
-                                        </div>
-                                    </FormControl>
-                                </FormItem>
+                            <FormItem>
+                                <FormLabel>حالة الباقة</FormLabel>
+                                <FormControl>
+                                    <div className="grid grid-cols-2 gap-2 pt-2">
+                                        <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)} className="h-11"><CheckCircle />فعالة</Button>
+                                        <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)} className="h-11"><XCircle />معطلة</Button>
+                                    </div>
+                                </FormControl>
+                            </FormItem>
                         )} />
                         
                         <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
@@ -585,24 +571,24 @@ export default function VipPage() {
             </DialogContent>
         </Dialog>
         
-        <AlertDialog open={alertState.isOpen} onOpenChange={(isOpen) => setAlertState(prev => ({ ...prev, isOpen }))}>
+        <AlertDialog open={modalState.type === 'deletePackage'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
              <AlertDialogContent dir="rtl">
                 <AlertDialogHeader className="text-right">
                     <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
                     <AlertDialogDescription>سيتم حذف الباقة بشكل دائم.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-row-reverse gap-2 sm:justify-start">
-                    <AlertDialogAction onClick={confirmDelete}>نعم، قم بالحذف</AlertDialogAction>
+                    <AlertDialogAction onClick={confirmDeletePackage}>نعم، قم بالحذف</AlertDialogAction>
                     <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={editSubState.isOpen} onOpenChange={(isOpen) => setEditSubState({ isOpen, data: isOpen ? editSubState.data : null })}>
+        <Dialog open={modalState.type === 'editSub'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
             <DialogContent dir="rtl">
                  <DialogHeader className="text-right">
                     <DialogTitle>تعديل الاشتراك</DialogTitle>
-                    <DialogDescription>تحديث تفاصيل اشتراك العميل: {editSubState.data && clientsMap[editSubState.data.clientId]?.name}</DialogDescription>
+                    {modalState.data && <DialogDescription>تحديث تفاصيل اشتراك العميل: {clientsMap[(modalState.data as VipSubscription).clientId]?.name}</DialogDescription>}
                 </DialogHeader>
                 <Form {...subscriptionEditForm}>
                     <form onSubmit={subscriptionEditForm.handleSubmit(onSubscriptionEditSubmit)} className="space-y-4">
@@ -651,7 +637,7 @@ export default function VipPage() {
             </DialogContent>
         </Dialog>
 
-        <AlertDialog open={deleteSubState.isOpen} onOpenChange={(isOpen) => setDeleteSubState({ isOpen, data: isOpen ? deleteSubState.data : null })}>
+        <AlertDialog open={modalState.type === 'deleteSub'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
             <AlertDialogContent dir="rtl">
                 <AlertDialogHeader className="text-right">
                     <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
@@ -664,13 +650,13 @@ export default function VipPage() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={detailsSubState.isOpen} onOpenChange={(isOpen) => setDetailsSubState({ isOpen, data: isOpen ? detailsSubState.data : null })}>
+        <Dialog open={modalState.type === 'detailsSub'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
             <DialogContent className="max-w-lg [&>button]:right-auto [&>button]:left-4" dir="rtl">
                 <DialogHeader className="text-right">
                     <DialogTitle>تفاصيل الاشتراك</DialogTitle>
                 </DialogHeader>
-                {detailsSubState.data && (() => {
-                    const sub = detailsSubState.data;
+                {modalState.data && (() => {
+                    const sub = modalState.data as VipSubscription;
                     const client = clientsMap[sub.clientId];
                     const pkg = packagesMap[sub.packageId];
                     return (
