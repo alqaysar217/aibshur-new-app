@@ -57,29 +57,33 @@ export default function DelegateRequestsPage() {
     const driversQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers') : null, [firestore]);
     const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
 
-    useEffect(() => {
-        if (!isLoading && drivers && drivers.length === 0 && !dataSeeded && firestore) {
-            setDataSeeded(true);
-            toast({
-                title: "جاري إضافة بيانات تجريبية...",
-                description: "سيتم إضافة 3 طلبات مناديب جديدة لتتمكن من اختبار النظام.",
-            });
-            mockDrivers.forEach(driver => {
-                const driverData = {
-                    ...driver,
-                    createdAt: serverTimestamp(),
-                };
-                addDocumentNonBlocking(collection(firestore, 'drivers'), driverData);
-            });
-        }
-    }, [drivers, isLoading, dataSeeded, firestore, toast]);
-
     const pendingApplications = useMemo(() => {
         if (!drivers) return [];
         return drivers
             .filter(d => d.status === 'pending')
             .sort((a, b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
     }, [drivers]);
+
+    useEffect(() => {
+        // Seed data only if loading is finished and there are no pending applications.
+        if (!isLoading && pendingApplications && pendingApplications.length === 0 && !dataSeeded && firestore) {
+            setDataSeeded(true);
+            toast({
+                title: "جاري إضافة بيانات تجريبية...",
+                description: "تم إضافة 3 طلبات مناديب جديدة بالحالة 'pending' لتتمكن من اختبار النظام.",
+            });
+            mockDrivers.forEach(driver => {
+                const driverData = {
+                    ...driver,
+                    createdAt: serverTimestamp(),
+                };
+                if (driverData.status === 'pending') {
+                    addDocumentNonBlocking(collection(firestore, 'drivers'), driverData);
+                }
+            });
+        }
+    }, [pendingApplications, isLoading, dataSeeded, firestore, toast]);
+
 
     const filteredApplications = useMemo(() => {
         return pendingApplications.filter(app =>
@@ -257,5 +261,3 @@ export default function DelegateRequestsPage() {
         </>
     );
 }
-
-    
