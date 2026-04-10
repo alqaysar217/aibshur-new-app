@@ -19,8 +19,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck, Image as ImageIcon, ListChecks } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Gem, CheckCircle, XCircle, Crown, Shield, Rocket, Tag, Calendar, CircleDollarSign, Banknote, Wallet, Receipt, Upload, Search, UserCheck, Image as ImageIcon, ListChecks, FileEdit, MoreVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Client } from '../users/page';
@@ -56,6 +57,22 @@ const subscriptionSchema = z.object({
     }
 });
 
+const subscriptionEditSchema = z.object({
+    expiryDate: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
+    paymentMethod: z.enum(['cash', 'wallet', 'bank_transfer']),
+    bankDetails: z.object({
+        bankAccountId: z.string().optional(),
+        receiptNumber: z.string().optional(),
+        receiptImageUrl: z.string().optional(),
+    }).optional(),
+    isActive: z.boolean(),
+}).superRefine((data, ctx) => {
+    if (data.paymentMethod === 'bank_transfer') {
+        if (!data.bankDetails?.bankAccountId) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["bankDetails.bankAccountId"], message: "يجب اختيار البنك" });
+        if (!data.bankDetails?.receiptNumber) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["bankDetails.receiptNumber"], message: "رقم السند مطلوب" });
+    }
+});
+
 
 // Types
 type VipPackage = z.infer<typeof packageSchema> & { id: string };
@@ -78,8 +95,12 @@ type VipSubscription = {
 export default function VipPage() {
     const [dialogState, setDialogState] = useState<{isOpen: boolean, data: VipPackage | null}>({isOpen: false, data: null});
     const [alertState, setAlertState] = useState<{isOpen: boolean, data: VipPackage | null}>({isOpen: false, data: null});
+    const [editSubState, setEditSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
+    const [deleteSubState, setDeleteSubState] = useState<{isOpen: boolean, data: VipSubscription | null}>({isOpen: false, data: null});
     const [clientSearch, setClientSearch] = useState('');
     const [foundClient, setFoundClient] = useState<Client | null>(null);
+    const [subFilters, setSubFilters] = useState({ searchTerm: '', status: 'all' });
+
 
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -99,6 +120,7 @@ export default function VipPage() {
             }
         } 
     });
+    const subscriptionEditForm = useForm<z.infer<typeof subscriptionEditSchema>>();
 
     // Data fetching
     const { data: packages, isLoading: l1 } = useCollection<VipPackage>(useMemoFirebase(() => firestore ? collection(firestore, 'vipPackages') : null, [firestore]));
@@ -112,6 +134,18 @@ export default function VipPage() {
     const packagesMap = useMemo(() => packages?.reduce((acc, p) => ({ ...acc, [p.id]: p }), {}) || {}, [packages]);
     const activePackages = useMemo(() => (packages || []).filter(p => p.isActive), [packages]);
     const paymentMethod = subscriptionForm.watch('paymentMethod');
+    const editPaymentMethod = subscriptionEditForm.watch('paymentMethod');
+
+     const sortedAndFilteredSubscriptions = useMemo(() => {
+        return (subscriptions || [])
+            .filter(sub => {
+                const client = clientsMap[sub.clientId];
+                const matchesSearch = !subFilters.searchTerm || (client && client.name.toLowerCase().includes(subFilters.searchTerm.toLowerCase()));
+                const matchesStatus = subFilters.status === 'all' || (subFilters.status === 'active' && sub.isActive) || (subFilters.status === 'inactive' && !sub.isActive);
+                return matchesSearch && matchesStatus;
+            })
+            .sort((a, b) => b.activationDate.toDate().getTime() - a.activationDate.toDate().getTime());
+    }, [subscriptions, clientsMap, subFilters]);
     
     // Handlers
     const handleOpenDialog = (data: VipPackage | null = null) => {
@@ -181,9 +215,47 @@ export default function VipPage() {
 
         addDocumentNonBlocking(collection(firestore, 'vipSubscriptions'), subscriptionData);
         toast({ title: `تم تفعيل اشتراك ${foundClient.name} بنجاح!` });
-        subscriptionForm.reset();
+        subscriptionForm.reset({ 
+            clientId: '', packageId: '', paymentMethod: 'cash',
+            bankDetails: { bankAccountId: '', receiptNumber: '', receiptImageUrl: '' }
+        });
         setClientSearch('');
         setFoundClient(null);
+    };
+    
+    const onSubscriptionEditSubmit = (values: z.infer<typeof subscriptionEditSchema>) => {
+        if (!firestore || !editSubState.data) return;
+        const dataToUpdate = {
+            ...values,
+            expiryDate: Timestamp.fromDate(values.expiryDate),
+        };
+        if (values.paymentMethod !== 'bank_transfer') {
+            dataToUpdate.bankDetails = {};
+        }
+        updateDocumentNonBlocking(doc(firestore, 'vipSubscriptions', editSubState.data.id), dataToUpdate);
+        toast({ title: 'تم تحديث الاشتراك بنجاح' });
+        setEditSubState({ isOpen: false, data: null });
+    };
+
+    const handleOpenEditDialog = (sub: VipSubscription) => {
+        subscriptionEditForm.reset({
+            expiryDate: sub.expiryDate.toDate(),
+            paymentMethod: sub.paymentMethod,
+            bankDetails: sub.bankDetails || { bankAccountId: '', receiptNumber: '', receiptImageUrl: '' },
+            isActive: sub.isActive,
+        });
+        setEditSubState({ isOpen: true, data: sub });
+    };
+
+    const handleOpenDeleteDialog = (sub: VipSubscription) => {
+        setDeleteSubState({ isOpen: true, data: sub });
+    };
+
+    const confirmSubscriptionDelete = () => {
+        if (!deleteSubState.data || !firestore) return;
+        deleteDocumentNonBlocking(doc(firestore, 'vipSubscriptions', deleteSubState.data.id));
+        toast({ title: "تم حذف الاشتراك بنجاح" });
+        setDeleteSubState({ isOpen: false, data: null });
     };
 
     const handleDeactivateSubscription = (subId: string) => {
@@ -274,7 +346,9 @@ export default function VipPage() {
                                         <p><strong>اسم العميل:</strong> {foundClient.name}</p>
                                         <div className="flex items-center gap-2">
                                             <strong>الحالة:</strong> 
-                                            <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
+                                             <div className="flex items-center gap-2">
+                                                <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -321,29 +395,50 @@ export default function VipPage() {
                 </Form>
                 
                 <Card>
-                    <CardHeader><CardTitle>سجل الاشتراكات</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>سجل الاشتراكات</CardTitle>
+                        <CardDescription>عرض وتصفية وإدارة جميع اشتراكات العملاء.</CardDescription>
+                         <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                           <Input placeholder="ابحث باسم العميل..." value={subFilters.searchTerm} onChange={e => setSubFilters(f => ({...f, searchTerm: e.target.value}))} className="w-full sm:w-64" />
+                           <Select value={subFilters.status} onValueChange={status => setSubFilters(f => ({...f, status: status as 'all'|'active'|'inactive'}))}>
+                             <SelectTrigger className="w-full sm:w-48"><SelectValue/></SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="all">كل الحالات</SelectItem>
+                               <SelectItem value="active">فعال</SelectItem>
+                               <SelectItem value="inactive">غير فعال</SelectItem>
+                             </SelectContent>
+                           </Select>
+                         </div>
+                    </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>العميل</TableHead>
-                                    <TableHead>الباقة</TableHead>
-                                    <TableHead>تاريخ التفعيل</TableHead>
-                                    <TableHead>تاريخ الانتهاء</TableHead>
-                                    <TableHead>الحالة</TableHead>
-                                    <TableHead>إجراء</TableHead>
+                                    <TableHead className="text-center">العميل</TableHead>
+                                    <TableHead className="text-center">الباقة</TableHead>
+                                    <TableHead className="text-center">تاريخ التفعيل</TableHead>
+                                    <TableHead className="text-center">تاريخ الانتهاء</TableHead>
+                                    <TableHead className="text-center">الحالة</TableHead>
+                                    <TableHead className="text-center">إجراء</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {(subscriptions || []).map(sub => (
+                                {(sortedAndFilteredSubscriptions || []).map(sub => (
                                     <TableRow key={sub.id}>
-                                        <TableCell>{clientsMap[sub.clientId]?.name || 'غير معروف'}</TableCell>
-                                        <TableCell>{packagesMap[sub.packageId]?.name || 'محذوفة'}</TableCell>
-                                        <TableCell>{format(sub.activationDate.toDate(), 'd MMM yyyy', { locale: ar })}</TableCell>
-                                        <TableCell>{format(sub.expiryDate.toDate(), 'd MMM yyyy', { locale: ar })}</TableCell>
-                                        <TableCell><Badge variant={sub.isActive ? 'default' : 'secondary'}>{sub.isActive ? 'فعال' : 'منتهي'}</Badge></TableCell>
-                                        <TableCell>
-                                            {sub.isActive && <Button variant="destructive" size="sm" onClick={() => handleDeactivateSubscription(sub.id)}>إلغاء التفعيل</Button>}
+                                        <TableCell className="text-center">{clientsMap[sub.clientId]?.name || 'غير معروف'}</TableCell>
+                                        <TableCell className="text-center">{packagesMap[sub.packageId]?.name || 'محذوفة'}</TableCell>
+                                        <TableCell className="text-center">{format(sub.activationDate.toDate(), 'd MMM yyyy', { locale: ar })}</TableCell>
+                                        <TableCell className="text-center">{format(sub.expiryDate.toDate(), 'd MMM yyyy', { locale: ar })}</TableCell>
+                                        <TableCell className="text-center"><Badge variant={sub.isActive ? 'default' : 'secondary'}>{sub.isActive ? 'فعال' : 'منتهي'}</Badge></TableCell>
+                                        <TableCell className="text-center">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(sub)}><FileEdit className="ml-2"/> تعديل</DropdownMenuItem>
+                                                    {sub.isActive && <DropdownMenuItem onClick={() => handleDeactivateSubscription(sub.id)} className="text-yellow-600 focus:text-yellow-600"><XCircle className="ml-2"/> إلغاء التفعيل</DropdownMenuItem>}
+                                                    <DropdownMenuItem onClick={() => handleOpenDeleteDialog(sub)} className="text-destructive focus:text-destructive"><Trash className="ml-2"/> حذف</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -366,26 +461,16 @@ export default function VipPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={packageForm.control} name="name" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>اسم الباقة</FormLabel>
-                                    <div className="relative">
-                                        <Tag className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input {...field} className="pr-10"/></FormControl>
-                                    </div>
+                                    <FormLabel className="flex items-center gap-2"><Tag/>اسم الباقة</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
                                     <FormMessage/>
                                 </FormItem>
                             )}/>
                             <FormField control={packageForm.control} name="type" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>نوع الباقة</FormLabel>
+                                    <FormLabel className="flex items-center gap-2"><Gem/>نوع الباقة</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <div className="flex items-center gap-2">
-                                                    <Gem className="h-5 w-5 text-muted-foreground" />
-                                                    <SelectValue placeholder="اختر النوع..."/>
-                                                </div>
-                                            </SelectTrigger>
-                                        </FormControl>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="اختر النوع..."/></SelectTrigger></FormControl>
                                         <SelectContent>
                                             <SelectItem value="bronze">برونزية</SelectItem>
                                             <SelectItem value="silver">فضية</SelectItem>
@@ -397,26 +482,16 @@ export default function VipPage() {
                             )}/>
                             <FormField control={packageForm.control} name="price" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>السعر (ر.ي)</FormLabel>
-                                    <div className="relative">
-                                        <CircleDollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <FormControl><Input type="number" {...field} className="pr-10"/></FormControl>
-                                    </div>
+                                    <FormLabel className="flex items-center gap-2"><CircleDollarSign/>السعر (ر.ي)</FormLabel>
+                                    <FormControl><Input type="number" {...field} /></FormControl>
                                     <FormMessage/>
                                 </FormItem>
                             )}/>
                             <FormField control={packageForm.control} name="duration" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>المدة</FormLabel>
+                                    <FormLabel className="flex items-center gap-2"><Calendar/>المدة</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                                                    <SelectValue placeholder="اختر المدة..."/>
-                                                </div>
-                                            </SelectTrigger>
-                                        </FormControl>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="اختر المدة..."/></SelectTrigger></FormControl>
                                         <SelectContent>
                                             <SelectItem value="monthly">شهرية</SelectItem>
                                             <SelectItem value="quarterly">ربع سنوية (3 أشهر)</SelectItem>
@@ -427,18 +502,11 @@ export default function VipPage() {
                                 </FormItem>
                             )}/>
                         </div>
-                        <FormField control={packageForm.control} name="imageUrl" render={({ field }) => (
+                         <FormField control={packageForm.control} name="imageUrl" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>رابط صورة الباقة (اختياري)</FormLabel>
-                                <div className="relative">
-                                    <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                    <FormControl><Input {...field} dir="ltr" className="pr-10" placeholder="https://... or /image.png"/></FormControl>
-                                </div>
-                                {field.value && (
-                                    <div className="mt-2 flex justify-center rounded-lg border border-dashed border-input p-2">
-                                        <Image src={field.value} alt="معاينة الباقة" width={80} height={80} className="rounded-md object-contain" unoptimized/>
-                                    </div>
-                                )}
+                                <FormLabel className="flex items-center gap-2"><ImageIcon/>رابط صورة الباقة (اختياري)</FormLabel>
+                                <FormControl><Input {...field} dir="ltr" placeholder="https://... or /image.png"/></FormControl>
+                                {field.value && <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1"><Image src={field.value} alt="معاينة" width={80} height={80} className="rounded-md object-contain" unoptimized/></div>}
                                 <FormMessage/>
                             </FormItem>
                         )}/>
@@ -466,11 +534,8 @@ export default function VipPage() {
                                 <FormMessage>{packageForm.formState.errors.features?.message || packageForm.formState.errors.features?.root?.message}</FormMessage>
                             </div>
                         </div>
-
-                        <FormField
-                            control={packageForm.control}
-                            name="isActive"
-                            render={({ field }) => (
+                        
+                        <FormField control={packageForm.control} name="isActive" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>حالة الباقة</FormLabel>
                                     <FormControl>
@@ -480,8 +545,7 @@ export default function VipPage() {
                                         </div>
                                     </FormControl>
                                 </FormItem>
-                            )}
-                        />
+                        )} />
                         
                         <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
                             <Button type="submit">حفظ</Button>
@@ -492,7 +556,6 @@ export default function VipPage() {
             </DialogContent>
         </Dialog>
         
-        {/* Delete Alert */}
         <AlertDialog open={alertState.isOpen} onOpenChange={(isOpen) => setAlertState({isOpen, data: null})}>
              <AlertDialogContent dir="rtl">
                 <AlertDialogHeader className="text-right">
@@ -501,6 +564,64 @@ export default function VipPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-row-reverse gap-2 sm:justify-start">
                     <AlertDialogAction onClick={confirmDelete}>نعم، قم بالحذف</AlertDialogAction>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <Dialog open={editSubState.isOpen} onOpenChange={(isOpen) => setEditSubState({isOpen, data: null})}>
+            <DialogContent dir="rtl">
+                 <DialogHeader className="text-right">
+                    <DialogTitle>تعديل الاشتراك</DialogTitle>
+                    <DialogDescription>تحديث تفاصيل اشتراك العميل: {editSubState.data && clientsMap[editSubState.data.clientId]?.name}</DialogDescription>
+                </DialogHeader>
+                <Form {...subscriptionEditForm}>
+                    <form onSubmit={subscriptionEditForm.handleSubmit(onSubscriptionEditSubmit)} className="space-y-4">
+                        <FormField control={subscriptionEditForm.control} name="expiryDate" render={({ field }) => (
+                            <FormItem><FormLabel>تاريخ الانتهاء</FormLabel>
+                                <FormControl>
+                                    <Input type="date" value={field.value ? format(field.value, 'yyyy-MM-dd') : ''} onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)} />
+                                </FormControl><FormMessage/>
+                            </FormItem>
+                        )}/>
+                        <FormField control={subscriptionEditForm.control} name="paymentMethod" render={({ field }) => (
+                            <FormItem><FormLabel>طريقة الدفع</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="cash">كاش</SelectItem><SelectItem value="wallet">محفظة</SelectItem><SelectItem value="bank_transfer">تحويل بنكي</SelectItem></SelectContent></Select></FormItem>
+                        )}/>
+                        {editPaymentMethod === 'bank_transfer' && (
+                            <div className="p-3 border rounded-lg space-y-3">
+                                <FormField control={subscriptionEditForm.control} name="bankDetails.bankAccountId" render={({ field }) => (
+                                    <FormItem><FormLabel>البنك</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..."/></SelectTrigger></FormControl><SelectContent>{(banks || []).map(b => <SelectItem key={b.id} value={b.id}>{b.bankName}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>
+                                )}/>
+                                <FormField control={subscriptionEditForm.control} name="bankDetails.receiptNumber" render={({ field }) => (
+                                    <FormItem><FormLabel>رقم السند</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage/></FormItem>
+                                )}/>
+                            </div>
+                        )}
+                         <FormField control={subscriptionEditForm.control} name="isActive" render={({ field }) => (
+                            <FormItem><FormLabel>حالة الاشتراك</FormLabel><FormControl>
+                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                    <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)}>فعال</Button>
+                                    <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)}>غير فعال</Button>
+                                </div>
+                            </FormControl></FormItem>
+                        )}/>
+                         <DialogFooter className="pt-4 flex-row-reverse sm:justify-start gap-2">
+                            <Button type="submit">حفظ التعديلات</Button>
+                            <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={deleteSubState.isOpen} onOpenChange={(isOpen) => setDeleteSubState({isOpen, data: null})}>
+            <AlertDialogContent dir="rtl">
+                <AlertDialogHeader className="text-right">
+                    <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                    <AlertDialogDescription>هل أنت متأكد من حذف هذا الاشتراك بشكل دائم؟</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-row-reverse gap-2 sm:justify-start">
+                    <AlertDialogAction onClick={confirmSubscriptionDelete}>نعم، قم بالحذف</AlertDialogAction>
                     <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 </AlertDialogFooter>
             </AlertDialogContent>
