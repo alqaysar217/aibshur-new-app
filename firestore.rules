@@ -157,6 +157,26 @@ service cloud.firestore {
     match /store_filters/{storeFilterId} {
         allow read, write: if request.auth != null;
     }
+    
+    /**
+     * @description Admin-only VIP package management.
+     * @path /vipPackages/{packageId}
+     * @allow (read, write) Only admins can manage VIP packages.
+     * @principle Protects business logic and revenue streams.
+     */
+    match /vipPackages/{packageId} {
+      allow read, write: if isAdmin();
+    }
+    
+    /**
+     * @description Admin-only VIP subscription management.
+     * @path /vipSubscriptions/{subscriptionId}
+     * @allow (read, write) Only admins can manage VIP subscriptions.
+     * @principle Protects customer subscription data.
+     */
+    match /vipSubscriptions/{subscriptionId} {
+      allow read, write: if isAdmin();
+    }
 
     //-------------------------------------------------------------------------
     // Publicly Readable Data
