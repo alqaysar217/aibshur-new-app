@@ -188,7 +188,6 @@ const CancellationDialog = ({ open, onOpenChange, onConfirm }: { open: boolean, 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>(mockOrdersData);
     const [delegates] = useState(mockDelegates);
-    const [isLoading, setIsLoading] = useState(true);
 
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -197,11 +196,14 @@ export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<string>("incoming");
     const [filters, setFilters] = useState({ searchTerm: '', storeId: 'all', date: undefined as DateRange | undefined });
     const { toast } = useToast();
-
+    const [isLoading, setIsLoading] = useState(true);
+    
+    // Defer client-side-only logic
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 500);
-        return () => clearTimeout(timer);
+      const timer = setTimeout(() => setIsLoading(false), 1000); // Simulate loading
+      return () => clearTimeout(timer);
     }, []);
+
 
     const activeDelegates = useMemo(() => (delegates || []).filter(d => d.is_active), [delegates]);
 
@@ -215,7 +217,7 @@ export default function OrdersPage() {
         });
         return Array.from(storeMap.entries());
     }, [orders]);
-
+    
     const filteredOrders = useMemo(() => {
         if (!orders) return [];
         let currentOrders: Order[];
@@ -236,6 +238,7 @@ export default function OrdersPage() {
         }).sort((a, b) => b.timestamps.createdAt.getTime() - a.timestamps.createdAt.getTime());
 
     }, [orders, activeTab, filters]);
+
 
     const handleViewDetails = (order: Order) => {
         setSelectedOrder(order);
@@ -445,13 +448,11 @@ export default function OrdersPage() {
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                         <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-4 text-sm">
-                                {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
-                            </div>
-                            {selectedOrder && <span className="flex items-center gap-1.5 text-sm text-muted-foreground"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
-                        </div>
                         <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
+                        <div className="flex justify-start items-center gap-4 text-sm pt-1">
+                            {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
+                            {selectedOrder && <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
+                        </div>
                     </DialogHeader>
                     {selectedOrder && (
                     <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
@@ -639,4 +640,3 @@ export default function OrdersPage() {
         </div>
     );
 }
-
