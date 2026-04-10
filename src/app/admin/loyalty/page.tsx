@@ -3,8 +3,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, doc, query, where, Timestamp, runTransaction, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc, query, where, Timestamp, runTransaction, getDocs, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useDoc, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -543,5 +543,3 @@ export default function LoyaltyPage() {
         </div>
     );
 }
-
-    
