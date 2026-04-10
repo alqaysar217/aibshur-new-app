@@ -86,7 +86,19 @@ export default function VipPage() {
 
     const packageForm = useForm<z.infer<typeof packageSchema>>({ resolver: zodResolver(packageSchema), defaultValues: { name: '', type: 'bronze', price: 0, duration: 'monthly', features: [{ value: '' }], imageUrl: '', isActive: true } });
     const { fields, append, remove } = useFieldArray({ control: packageForm.control, name: "features" });
-    const subscriptionForm = useForm<z.infer<typeof subscriptionSchema>>({ resolver: zodResolver(subscriptionSchema), defaultValues: { paymentMethod: 'cash' } });
+    const subscriptionForm = useForm<z.infer<typeof subscriptionSchema>>({ 
+        resolver: zodResolver(subscriptionSchema), 
+        defaultValues: { 
+            clientId: '',
+            packageId: '',
+            paymentMethod: 'cash',
+            bankDetails: {
+                bankAccountId: '',
+                receiptNumber: '',
+                receiptImageUrl: ''
+            }
+        } 
+    });
 
     // Data fetching
     const { data: packages, isLoading: l1 } = useCollection<VipPackage>(useMemoFirebase(() => firestore ? collection(firestore, 'vipPackages') : null, [firestore]));
