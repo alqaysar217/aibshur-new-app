@@ -655,7 +655,7 @@ export default function VipPage() {
                 <DialogHeader className="text-right">
                     <DialogTitle>تفاصيل الاشتراك</DialogTitle>
                 </DialogHeader>
-                {modalState.data && (() => {
+                {modalState.type === 'detailsSub' && modalState.data && (() => {
                     const sub = modalState.data as VipSubscription;
                     const client = clientsMap[sub.clientId];
                     const pkg = packagesMap[sub.packageId];
