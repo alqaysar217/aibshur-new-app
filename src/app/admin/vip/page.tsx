@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Client } from '../users/page';
 import type { BankAccount } from '../bank-accounts/page';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 // Schemas
@@ -466,7 +467,7 @@ export default function VipPage() {
 
         {/* Package Dialog */}
         <Dialog open={modalState.type === 'addPackage' || modalState.type === 'editPackage'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
-            <DialogContent className="sm:max-w-2xl" dir="rtl">
+            <DialogContent className="sm:max-w-2xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
                 <DialogHeader className="text-right">
                     <DialogTitle>{modalState.type === 'editPackage' ? 'تعديل باقة' : 'إضافة باقة جديدة'}</DialogTitle>
                     <DialogDescription>أدخل تفاصيل الباقة والمميزات التي تقدمها.</DialogDescription>
@@ -651,7 +652,7 @@ export default function VipPage() {
         </AlertDialog>
 
         <Dialog open={modalState.type === 'detailsSub'} onOpenChange={(isOpen) => !isOpen && handleModalClose()}>
-            <DialogContent className="max-w-lg [&>button]:right-auto [&>button]:left-4" dir="rtl">
+            <DialogContent className="max-w-2xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
                 <DialogHeader className="text-right">
                     <DialogTitle>تفاصيل الاشتراك</DialogTitle>
                 </DialogHeader>
@@ -660,7 +661,7 @@ export default function VipPage() {
                     const client = clientsMap[sub.clientId];
                     const pkg = packagesMap[sub.packageId];
                     return (
-                        <div className="space-y-4 pt-2 text-sm">
+                        <div className="grid md:grid-cols-2 gap-4 pt-2 text-sm max-h-[70vh] overflow-y-auto p-1">
                             <Card>
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات العميل</CardTitle></CardHeader>
                                 <CardContent className="space-y-2">
