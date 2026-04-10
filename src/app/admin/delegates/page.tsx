@@ -51,7 +51,7 @@ export default function DelegateRequestsPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const driversQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers') : null, [firestore]);
+    const driversQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers_v2') : null, [firestore]);
     const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
 
     const { pendingApplications, activeDrivers, rejectedDrivers } = useMemo(() => {
@@ -91,7 +91,7 @@ export default function DelegateRequestsPage() {
     
     const handleAccept = (driver: Driver) => {
         if (!firestore) return;
-        const driverRef = doc(firestore, 'drivers', driver.id);
+        const driverRef = doc(firestore, 'drivers_v2', driver.id);
         updateDocumentNonBlocking(driverRef, { status: 'active', is_active: true });
         
         const message = encodeURIComponent(`مرحباً ${driver.name}، يسعدنا إخبارك بقبول طلب انضمامك لفريق مناديب أبشر! يمكنك الآن تسجيل الدخول إلى تطبيق المناديب والبدء في استقبال الطلبات. بالتوفيق!`);
@@ -107,7 +107,7 @@ export default function DelegateRequestsPage() {
 
     const confirmReject = () => {
         if (!selectedDriver || !firestore) return;
-        const driverRef = doc(firestore, 'drivers', selectedDriver.id);
+        const driverRef = doc(firestore, 'drivers_v2', selectedDriver.id);
         updateDocumentNonBlocking(driverRef, { status: 'rejected', is_active: false });
 
         const message = encodeURIComponent(`مرحباً ${selectedDriver.name}، نشكرك على اهتمامك بالانضمام لفريق أبشر. نعتذر لإبلاغك بعدم قبول طلبك في الوقت الحالي. نتمنى لك كل التوفيق.`);

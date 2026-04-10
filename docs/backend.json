@@ -885,7 +885,7 @@
         }
       },
       {
-        "path": "/drivers/{driverId}",
+        "path": "/drivers_v2/{driverId}",
         "definition": {
           "entityName": "Driver",
           "schema": {
