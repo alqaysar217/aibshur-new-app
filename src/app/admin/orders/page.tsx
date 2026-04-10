@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 // Types
 import type { Driver } from '../delegates/page';
@@ -46,6 +47,8 @@ interface Order {
     clientPhone: string;
     storeId: string;
     storeName: string;
+    storeImage: string;
+    storeImageHint: string;
     delegateId?: string;
     delegateName?: string;
     delegatePhotoUrl?: string;
@@ -72,7 +75,7 @@ const mockDelegatesMap = mockDelegates.reduce((acc, d) => ({ ...acc, [d.id]: d }
 
 
 // Mock Orders
-const mockOrders: Order[] = [
+const mockOrdersData: Omit<Order, 'storeImage' | 'storeImageHint'>[] = [
     {
         id: 'ORD001',
         clientId: 'C01', clientName: 'عبدالله الحضرمي', clientPhone: '777123456',
@@ -101,7 +104,7 @@ const mockOrders: Order[] = [
         clientId: 'C03', clientName: 'سالم بن محفوظ', clientPhone: '777888999',
         storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
         status: 'dispatched',
-        delegateId: 'del1', delegateName: 'أحمد علي', delegatePhotoUrl: mockDelegates[0].personalPhotoUrl,
+        delegateId: 'del1', delegateName: 'أحمد علي', delegatePhotoUrl: 'https://picsum.photos/seed/del1/100/100',
         items: [{ productId: 'P03', productName: 'فحسة', quantity: 1, price: 2800 }],
         financials: { subtotal: 2800, deliveryFee: 400, discount: 0, tip: 0, total: 3200 },
         payment: { method: 'cash', status: 'pending' },
@@ -114,7 +117,7 @@ const mockOrders: Order[] = [
         clientId: 'C04', clientName: 'نورة باوزير', clientPhone: '774445556',
         storeId: 'S03', storeName: 'صيدلية الشفاء',
         status: 'delivered',
-        delegateId: 'del2', delegateName: 'خالد صالح', delegatePhotoUrl: mockDelegates[1].personalPhotoUrl,
+        delegateId: 'del2', delegateName: 'خالد صالح', delegatePhotoUrl: 'https://picsum.photos/seed/del2/100/100',
         items: [{ productId: 'P04', productName: 'بندول اكسترا', quantity: 1, price: 500 }],
         financials: { subtotal: 500, deliveryFee: 200, discount: 0, tip: 500, total: 1200 },
         payment: { method: 'wallet', status: 'paid' },
@@ -146,7 +149,8 @@ const mockOrders: Order[] = [
         address: { description: 'المكلا، فوة', latitude: 14.5678, longitude: 49.1111, addressType: 'other', receiverName: 'محمد علي', receiverPhone: '771231234'},
         timestamps: { createdAt: new Date(Date.now() - 2 * 60 * 1000) },
     },
-];
+].map(o => ({...o, storeImage: 'https://picsum.photos/seed/store-logo/100/100', storeImageHint: 'store logo'}));
+
 
 const statusInfo: Record<OrderStatus, { text: string; icon: React.ElementType; color: string; ringColor: string; }> = {
     incoming: { text: 'طلب وارد', icon: Clock, color: 'text-amber-600', ringColor: 'ring-amber-500' },
@@ -182,7 +186,7 @@ const CancellationDialog = ({ open, onOpenChange, onConfirm }: { open: boolean, 
 };
 
 export default function OrdersPage() {
-    const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const [orders, setOrders] = useState<Order[]>(mockOrdersData);
     const [delegates] = useState(mockDelegates);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -227,7 +231,7 @@ export default function OrdersPage() {
             const matchesSearch = (o.id.toLowerCase().includes(filters.searchTerm.toLowerCase()) || o.clientPhone.includes(filters.searchTerm));
             const matchesStore = (filters.storeId === 'all' || o.storeId === filters.storeId);
             const orderDate = o.timestamps.createdAt;
-            const matchesDate = !filters.date || (filters.date.from && orderDate >= filters.date.from && filters.date.to && orderDate <= filters.date.to);
+            const matchesDate = !filters.date || (filters.date.from && orderDate >= filters.date.from && (!filters.date.to || orderDate <= filters.date.to));
             return matchesSearch && matchesStore && matchesDate;
         }).sort((a, b) => b.timestamps.createdAt.getTime() - a.timestamps.createdAt.getTime());
 
@@ -441,19 +445,19 @@ export default function OrdersPage() {
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                         <div className="flex justify-between items-center">
-                             <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                         <div className="flex justify-between items-start">
+                            {selectedOrder && <span className="flex items-center gap-1.5 text-sm text-muted-foreground"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
+                            <div className="flex items-center gap-4 text-sm">
                                 {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
-                                {selectedOrder && <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
                             </div>
                         </div>
+                        <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
                     </DialogHeader>
                     {selectedOrder && (
-                    <div className="grid md:grid-cols-2 gap-6 flex-1 overflow-y-auto p-1 pr-4">
+                    <div className="grid md:grid-cols-2 gap-x-6 gap-y-4 flex-1 overflow-y-auto p-1 pr-4">
+                        {/* LEFT COLUMN */}
                         <div className="space-y-4">
-                            {/* Customer & Address */}
-                            <Card>
+                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><User/>بيانات العميل</CardTitle></CardHeader>
                                 <CardContent className="text-sm space-y-2">
                                     <p><strong>الاسم:</strong> {selectedOrder.clientName}</p>
@@ -462,7 +466,6 @@ export default function OrdersPage() {
                                 </CardContent>
                             </Card>
                             
-                            {/* Receiver Info */}
                              {selectedOrder.address.addressType === 'other' && selectedOrder.address.receiverName && (
                                 <Card>
                                     <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact/>بيانات المستلم</CardTitle></CardHeader>
@@ -473,13 +476,11 @@ export default function OrdersPage() {
                                 </Card>
                             )}
 
-                            {/* Order Notes */}
                             {selectedOrder.notes && <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText/>ملاحظات الطلب</CardTitle></CardHeader>
                                 <CardContent className="text-sm"><p>{selectedOrder.notes}</p></CardContent>
                             </Card>}
-
-                            {/* Delegate Info */}
+                            
                             {selectedOrder.delegateId && (
                                 <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike/>بيانات المندوب</CardTitle></CardHeader>
@@ -498,15 +499,6 @@ export default function OrdersPage() {
                             </Card>
                             )}
                             
-                            {/* Cancellation Reason */}
-                            {selectedOrder.cancellationReason && <Card className="border-destructive/50 bg-destructive/10">
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
-                                <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
-                            </Card>}
-                        </div>
-
-                        <div className="space-y-4">
-                             {/* Map */}
                              <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin/>موقع التوصيل</CardTitle></CardHeader>
                                 <CardContent>
@@ -517,32 +509,42 @@ export default function OrdersPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* Order Items */}
+                            {selectedOrder.cancellationReason && <Card className="border-destructive/50 bg-destructive/10">
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
+                                <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
+                            </Card>}
+                        </div>
+
+                        {/* RIGHT COLUMN */}
+                        <div className="space-y-4">
                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShoppingCart/>محتويات الطلب</CardTitle></CardHeader>
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <Image src={selectedOrder.storeImage} alt={selectedOrder.storeName} width={40} height={40} className="rounded-md object-cover border" />
+                                        <CardTitle className="text-base">{selectedOrder.storeName}</CardTitle>
+                                    </div>
+                                </CardHeader>
                                 <CardContent>
                                     <Table>
-                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[60px]">الكمية</TableHead><TableHead className="w-[80px]">السعر</TableHead><TableHead className="text-left w-[90px]">الإجمالي</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[50px] text-center">الكمية</TableHead><TableHead className="w-[80px] text-center">السعر</TableHead><TableHead className="text-left w-[90px]">الإجمالي</TableHead></TableRow></TableHeader>
                                         <TableBody>{selectedOrder.items.map(item => (
-                                            <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell dir="ltr">{item.price.toLocaleString()}</TableCell><TableCell className="text-left" dir="ltr">{(item.price * item.quantity).toLocaleString()}</TableCell></TableRow>
+                                            <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity}</TableCell><TableCell dir="ltr" className="text-center">{item.price.toLocaleString()}</TableCell><TableCell className="text-left" dir="ltr">{(item.price * item.quantity).toLocaleString()}</TableCell></TableRow>
                                         ))}</TableBody>
                                     </Table>
                                 </CardContent>
                             </Card>
 
-                            {/* Financials */}
                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign/>الملخص المالي</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
                                     <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedOrder.financials.subtotal.toLocaleString()}&nbsp;ر.ي</span></div>
-                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedOrder.financials.deliveryFee.toLocaleString()}&nbsp;ر.ي</span></div>
                                     {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedOrder.financials.discount.toLocaleString()}&nbsp;ر.ي</span></div>}
-                                    {selectedOrder.financials.tip > 0 && <div className="flex justify-between text-primary"><span>إكرامية للمندوب</span><span dir="ltr">{selectedOrder.financials.tip.toLocaleString()}&nbsp;ر.ي</span></div>}
-                                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>الإجمالي النهائي</span><span dir="ltr">{selectedOrder.financials.total.toLocaleString()}&nbsp;ر.ي</span></div>
+                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedOrder.financials.deliveryFee.toLocaleString()}&nbsp;ر.ي</span></div>
+                                    <Separator/>
+                                    <div className="flex justify-between font-bold text-base"><span>الإجمالي النهائي</span><span dir="ltr">{selectedOrder.financials.total.toLocaleString()}&nbsp;ر.ي</span></div>
                                 </CardContent>
                             </Card>
 
-                            {/* Payment */}
                              <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard/>الدفع</CardTitle></CardHeader>
                                 <CardContent className="text-sm space-y-2">
@@ -552,7 +554,6 @@ export default function OrdersPage() {
                                 </CardContent>
                             </Card>
 
-                             {/* Rating and Tip details for delivered orders */}
                             {selectedOrder.status === 'delivered' && (
                                 <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Star/>التقييم والإكرامية</CardTitle></CardHeader>
@@ -566,12 +567,11 @@ export default function OrdersPage() {
                                         <p className="border-t pt-2 text-muted-foreground">"{selectedOrder.rating.comment}"</p>
                                     </>
                                     ) : <p className="text-muted-foreground">لم يتم تقييم الطلب بعد.</p>}
-                                    {selectedOrder.financials.tip > 0 && (
-                                        <div className="border-t pt-3 mt-3">
-                                            <p><strong>الإكرامية:</strong> <span className="font-bold text-primary">{selectedOrder.financials.tip.toLocaleString()} ر.ي</span></p>
-                                            <p><strong>طريقة الدفع:</strong> {selectedOrder.tipPayment ? translatePaymentMethod(selectedOrder.tipPayment.method) : 'غير محدد'}</p>
-                                        </div>
-                                    )}
+                                    
+                                    <div className="border-t pt-3 mt-3">
+                                        <p><strong>الإكرامية:</strong> <span className="font-bold text-primary">{selectedOrder.financials.tip > 0 ? `${selectedOrder.financials.tip.toLocaleString()} ر.ي` : 'لا يوجد'}</span></p>
+                                        {selectedOrder.financials.tip > 0 && <p><strong>طريقة الدفع:</strong> {selectedOrder.tipPayment ? translatePaymentMethod(selectedOrder.tipPayment.method) : 'غير محدد'}</p>}
+                                    </div>
                                 </CardContent>
                                 </Card>
                             )}
