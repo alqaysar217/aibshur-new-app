@@ -89,6 +89,17 @@ type LoyaltyLog = {
 
 const arabicDays = { saturday: "السبت", sunday: "الأحد", monday: "الإثنين", tuesday: "الثلاثاء", wednesday: "الأربعاء", thursday: "الخميس", friday: "الجمعة" };
 
+const defaultRulesValues: LoyaltyRule = {
+    strategy: 'order_value',
+    basePointsRatio: 1000,
+    valueThreshold: 0,
+    valueMultiplier: 1,
+    ordersForPoints: 5,
+    pointsPerOrderSet: 10,
+    conversionRate: 0.5,
+    dayMultipliers: [],
+};
+
 export default function LoyaltyPage() {
     const [alertState, setAlertState] = useState<{ isOpen: boolean, data: PointRequest | null, type: 'approve' | 'reject' | null }>({ isOpen: false, data: null, type: null });
     const [searchTerm, setSearchTerm] = useState('');
@@ -121,16 +132,7 @@ export default function LoyaltyPage() {
     // Forms
     const rulesForm = useForm<LoyaltyRule>({
       resolver: zodResolver(loyaltyRuleSchema),
-      defaultValues: {
-        strategy: 'order_value',
-        basePointsRatio: 1000,
-        valueThreshold: 0,
-        valueMultiplier: 1,
-        ordersForPoints: 5,
-        pointsPerOrderSet: 10,
-        conversionRate: 0.5,
-        dayMultipliers: [],
-      }
+      defaultValues: defaultRulesValues,
     });
     const { fields, append, remove } = useFieldArray({ control: rulesForm.control, name: "dayMultipliers" });
     const manualConversionForm = useForm<z.infer<typeof manualConversionSchema>>({
@@ -141,7 +143,15 @@ export default function LoyaltyPage() {
     const strategy = rulesForm.watch('strategy');
 
     // Effects
-    useEffect(() => { if (rules) rulesForm.reset(rules); }, [rules, rulesForm]);
+    useEffect(() => {
+        if (rules) {
+            rulesForm.reset({
+                ...defaultRulesValues,
+                ...rules,
+            });
+        }
+    }, [rules, rulesForm.reset]);
+    
     useEffect(() => { const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500); return () => clearTimeout(handler); }, [searchTerm]);
     useEffect(() => { if (foundClients && foundClients.length > 0) { setFoundClient(foundClients[0]); manualConversionForm.setValue('clientId', foundClients[0].id); } else { setFoundClient(null); } }, [foundClients, manualConversionForm]);
     
@@ -158,7 +168,6 @@ export default function LoyaltyPage() {
     // Handlers
     const onRulesSubmit = (values: LoyaltyRule) => {
         if (!firestore) return;
-        // Use set with merge to handle both creation and update, preventing permission errors on non-existent documents.
         setDocumentNonBlocking(doc(firestore, 'loyaltyRules', 'main_rules'), values, { merge: true });
         toast({ title: 'تم حفظ قواعد الولاء بنجاح' });
     };
