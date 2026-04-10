@@ -442,11 +442,11 @@ export default function OrdersPage() {
                 <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
                          <div className="flex justify-between items-center">
+                             <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
                                 {selectedOrder && <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
                             </div>
-                             <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
                         </div>
                     </DialogHeader>
                     {selectedOrder && (
