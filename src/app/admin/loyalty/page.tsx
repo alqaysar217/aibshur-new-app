@@ -106,9 +106,23 @@ export default function LoyaltyPage() {
     const clientsMap = useMemo(() => clients?.reduce((acc, c) => ({...acc, [c.id]: c.name}), {}) || {}, [clients]);
     
     // Forms
-    const rulesForm = useForm<LoyaltyRule>({ resolver: zodResolver(loyaltyRuleSchema) });
+    const rulesForm = useForm<LoyaltyRule>({
+      resolver: zodResolver(loyaltyRuleSchema),
+      defaultValues: {
+        pointsRatio: 1000,
+        conversionRate: 0.5,
+        dayMultipliers: [],
+      }
+    });
     const { fields, append, remove } = useFieldArray({ control: rulesForm.control, name: "dayMultipliers" });
-    const manualConversionForm = useForm<z.infer<typeof manualConversionSchema>>({ resolver: zodResolver(manualConversionSchema) });
+    const manualConversionForm = useForm<z.infer<typeof manualConversionSchema>>({
+      resolver: zodResolver(manualConversionSchema),
+      defaultValues: {
+        clientId: '',
+        points: 0,
+        notes: ''
+      }
+    });
 
     // Effects
     useEffect(() => { if (rules) rulesForm.reset(rules); }, [rules, rulesForm]);
