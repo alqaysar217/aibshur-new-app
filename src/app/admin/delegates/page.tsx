@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Eye, Check, X, MessageSquare, CreditCard, BookUser, Mail, MapPin, Calendar, User } from 'lucide-react';
+import { Search, Eye, Check, X, MessageSquare, CreditCard, BookUser, Mail, MapPin, Calendar, User, Phone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -42,11 +42,11 @@ type Attachment = {
 };
 
 const mockDrivers: Omit<Driver, 'id'>[] = [
-    { name: 'علي محسن', phone: '771234567', email: 'ali.mohsen@example.com', address: 'المكلا - الديس', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate1/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id1front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id1back/800/500', latitude: 15.354, longitude: 44.206, is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-28T10:00:00Z')) },
-    { name: 'فاطمة سالم', phone: '731234567', email: 'fatima.salem@example.com', address: 'صنعاء - حدة', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate2/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport2/800/500', latitude: 15.344, longitude: 44.196, is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-27T15:30:00Z')) },
-    { name: 'خالد عبدالله', phone: '711234567', email: 'khalid.abdullah@example.com', address: 'عدن - المنصورة', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate3/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id3front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id3back/800/500', latitude: 15.361, longitude: 44.188, is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-26T09:00:00Z')) },
-    { name: 'مريم أحمد', phone: '777888999', email: 'maryam.ahmed@example.com', address: 'تعز - شارع جمال', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate4/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id4front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id4back/800/500', latitude: 13.578, longitude: 44.022, is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-25T11:00:00Z')) },
-    { name: 'سعيد صالح', phone: '733444555', email: 'saeed.saleh@example.com', address: 'الحديدة - الميناء', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate5/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport5/800/500', latitude: 14.802, longitude: 42.95, is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-24T18:00:00Z')) },
+    { name: 'علي محسن', phone: '771234567', email: 'ali.mohsen@example.com', address: 'المكلا - الديس', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate1/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id1front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id1back/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-28T10:00:00Z')) },
+    { name: 'فاطمة سالم', phone: '731234567', email: 'fatima.salem@example.com', address: 'صنعاء - حدة', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate2/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport2/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-27T15:30:00Z')) },
+    { name: 'خالد عبدالله', phone: '711234567', email: 'khalid.abdullah@example.com', address: 'عدن - المنصورة', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate3/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id3front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id3back/800/500', is_active: false, status: 'pending', createdAt: Timestamp.fromDate(new Date('2024-07-26T09:00:00Z')) },
+    { name: 'مريم أحمد', phone: '777888999', email: 'maryam.ahmed@example.com', address: 'تعز - شارع جمال', idType: 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate4/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id4front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id4back/800/500', is_active: true, status: 'active', createdAt: Timestamp.fromDate(new Date('2024-07-25T11:00:00Z')) },
+    { name: 'سعيد صالح', phone: '733444555', email: 'saeed.saleh@example.com', address: 'الحديدة - الميناء', idType: 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate5/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport5/800/500', is_active: false, status: 'rejected', createdAt: Timestamp.fromDate(new Date('2024-07-24T18:00:00Z')) },
 ];
 
 export default function DelegateRequestsPage() {
@@ -63,16 +63,15 @@ export default function DelegateRequestsPage() {
     const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
 
     useEffect(() => {
-        if (!isLoading && (!drivers || drivers.length === 0) && firestore) {
-            toast({
-                title: "جاري إضافة بيانات تجريبية...",
-                description: "تمت إضافة طلبات مناديب بحالات مختلفة لتتمكن من اختبار النظام.",
-            });
+        const pendingRequests = drivers?.filter(d => d.status === 'pending' || !d.status);
+        if (!isLoading && drivers && pendingRequests?.length === 0) {
             mockDrivers.forEach(driver => {
-                addDocumentNonBlocking(collection(firestore, 'drivers'), { ...driver, createdAt: serverTimestamp() });
+                 if (driver.status === 'pending') {
+                    addDocumentNonBlocking(collection(firestore, 'drivers'), { ...driver, createdAt: serverTimestamp() });
+                 }
             });
         }
-    }, [drivers, isLoading, firestore, toast]);
+    }, [drivers, isLoading, firestore]);
 
     const { pendingApplications, activeDrivers, rejectedDrivers } = useMemo(() => {
         const pending: Driver[] = [];
