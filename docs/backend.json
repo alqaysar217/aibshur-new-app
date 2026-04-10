@@ -876,7 +876,11 @@
         },
         "type": {
           "type": "string",
-          "enum": ["bronze", "silver", "gold"],
+          "enum": [
+            "bronze",
+            "silver",
+            "gold"
+          ],
           "description": "The tier of the package."
         },
         "price": {
@@ -885,7 +889,11 @@
         },
         "duration": {
           "type": "string",
-          "enum": ["monthly", "quarterly", "yearly"],
+          "enum": [
+            "monthly",
+            "quarterly",
+            "yearly"
+          ],
           "description": "The subscription duration."
         },
         "features": {
@@ -905,7 +913,14 @@
           "description": "Whether the package is currently available for purchase."
         }
       },
-      "required": ["name", "type", "price", "duration", "features", "imageUrl", "isActive"]
+      "required": [
+        "name",
+        "type",
+        "price",
+        "duration",
+        "features",
+        "isActive"
+      ]
     },
     "VipSubscription": {
       "title": "VIP Subscription",
@@ -932,24 +947,211 @@
         },
         "paymentMethod": {
           "type": "string",
-          "enum": ["cash", "wallet", "bank_transfer"],
+          "enum": [
+            "cash",
+            "wallet",
+            "bank_transfer"
+          ],
           "description": "The payment method used for the subscription."
         },
         "bankDetails": {
           "type": "object",
           "properties": {
-            "bankAccountId": { "type": "string" },
-            "receiptNumber": { "type": "string" },
-            "receiptImageUrl": { "type": "string", "format": "uri" }
+            "bankAccountId": {
+              "type": "string"
+            },
+            "receiptNumber": {
+              "type": "string"
+            },
+            "receiptImageUrl": {
+              "type": "string",
+              "format": "uri"
+            }
           },
           "description": "Details for bank transfer payments."
         },
         "isActive": {
           "type": "boolean",
           "description": "Whether the subscription is currently active."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "deleted"]
+        },
+        "deactivatedAt": {
+            "type": "string",
+            "format": "date-time"
         }
       },
-      "required": ["clientId", "packageId", "activationDate", "expiryDate", "paymentMethod", "isActive"]
+      "required": [
+        "clientId",
+        "packageId",
+        "activationDate",
+        "expiryDate",
+        "paymentMethod",
+        "isActive"
+      ]
+    },
+    "LoyaltyRule": {
+      "title": "Loyalty Rule",
+      "type": "object",
+      "description": "Defines the rules for calculating and converting loyalty points.",
+      "properties": {
+        "pointsRatio": {
+          "type": "number",
+          "description": "Amount of money (e.g., YER) that equals one point."
+        },
+        "conversionRate": {
+          "type": "number",
+          "description": "How many points equal 1 unit of currency (e.g., YER)."
+        },
+        "dayMultipliers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string",
+                "enum": [
+                  "saturday",
+                  "sunday",
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday"
+                ]
+              },
+              "multiplier": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "day",
+              "multiplier"
+            ]
+          }
+        }
+      },
+      "required": [
+        "pointsRatio",
+        "conversionRate"
+      ]
+    },
+    "UserWallet": {
+      "title": "User Wallet",
+      "type": "object",
+      "description": "Stores a user's loyalty points and cash balance.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "pointsBalance": {
+          "type": "number"
+        },
+        "cashBalance": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "userId",
+        "pointsBalance",
+        "cashBalance"
+      ]
+    },
+    "PointRequest": {
+      "title": "Point Request",
+      "type": "object",
+      "description": "A user's request to redeem loyalty points for cash.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "userPhone": {
+          "type": "string"
+        },
+        "pointsToRedeem": {
+          "type": "number"
+        },
+        "amountInYER": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "userPhone",
+        "pointsToRedeem",
+        "amountInYER",
+        "status",
+        "createdAt"
+      ]
+    },
+    "LoyaltyLog": {
+      "title": "Loyalty Log",
+      "type": "object",
+      "description": "A log entry for any change in a user's loyalty points.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "earn",
+            "redeem_request",
+            "redeem_manual",
+            "manual_add",
+            "manual_deduct",
+            "correction"
+          ]
+        },
+        "points": {
+          "type": "number"
+        },
+        "newPointsBalance": {
+          "type": "number"
+        },
+        "relatedOrderId": {
+          "type": "string"
+        },
+        "relatedRequestId": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "type",
+        "points",
+        "newPointsBalance",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -1144,7 +1346,9 @@
         "path": "/vipPackages/{packageId}",
         "definition": {
           "entityName": "VipPackage",
-          "schema": { "$ref": "#/backend/entities/VipPackage" },
+          "schema": {
+            "$ref": "#/backend/entities/VipPackage"
+          },
           "description": "Stores VIP package definitions. Admin-managed."
         }
       },
@@ -1152,8 +1356,50 @@
         "path": "/vipSubscriptions/{subscriptionId}",
         "definition": {
           "entityName": "VipSubscription",
-          "schema": { "$ref": "#/backend/entities/VipSubscription" },
+          "schema": {
+            "$ref": "#/backend/entities/VipSubscription"
+          },
           "description": "Stores customer VIP subscription records. Admin-managed."
+        }
+      },
+      {
+        "path": "/loyaltyRules/{ruleId}",
+        "definition": {
+          "entityName": "LoyaltyRule",
+          "schema": {
+            "$ref": "#/backend/entities/LoyaltyRule"
+          },
+          "description": "Stores the global rules for the loyalty program. Admin-managed."
+        }
+      },
+      {
+        "path": "/users/{userId}/wallet/main",
+        "definition": {
+          "entityName": "UserWallet",
+          "schema": {
+            "$ref": "#/backend/entities/UserWallet"
+          },
+          "description": "Stores a user's loyalty points and cash balance. Write access is restricted to server-side functions triggered by user actions or admin intervention."
+        }
+      },
+      {
+        "path": "/point_requests/{requestId}",
+        "definition": {
+          "entityName": "PointRequest",
+          "schema": {
+            "$ref": "#/backend/entities/PointRequest"
+          },
+          "description": "Stores user requests to redeem points. Readable by the requesting user, managed by admins."
+        }
+      },
+      {
+        "path": "/loyaltyLogs/{logId}",
+        "definition": {
+          "entityName": "LoyaltyLog",
+          "schema": {
+            "$ref": "#/backend/entities/LoyaltyLog"
+          },
+          "description": "Audit log for all point transactions. Readable by the relevant user, admin-managed."
         }
       }
     ],

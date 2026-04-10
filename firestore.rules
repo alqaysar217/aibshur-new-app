@@ -2,10 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    //-------------------------------------------------------------------------
-    // Helper Functions
-    //-------------------------------------------------------------------------
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -13,97 +9,49 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
+
     function isAdmin() {
-        // For prototyping, any signed-in user is considered an admin for the dashboard.
-        return isSignedIn();
+      // For prototyping, any signed-in user is considered an admin for the dashboard.
+      return isSignedIn();
     }
 
-    //-------------------------------------------------------------------------
-    // Admin Collections (Full CRUD for Admins)
-    //-------------------------------------------------------------------------
-
-    match /clients/{clientId} {
+    // Admin-Managed Collections (Full CRUD for Admins)
+    match /{collectionId}/{docId}
+      where collectionId in [
+        'clients', 'drivers_v2', 'storeOwners', 'admins', 
+        'bankAccounts', 'app_provinces', 'app_categories', 'store_filters',
+        'products', 'donations', 'coupons', 'vipPackages', 'vipSubscriptions',
+        'loyaltyRules', 'point_requests', 'loyaltyLogs'
+      ] {
       allow read, write: if isAdmin();
     }
-    match /drivers_v2/{driverId} {
-      allow read, write: if isAdmin();
-    }
-    match /storeOwners/{ownerId} {
-      allow read, write: if isAdmin();
-    }
-    match /admins/{adminId} {
-      allow read, write: if isAdmin();
-    }
-    match /bankAccounts/{bankAccountId} {
-      allow read, write: if isAdmin();
-    }
-    match /app_provinces/{appProvinceId} {
-      allow read, write: if isAdmin();
-    }
-    match /app_categories/{appCategoryId} {
-      allow read, write: if isAdmin();
-    }
-    match /store_filters/{storeFilterId} {
-      allow read, write: if isAdmin();
-    }
-    match /vipPackages/{packageId} {
-      allow read, write: if isAdmin();
-    }
-    match /vipSubscriptions/{subscriptionId} {
-      allow read, write: if isAdmin();
-    }
-    match /donations/{donationId} {
-      allow read, write: if isAdmin();
-    }
-    match /coupons/{couponId} {
-      allow read, write: if isAdmin();
-    }
-
-    //-------------------------------------------------------------------------
+    
     // Public Read / Admin Write Collections
-    //-------------------------------------------------------------------------
-    
-    match /adBanners/{adBannerId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-    match /stores/{storeId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-    match /products/{productId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-    match /donationTypes/{donationTypeId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
-    }
-    match /donationCampaigns/{campaignId} {
-      allow get, list: if true;
-      allow write: if isAdmin();
+    match /{collectionId}/{docId} 
+      where collectionId in [
+        'adBanners', 'stores', 'donationTypes', 'donationCampaigns'
+      ] {
+        allow get, list: if true;
+        allow write: if isAdmin();
     }
 
-    //-------------------------------------------------------------------------
-    // Public Read Collections (No Writes)
-    //-------------------------------------------------------------------------
-
-    match /governorates/{governorateId} {
-      allow read: if true;
-      allow write: if false;
-    }
-    match /storeCategories/{storeCategoryId} {
+    // Public Read-Only Collections
+    match /{collectionId}/{docId}
+      where collectionId in ['governorates', 'storeCategories'] {
       allow read: if true;
       allow write: if false;
     }
     
-    //-------------------------------------------------------------------------
-    // User-Specific Private Data
-    //-------------------------------------------------------------------------
-
-    match /users/{userId}/profile/{profileId} {
-      allow read, write: if isOwner(userId);
+    // User-Specific Data
+    match /users/{userId} {
+      // User Profile
+      match /profile/{profileId} {
+        allow read, write: if isOwner(userId);
+      }
+      // User Wallet
+      match /wallet/{walletId} {
+        allow read, write: if isAdmin() || isOwner(userId);
+      }
     }
   }
 }
