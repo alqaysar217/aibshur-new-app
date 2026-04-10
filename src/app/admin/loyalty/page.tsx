@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Star, Scale, Inbox, History, Search, Check, X, Calendar, Filter, Wand2 } from 'lucide-react';
+import { PlusCircle, Trash, Star, Scale, Inbox, History, Search, Check, X, Calendar, Filter, Wand2, CircleDollarSign, Hash, Settings, Repeat, TrendingUp, Sparkles, Package, Award, CalendarDays, ArrowRightLeft, ListChecks, User, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -92,6 +92,8 @@ const arabicDays = { saturday: "السبت", sunday: "الأحد", monday: "ال
 const defaultRuleValues: LoyaltyRule = {
     strategy: 'order_value',
     basePointsRatio: 1000,
+    valueThreshold: 0,
+    valueMultiplier: 1,
     conversionRate: 0.5,
     dayMultipliers: [],
 };
@@ -228,7 +230,7 @@ export default function LoyaltyPage() {
                 });
             });
             toast({title: 'تم التحويل بنجاح', description: `تم خصم ${values.points} نقطة من ${foundClient.name}.`});
-            manualConversionForm.reset();
+            manualConversionForm.reset({ clientId: '', points: 0, notes: '' });
             setSearchTerm('');
             setFoundClient(null);
         } catch(e: any) {
@@ -241,9 +243,12 @@ export default function LoyaltyPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-black text-foreground">نظام الولاء الذكي</h1>
-                <p className="text-muted-foreground mt-1">إدارة قواعد احتساب النقاط، طلبات التحويل، والسجلات.</p>
+            <div className="flex items-center gap-4">
+                 <Star className="h-8 w-8 text-amber-400 fill-amber-300" />
+                 <div>
+                    <h1 className="text-3xl font-black text-foreground">نظام الولاء الذكي</h1>
+                    <p className="text-muted-foreground mt-1">إدارة قواعد احتساب النقاط، طلبات التحويل، والسجلات.</p>
+                </div>
             </div>
 
              <Tabs defaultValue="rules" dir="rtl">
@@ -258,7 +263,7 @@ export default function LoyaltyPage() {
                         <form onSubmit={rulesForm.handleSubmit(onRulesSubmit)}>
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>محرك قواعد احتساب وصرف النقاط</CardTitle>
+                                    <CardTitle className="flex items-center gap-2"><Wand2 />محرك قواعد احتساب وصرف النقاط</CardTitle>
                                     <CardDescription>اختر الاستراتيجية المناسبة لعملك واضبط الإعدادات.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
@@ -267,22 +272,27 @@ export default function LoyaltyPage() {
                                         name="strategy"
                                         render={({ field }) => (
                                             <FormItem className="space-y-3">
-                                                <FormLabel>اختر استراتيجية اكتساب النقاط:</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><ListChecks />اختر استراتيجية اكتساب النقاط:</FormLabel>
                                                 <FormControl>
                                                     <RadioGroup
                                                     onValueChange={field.onChange}
-                                                    defaultValue={field.value}
+                                                    value={field.value}
                                                     className="grid grid-cols-1 md:grid-cols-2 gap-4"
                                                     >
                                                     <FormItem className="flex items-center space-x-3 space-y-0 space-x-reverse">
                                                         <FormControl>
                                                             <Card className={cn("p-4 flex-1 cursor-pointer", field.value === 'order_value' && "border-primary ring-2 ring-primary")}>
                                                                 <RadioGroupItem value="order_value" id="order_value" className="sr-only"/>
-                                                                <FormLabel htmlFor="order_value" className="font-bold cursor-pointer">
-                                                                    على أساس قيمة الطلب
-                                                                    <p className="font-normal text-muted-foreground text-sm mt-1">
-                                                                        مكافأة العملاء بناءً على قيمة مشترياتهم.
-                                                                    </p>
+                                                                <FormLabel htmlFor="order_value" className="font-normal cursor-pointer w-full">
+                                                                    <div className="flex items-center justify-between">
+                                                                         <div className="flex flex-col text-right">
+                                                                            <span className="font-bold">على أساس قيمة الطلب</span>
+                                                                            <p className="text-muted-foreground text-sm mt-1">
+                                                                                مكافأة العملاء بناءً على قيمة مشترياتهم.
+                                                                            </p>
+                                                                         </div>
+                                                                         <CircleDollarSign className="h-8 w-8 text-primary mr-4"/>
+                                                                    </div>
                                                                 </FormLabel>
                                                             </Card>
                                                         </FormControl>
@@ -291,11 +301,16 @@ export default function LoyaltyPage() {
                                                          <FormControl>
                                                             <Card className={cn("p-4 flex-1 cursor-pointer", field.value === 'order_count' && "border-primary ring-2 ring-primary")}>
                                                                 <RadioGroupItem value="order_count" id="order_count" className="sr-only"/>
-                                                                <FormLabel htmlFor="order_count" className="font-bold cursor-pointer">
-                                                                    على أساس عدد الطلبات
-                                                                     <p className="font-normal text-muted-foreground text-sm mt-1">
-                                                                        مكافأة ولاء العملاء بناءً على تكرار طلباتهم.
-                                                                    </p>
+                                                                <FormLabel htmlFor="order_count" className="font-normal cursor-pointer w-full">
+                                                                    <div className="flex items-center justify-between">
+                                                                         <div className="flex flex-col text-right">
+                                                                            <span className="font-bold">على أساس عدد الطلبات</span>
+                                                                            <p className="text-muted-foreground text-sm mt-1">
+                                                                                مكافأة ولاء العملاء بناءً على تكرار طلباتهم.
+                                                                            </p>
+                                                                         </div>
+                                                                         <Hash className="h-8 w-8 text-primary mr-4"/>
+                                                                    </div>
                                                                 </FormLabel>
                                                             </Card>
                                                         </FormControl>
@@ -308,32 +323,32 @@ export default function LoyaltyPage() {
                                     />
                                     
                                     <div className="space-y-4 rounded-lg border p-4">
-                                        <h3 className="font-semibold">إعدادات الاستراتيجية المختارة</h3>
+                                        <h3 className="font-semibold flex items-center gap-2"><Settings/>إعدادات الاستراتيجية المختارة</h3>
                                         {strategy === 'order_value' && (
                                             <div className="space-y-4">
-                                                <FormField control={rulesForm.control} name="basePointsRatio" render={({field}) => <FormItem><FormLabel>المعدل الأساسي للنقاط</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>كل كم ريال يساوي 1 نقطة. (مثال: 1000)</FormDescription><FormMessage/></FormItem>} />
+                                                <FormField control={rulesForm.control} name="basePointsRatio" render={({field}) => <FormItem><FormLabel className="flex items-center gap-2"><Repeat/>المعدل الأساسي للنقاط</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>كل كم ريال يساوي 1 نقطة. (مثال: 1000)</FormDescription><FormMessage/></FormItem>} />
                                                 <div className="space-y-2">
-                                                    <FormLabel>مضاعف قيمة الطلب (اختياري)</FormLabel>
+                                                    <FormLabel className="flex items-center gap-2"><Sparkles/>مضاعف قيمة الطلب (اختياري)</FormLabel>
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        <FormField control={rulesForm.control} name="valueThreshold" render={({field}) => <FormItem><FormLabel className="text-xs">إذا تجاوز الطلب (ريال)</FormLabel><FormControl><Input type="number" {...field} placeholder="مثال: 5000"/></FormControl><FormMessage/></FormItem>} />
-                                                        <FormField control={rulesForm.control} name="valueMultiplier" render={({field}) => <FormItem><FormLabel className="text-xs">اضرب النقاط في</FormLabel><FormControl><Input type="number" {...field} placeholder="مثال: 2"/></FormControl><FormMessage/></FormItem>} />
+                                                        <FormField control={rulesForm.control} name="valueThreshold" render={({field}) => <FormItem><FormLabel className="text-xs flex items-center gap-1"><TrendingUp/>إذا تجاوز الطلب (ريال)</FormLabel><FormControl><Input type="number" {...field} placeholder="مثال: 5000"/></FormControl><FormMessage/></FormItem>} />
+                                                        <FormField control={rulesForm.control} name="valueMultiplier" render={({field}) => <FormItem><FormLabel className="text-xs flex items-center gap-1"><Sparkles/>اضرب النقاط في</FormLabel><FormControl><Input type="number" {...field} placeholder="مثال: 2"/></FormControl><FormMessage/></FormItem>} />
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                         {strategy === 'order_count' && (
                                             <div className="grid sm:grid-cols-2 gap-4">
-                                                <FormField control={rulesForm.control} name="ordersForPoints" render={({field}) => <FormItem><FormLabel>عدد الطلبات لاكتساب النقاط</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>بعد كل كم طلب يحصل على نقاط؟ (مثال: 5)</FormDescription><FormMessage/></FormItem>} />
-                                                <FormField control={rulesForm.control} name="pointsPerOrderSet" render={({field}) => <FormItem><FormLabel>النقاط المكتسبة</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>كم نقطة يكتسبها؟ (مثال: 10)</FormDescription><FormMessage/></FormItem>} />
+                                                <FormField control={rulesForm.control} name="ordersForPoints" render={({field}) => <FormItem><FormLabel className="flex items-center gap-2"><Package/>عدد الطلبات لاكتساب النقاط</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>بعد كل كم طلب يحصل على نقاط؟ (مثال: 5)</FormDescription><FormMessage/></FormItem>} />
+                                                <FormField control={rulesForm.control} name="pointsPerOrderSet" render={({field}) => <FormItem><FormLabel className="flex items-center gap-2"><Award/>النقاط المكتسبة</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>كم نقطة يكتسبها؟ (مثال: 10)</FormDescription><FormMessage/></FormItem>} />
                                             </div>
                                         )}
                                     </div>
                                     
                                     <div className="space-y-4 rounded-lg border p-4">
-                                        <h3 className="font-semibold">الإعدادات العامة</h3>
-                                        <FormField control={rulesForm.control} name="conversionRate" render={({field}) => <FormItem><FormLabel>سعر صرف النقطة</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormDescription>كل 1 نقطة تساوي كم ريال. (مثال: 0.5)</FormDescription><FormMessage/></FormItem>} />
+                                        <h3 className="font-semibold flex items-center gap-2"><Settings/>الإعدادات العامة</h3>
+                                        <FormField control={rulesForm.control} name="conversionRate" render={({field}) => <FormItem><FormLabel className="flex items-center gap-2"><ArrowRightLeft/>سعر صرف النقطة</FormLabel><FormControl><Input type="number" {...field}/></FormControl><FormDescription>كل 1 نقطة تساوي كم ريال. (مثال: 0.5)</FormDescription><FormMessage/></FormItem>} />
                                         <div>
-                                            <FormLabel>مضاعفات الأيام الخاصة</FormLabel>
+                                            <FormLabel className="flex items-center gap-2"><CalendarDays/>مضاعفات الأيام الخاصة</FormLabel>
                                             <div className="space-y-2 mt-2">
                                                 {fields.map((item, index) => (
                                                     <div key={item.id} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
@@ -355,15 +370,21 @@ export default function LoyaltyPage() {
 
                 <TabsContent value="requests" className="mt-4">
                     <Card>
-                        <CardHeader><CardTitle>طلبات تحويل النقاط المعلقة</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><Inbox/>طلبات تحويل النقاط المعلقة</CardTitle></CardHeader>
                         <CardContent><Table>
-                            <TableHeader><TableRow><TableHead>العميل</TableHead><TableHead>نقاط</TableHead><TableHead>مبلغ</TableHead><TableHead>تاريخ الطلب</TableHead><TableHead className="text-center">إجراء</TableHead></TableRow></TableHeader>
-                            <TableBody>{requests?.map(req => (
+                            <TableHeader><TableRow>
+                                <TableHead className="text-center">العميل</TableHead>
+                                <TableHead className="text-center">نقاط</TableHead>
+                                <TableHead className="text-center">مبلغ</TableHead>
+                                <TableHead className="text-center">تاريخ الطلب</TableHead>
+                                <TableHead className="text-center">إجراء</TableHead>
+                            </TableRow></TableHeader>
+                            <TableBody>{(requests || [])?.map(req => (
                                 <TableRow key={req.id}>
-                                    <TableCell>{req.userName} ({req.userPhone})</TableCell>
-                                    <TableCell>{req.pointsToRedeem}</TableCell>
-                                    <TableCell>{req.amountInYER.toLocaleString()} ر.ي</TableCell>
-                                    <TableCell>{format(req.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar})}</TableCell>
+                                    <TableCell className="flex items-center gap-2 justify-center"><User className="text-muted-foreground"/>{req.userName} ({req.userPhone})</TableCell>
+                                    <TableCell className="text-center font-mono">{req.pointsToRedeem}</TableCell>
+                                    <TableCell className="text-center font-mono">{req.amountInYER.toLocaleString()} ر.ي</TableCell>
+                                    <TableCell className="text-center">{format(req.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar})}</TableCell>
                                     <TableCell className="text-center space-x-2 space-x-reverse">
                                         <Button size="sm" onClick={() => handleRequestAction(req, 'approve')}><Check/>قبول</Button>
                                         <Button size="sm" variant="destructive" onClick={() => handleRequestAction(req, 'reject')}><X/>رفض</Button>
@@ -376,16 +397,16 @@ export default function LoyaltyPage() {
 
                 <TabsContent value="manual" className="mt-4 space-y-6">
                     <Card>
-                        <CardHeader><CardTitle>تحويل يدوي لرصيد النقاط</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><UserPlus />تحويل يدوي لرصيد النقاط</CardTitle></CardHeader>
                          <Form {...manualConversionForm}>
                             <form onSubmit={manualConversionForm.handleSubmit(onManualConversionSubmit)}>
                                 <CardContent className="space-y-4">
-                                    <FormItem><FormLabel>ابحث عن العميل برقم الهاتف</FormLabel><div className="flex gap-2"><Input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="7XXXXXXXX" /><Button type="button" disabled><Search/></Button></div></FormItem>
+                                    <FormItem><FormLabel>ابحث عن العميل برقم الهاتف</FormLabel><div className="flex gap-2"><Input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="7XXXXXXXX" /><Button type="button"><Search/></Button></div></FormItem>
                                     {foundClient && (
                                         <div className="p-3 bg-primary/10 rounded-lg text-sm space-y-2">
                                             <div className="font-bold">العميل: {foundClient.name}</div>
                                             <div>الرصيد الحالي: <span className="font-bold">{userWallet?.pointsBalance?.toLocaleString() || 0} نقطة</span></div>
-                                            {rules && rules.strategy === 'order_value' && <div>تساوي تقريباً: <span className="font-bold">{( (userWallet?.pointsBalance || 0) * rules.conversionRate ).toLocaleString()} ر.ي</span></div>}
+                                            {rules && <div>تساوي تقريباً: <span className="font-bold">{( (userWallet?.pointsBalance || 0) * rules.conversionRate ).toLocaleString()} ر.ي</span></div>}
                                         </div>
                                     )}
                                     {foundClient && (<>
@@ -400,7 +421,7 @@ export default function LoyaltyPage() {
                          </Form>
                     </Card>
                      <Card>
-                        <CardHeader><CardTitle>سجلات عمليات الولاء</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><History/>سجلات عمليات الولاء</CardTitle></CardHeader>
                         <CardContent>
                             <div className="flex gap-2 mb-4">
                                 <Select value={logFilters.type} onValueChange={v => setLogFilters(f => ({...f, type: v}))}>
@@ -420,19 +441,28 @@ export default function LoyaltyPage() {
                                     <PopoverContent className="w-auto p-0" align="start"><CalendarComponent mode="range" selected={logFilters.dateRange} onSelect={(range) => setLogFilters(f => ({...f, dateRange: range || {}}))} numberOfMonths={2}/></PopoverContent>
                                 </Popover>
                             </div>
+                            <div className="border rounded-lg">
                             <Table>
-                                <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>العميل</TableHead><TableHead>العملية</TableHead><TableHead>النقاط</TableHead><TableHead>الرصيد الجديد</TableHead><TableHead>ملاحظات</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow>
+                                    <TableHead className="text-center">التاريخ</TableHead>
+                                    <TableHead className="text-center">العميل</TableHead>
+                                    <TableHead className="text-center">العملية</TableHead>
+                                    <TableHead className="text-center">النقاط</TableHead>
+                                    <TableHead className="text-center">الرصيد الجديد</TableHead>
+                                    <TableHead className="text-center">ملاحظات</TableHead>
+                                </TableRow></TableHeader>
                                 <TableBody>{filteredLogs.map(log => (
                                     <TableRow key={log.id}>
-                                        <TableCell>{format(log.createdAt.toDate(), 'd MMM, h:mm a', {locale: ar})}</TableCell>
-                                        <TableCell>{clientsMap[log.userId] || log.userId}</TableCell>
-                                        <TableCell><Badge variant="secondary">{log.type}</Badge></TableCell>
-                                        <TableCell className={cn(log.points > 0 ? 'text-green-600' : 'text-red-600')}>{log.points > 0 && '+'}{log.points.toLocaleString()}</TableCell>
-                                        <TableCell>{log.newPointsBalance.toLocaleString()}</TableCell>
-                                        <TableCell>{log.notes || '—'}</TableCell>
+                                        <TableCell className="text-center">{format(log.createdAt.toDate(), 'd MMM, h:mm a', {locale: ar})}</TableCell>
+                                        <TableCell className="text-center">{clientsMap[log.userId] || log.userId}</TableCell>
+                                        <TableCell className="text-center"><Badge variant="secondary">{log.type}</Badge></TableCell>
+                                        <TableCell className={cn("text-center font-mono", log.points > 0 ? 'text-green-600' : 'text-red-600')}>{log.points > 0 && '+'}{log.points.toLocaleString()}</TableCell>
+                                        <TableCell className="text-center font-mono">{log.newPointsBalance.toLocaleString()}</TableCell>
+                                        <TableCell className="text-center">{log.notes || '—'}</TableCell>
                                     </TableRow>
                                 ))}</TableBody>
                             </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
