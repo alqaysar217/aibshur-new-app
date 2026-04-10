@@ -15,40 +15,59 @@ service cloud.firestore {
       return isSignedIn();
     }
 
-    // Admin-Managed Collections (Full CRUD for Admins)
-    match /{collectionId}/{docId}
-      where collectionId in [
-        'clients', 'drivers_v2', 'storeOwners', 'admins', 
-        'bankAccounts', 'app_provinces', 'app_categories', 'store_filters',
-        'products', 'donations', 'coupons', 'vipPackages', 'vipSubscriptions',
-        'loyaltyRules', 'point_requests', 'loyaltyLogs'
-      ] {
-      allow read, write: if isAdmin();
-    }
+    // --- Admin-Managed Collections (Full CRUD for Admins) ---
+    match /clients/{docId} { allow read, write: if isAdmin(); }
+    match /drivers_v2/{docId} { allow read, write: if isAdmin(); }
+    match /storeOwners/{docId} { allow read, write: if isAdmin(); }
+    match /admins/{docId} { allow read, write: if isAdmin(); }
+    match /bankAccounts/{docId} { allow read, write: if isAdmin(); }
+    match /app_provinces/{docId} { allow read, write: if isAdmin(); }
+    match /app_categories/{docId} { allow read, write: if isAdmin(); }
+    match /store_filters/{docId} { allow read, write: if isAdmin(); }
+    match /products/{docId} { allow read, write: if isAdmin(); }
+    match /donations/{docId} { allow read, write: if isAdmin(); }
+    match /coupons/{docId} { allow read, write: if isAdmin(); }
+    match /vipPackages/{docId} { allow read, write: if isAdmin(); }
+    match /vipSubscriptions/{docId} { allow read, write: if isAdmin(); }
+    match /loyaltyRules/{docId} { allow read, write: if isAdmin(); }
+    match /point_requests/{docId} { allow read, write: if isAdmin(); }
+    match /loyaltyLogs/{docId} { allow read, write: if isAdmin(); }
     
-    // Public Read / Admin Write Collections
-    match /{collectionId}/{docId} 
-      where collectionId in [
-        'adBanners', 'stores', 'donationTypes', 'donationCampaigns'
-      ] {
-        allow get, list: if true;
-        allow write: if isAdmin();
+    // --- Public Read / Admin Write Collections ---
+    match /adBanners/{docId} { 
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /stores/{docId} { 
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /donationTypes/{docId} { 
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /donationCampaigns/{docId} { 
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Public Read-Only Collections
-    match /{collectionId}/{docId}
-      where collectionId in ['governorates', 'storeCategories'] {
+    // --- Public Read-Only Collections ---
+    match /governorates/{docId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if false; // Explicitly disallow writes
+    }
+    match /storeCategories/{docId} {
+      allow read: if true;
+      allow write: if false; // Explicitly disallow writes
     }
     
-    // User-Specific Data
+    // --- User-Specific Data ---
     match /users/{userId} {
-      // User Profile
+      // User Profile: Only owner can access
       match /profile/{profileId} {
         allow read, write: if isOwner(userId);
       }
-      // User Wallet
+      // User Wallet: Owner and Admin can access
       match /wallet/{walletId} {
         allow read, write: if isAdmin() || isOwner(userId);
       }
