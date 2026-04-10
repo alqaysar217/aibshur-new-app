@@ -25,7 +25,7 @@ const sidebarNavItems = [
     { label: 'إدارة الطلبات', href: '/admin/orders', icon: ClipboardList },
     { label: 'إدارة المواعيد', href: '/admin/appointments', icon: Calendar },
     { label: 'إدارة المستخدمين', href: '/admin/users', icon: Users },
-    { label: 'إدارة طلبات المناديب', href: '/admin/delegates', icon: Bike },
+    { label: 'طلبات المناديب', href: '/admin/delegates', icon: Bike },
     { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Gem },
     { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
     { label: 'إدارة الإعلانات', href: '/admin/ads', icon: Megaphone },
