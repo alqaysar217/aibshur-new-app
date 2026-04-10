@@ -247,16 +247,30 @@ export default function UsersPage() {
 
     const onSubmit = async (values: any) => {
         if (!firestore) return;
+
+        // Create a copy of the form values to sanitize before sending to Firestore.
+        const dataToSave = { ...values };
+
+        // Firestore does not support `undefined` values.
+        // We must iterate over the object and remove any properties that have this value.
+        // This is a robust way to handle any optional fields in our forms.
+        Object.keys(dataToSave).forEach(key => {
+            if (dataToSave[key] === undefined) {
+                delete dataToSave[key];
+            }
+        });
+
         const collectionRef = collection(firestore, activeTab);
         if (dialogState.isEditing && dialogState.data) {
-            updateDocumentNonBlocking(doc(collectionRef, dialogState.data.id), values);
+            updateDocumentNonBlocking(doc(collectionRef, dialogState.data.id), dataToSave);
             toast({ title: "تم تحديث المستخدم بنجاح" });
         } else {
-            addDocumentNonBlocking(collectionRef, values);
+            addDocumentNonBlocking(collectionRef, dataToSave);
             toast({ title: "تمت إضافة المستخدم بنجاح" });
         }
         setDialogState({ isOpen: false, data: null, isEditing: false });
     };
+
 
     if (isLoading) return <UsersLoading />;
 
