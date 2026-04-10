@@ -1,8 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
-import { collection, doc, Timestamp } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -38,17 +38,41 @@ type Attachment = {
     url: string;
 };
 
+const mockDrivers = [
+    { name: 'علي محسن', phone: '771234567', email: 'ali.mohsen@example.com', address: 'شارع الزبيري', idType: 'card' as 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate1/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id1front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id1back/800/500', latitude: 15.354, longitude: 44.206, is_active: false, status: 'pending' as 'pending' },
+    { name: 'فاطمة سالم', phone: '731234567', email: 'fatima.salem@example.com', address: 'شارع حدة', idType: 'passport' as 'passport', personalPhotoUrl: 'https://picsum.photos/seed/delegate2/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/passport2/800/500', latitude: 15.344, longitude: 44.196, is_active: false, status: 'pending' as 'pending' },
+    { name: 'خالد عبدالله', phone: '711234567', email: 'khalid.abdullah@example.com', address: 'شارع الجزائر', idType: 'card' as 'card', personalPhotoUrl: 'https://picsum.photos/seed/delegate3/400/400', idFrontPhotoUrl: 'https://picsum.photos/seed/id3front/800/500', idBackPhotoUrl: 'https://picsum.photos/seed/id3back/800/500', latitude: 15.361, longitude: 44.188, is_active: false, status: 'pending' as 'pending' },
+];
+
 export default function DelegateRequestsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
     const [isRejectAlertOpen, setIsRejectAlertOpen] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+    const [dataSeeded, setDataSeeded] = useState(false);
 
     const { toast } = useToast();
     const firestore = useFirestore();
 
     const driversQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers') : null, [firestore]);
     const { data: drivers, isLoading } = useCollection<Driver>(driversQuery);
+
+    useEffect(() => {
+        if (!isLoading && drivers && drivers.length === 0 && !dataSeeded && firestore) {
+            setDataSeeded(true);
+            toast({
+                title: "جاري إضافة بيانات تجريبية...",
+                description: "سيتم إضافة 3 طلبات مناديب جديدة لتتمكن من اختبار النظام.",
+            });
+            mockDrivers.forEach(driver => {
+                const driverData = {
+                    ...driver,
+                    createdAt: serverTimestamp(),
+                };
+                addDocumentNonBlocking(collection(firestore, 'drivers'), driverData);
+            });
+        }
+    }, [drivers, isLoading, dataSeeded, firestore, toast]);
 
     const pendingApplications = useMemo(() => {
         if (!drivers) return [];
@@ -117,7 +141,7 @@ export default function DelegateRequestsPage() {
         return list;
     }, [selectedDriver]);
 
-    if (isLoading) {
+    if (isLoading && !dataSeeded) {
         return <DelegatesLoading />;
     }
 
@@ -233,3 +257,5 @@ export default function DelegateRequestsPage() {
         </>
     );
 }
+
+    
