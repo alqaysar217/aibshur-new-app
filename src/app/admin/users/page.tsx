@@ -95,10 +95,10 @@ const adminSchema = z.object({
 });
 
 // Types
-type Client = z.infer<typeof clientSchema> & { id: string };
-type Driver = z.infer<typeof driverSchema> & { id: string };
-type StoreOwner = z.infer<typeof storeOwnerSchema> & { id: string };
-type Admin = z.infer<typeof adminSchema> & { id: string };
+export type Client = z.infer<typeof clientSchema> & { id: string };
+export type Driver = z.infer<typeof driverSchema> & { id: string };
+export type StoreOwner = z.infer<typeof storeOwnerSchema> & { id: string };
+export type Admin = z.infer<typeof adminSchema> & { id: string };
 type AnyUser = Client | Driver | StoreOwner | Admin;
 type UserType = 'clients' | 'drivers_v2' | 'storeOwners' | 'admins';
 
@@ -113,7 +113,7 @@ const dashboardPages = [
 ];
 
 const MapPicker = dynamic(() => import('@/components/map-picker').then(mod => mod.MapPicker), { ssr: false, loading: () => <div className="h-[250px] w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
-const UserLocationViewer = dynamic(() => import('@/components/user-location-viewer').then(mod => mod.UserLocationViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
+const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
 const ImagePreview = ({ url }: { url?: string }) => {
     if (!url) return null;
@@ -413,7 +413,7 @@ export default function UsersPage() {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </FormItem>}
-                    {dialogState.isEditing && (dialogState.data as Admin)?.latitude && <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>آخر موقع مسجل</FormLabel><UserLocationViewer className="h-48 w-full rounded-lg overflow-hidden border" position={{ lat: (dialogState.data as Admin).latitude!, lng: (dialogState.data as Admin).longitude! }} /></FormItem>}
+                    {dialogState.isEditing && (dialogState.data as Admin)?.latitude && <FormItem><FormLabel className="flex items-center gap-2"><MapPin/>آخر موقع مسجل</FormLabel><LocationMapViewer className="h-48 w-full rounded-lg overflow-hidden border" mainPosition={{ lat: (dialogState.data as Admin).latitude!, lng: (dialogState.data as Admin).longitude! }} /></FormItem>}
                     <FormField name="is_active" control={currentForm.control} render={({ field }) => <FormItem className="flex items-center gap-2 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>الحساب نشط</FormLabel></FormItem>} />
                     <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                 </form></Form>;

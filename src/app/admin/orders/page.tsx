@@ -5,9 +5,6 @@ import dynamic from 'next/dynamic';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-// Firebase imports
-import { collection, doc, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 
 // Components
 import OrdersLoading from './loading';
@@ -35,6 +32,8 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 // Types
 import type { Driver } from '../delegates/page';
 
+const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-48 w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
+
 type OrderStatus = 'incoming' | 'confirmed' | 'preparing' | 'dispatched' | 'delivered' | 'cancelled';
 type PaymentMethod = 'cash' | 'wallet' | 'bank_transfer';
 type PaymentStatus = 'pending' | 'paid' | 'refunded';
@@ -53,13 +52,85 @@ interface Order {
     financials: { subtotal: number; deliveryFee: number; discount: number; tip: number; total: number; };
     payment: { method: PaymentMethod; status: PaymentStatus; receiptImageUrl?: string; };
     address: { description: string; latitude: number; longitude: number; };
-    timestamps: { createdAt: Timestamp; confirmedAt?: Timestamp; dispatchedAt?: Timestamp; deliveredAt?: Timestamp; cancelledAt?: Timestamp; };
+    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; };
     cancellationReason?: string;
     rating?: { store: number; delegate: number; comment: string; };
+    delegatePosition?: { lat: number; lng: number };
 }
 
+// Mock Delegates
+const mockDelegates: (Omit<Driver, 'id'> & {id: string, position: {lat: number, lng: number}} )[] = [
+    { id: 'del1', name: 'أحمد علي', phone: '771111111', is_active: true, email: 'ahmed@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: '', idType: 'card', position: { lat: 14.5450, lng: 49.1350 } },
+    { id: 'del2', name: 'خالد صالح', phone: '772222222', is_active: true, email: 'khalid@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: '', idType: 'card', position: { lat: 14.5390, lng: 49.1300 } },
+    { id: 'del3', name: 'ياسر محمد', phone: '773333333', is_active: true, email: 'yasser@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: '', idType: 'card', position: { lat: 14.5480, lng: 49.1290 } },
+];
+
+// Mock Orders
+const mockOrders: Order[] = [
+    {
+        id: 'ORD001',
+        clientId: 'C01', clientName: 'عبدالله الحضرمي', clientPhone: '777123456',
+        storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
+        status: 'incoming',
+        items: [{ productId: 'P01', productName: 'مندي دجاج', quantity: 2, price: 2500 }],
+        financials: { subtotal: 5000, deliveryFee: 500, discount: 0, tip: 0, total: 5500 },
+        payment: { method: 'cash', status: 'pending' },
+        address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333 },
+        timestamps: { createdAt: new Date(Date.now() - 5 * 60 * 1000) }, // 5 mins ago
+    },
+    {
+        id: 'ORD002',
+        clientId: 'C02', clientName: 'فاطمة الكندي', clientPhone: '775654321',
+        storeId: 'S02', storeName: 'سوبر ماركت العالمية',
+        status: 'confirmed',
+        items: [{ productId: 'P02', productName: 'حليب المراعي', quantity: 4, price: 800 }],
+        financials: { subtotal: 3200, deliveryFee: 300, discount: 0, tip: 0, total: 3500 },
+        payment: { method: 'wallet', status: 'paid' },
+        address: { description: 'المكلا، الديس، خلف مول المكلا', latitude: 14.5333, longitude: 49.1412 },
+        timestamps: { createdAt: new Date(Date.now() - 15 * 60 * 1000), confirmedAt: new Date(Date.now() - 10 * 60 * 1000) },
+    },
+    {
+        id: 'ORD003',
+        clientId: 'C03', clientName: 'سالم بن محفوظ', clientPhone: '777888999',
+        storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
+        status: 'dispatched',
+        delegateId: 'del1', delegateName: 'أحمد علي',
+        items: [{ productId: 'P03', productName: 'فحسة', quantity: 1, price: 2800 }],
+        financials: { subtotal: 2800, deliveryFee: 400, discount: 0, tip: 0, total: 3200 },
+        payment: { method: 'cash', status: 'pending' },
+        address: { description: 'فوة، حي المساكن، بالقرب من مسجد بن هامل', latitude: 14.5678, longitude: 49.1111 },
+        timestamps: { createdAt: new Date(Date.now() - 45 * 60 * 1000), confirmedAt: new Date(Date.now() - 40 * 60 * 1000), dispatchedAt: new Date(Date.now() - 20 * 60 * 1000) },
+        delegatePosition: { lat: 14.555, lng: 49.122 }
+    },
+    {
+        id: 'ORD004',
+        clientId: 'C04', clientName: 'نورة باوزير', clientPhone: '774445556',
+        storeId: 'S03', storeName: 'صيدلية الشفاء',
+        status: 'delivered',
+        delegateId: 'del2', delegateName: 'خالد صالح',
+        items: [{ productId: 'P04', productName: 'بندول اكسترا', quantity: 1, price: 500 }],
+        financials: { subtotal: 500, deliveryFee: 200, discount: 0, tip: 0, total: 700 },
+        payment: { method: 'wallet', status: 'paid' },
+        address: { description: 'المكلا، الشرج، مقابل بوابة الميناء', latitude: 14.5380, longitude: 49.1280 },
+        timestamps: { createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), confirmedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000), dispatchedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 25 * 60 * 1000), deliveredAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000) },
+        rating: { store: 5, delegate: 4, comment: "خدمة ممتازة وسريعة" },
+    },
+    {
+        id: 'ORD005',
+        clientId: 'C01', clientName: 'عبدالله الحضرمي', clientPhone: '777123456',
+        storeId: 'S02', storeName: 'سوبر ماركت العالمية',
+        status: 'cancelled',
+        items: [{ productId: 'P05', productName: 'شوكولاتة جالاكسي', quantity: 5, price: 300 }],
+        financials: { subtotal: 1500, deliveryFee: 300, discount: 0, tip: 0, total: 1800 },
+        payment: { method: 'cash', status: 'pending' },
+        address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333 },
+        timestamps: { createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), cancelledAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000) },
+        cancellationReason: 'العميل لم يرد على الاتصال.',
+    },
+];
+
 const statusInfo: Record<OrderStatus, { text: string; icon: React.ElementType; color: string; ringColor: string; }> = {
-    incoming: { text: 'طلب وارد', icon: Hourglass, color: 'text-amber-600', ringColor: 'ring-amber-500' },
+    incoming: { text: 'طلب وارد', icon: Clock, color: 'text-amber-600', ringColor: 'ring-amber-500' },
     confirmed: { text: 'مؤكد', icon: Check, color: 'text-sky-600', ringColor: 'ring-sky-500' },
     preparing: { text: 'جاري التجهيز', icon: CookingPot, color: 'text-orange-600', ringColor: 'ring-orange-500' },
     dispatched: { text: 'مع المندوب', icon: Bike, color: 'text-indigo-600', ringColor: 'ring-indigo-500' },
@@ -71,8 +142,6 @@ const OrderStatusBadge = ({ status }: { status: OrderStatus }) => {
     const { text, icon: Icon, color } = statusInfo[status];
     return <Badge variant="outline" className={`gap-1.5 border-current ${color}`}><Icon className="h-3.5 w-3.5"/>{text}</Badge>;
 };
-
-const MapViewer = dynamic(() => import('@/components/user-location-viewer').then(mod => mod.UserLocationViewer), { ssr: false, loading: () => <div className="h-48 w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
 const CancellationDialog = ({ open, onOpenChange, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, onConfirm: (reason: string) => void }) => {
     const [reason, setReason] = useState('');
@@ -94,6 +163,10 @@ const CancellationDialog = ({ open, onOpenChange, onConfirm }: { open: boolean, 
 };
 
 export default function OrdersPage() {
+    const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const [delegates] = useState(mockDelegates);
+    const [isLoading, setIsLoading] = useState(true);
+
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -102,13 +175,10 @@ export default function OrdersPage() {
     const [filters, setFilters] = useState({ searchTerm: '', storeId: 'all' });
     const { toast } = useToast();
 
-    // Data Fetching
-    const firestore = useFirestore();
-    const ordersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]);
-    const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(ordersQuery);
-
-    const delegatesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'drivers_v2') : null, [firestore]);
-    const { data: delegates, isLoading: isLoadingDelegates } = useCollection<Driver>(delegatesQuery);
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 500);
+        return () => clearTimeout(timer);
+    }, []);
 
     const activeDelegates = useMemo(() => (delegates || []).filter(d => d.is_active), [delegates]);
 
@@ -137,7 +207,7 @@ export default function OrdersPage() {
         return currentOrders.filter(o =>
             (o.id.toLowerCase().includes(filters.searchTerm.toLowerCase()) || o.clientPhone.includes(filters.searchTerm)) &&
             (filters.storeId === 'all' || o.storeId === filters.storeId)
-        ).sort((a, b) => b.timestamps.createdAt.toMillis() - a.timestamps.createdAt.toMillis());
+        ).sort((a, b) => b.timestamps.createdAt.getTime() - a.timestamps.createdAt.getTime());
     }, [orders, activeTab, filters]);
 
     const handleViewDetails = (order: Order) => {
@@ -146,18 +216,18 @@ export default function OrdersPage() {
     };
 
     const updateOrderStatus = (orderId: string, newStatus: OrderStatus, details: Record<string, any> = {}) => {
-        if (!firestore) return;
-        const orderRef = doc(firestore, 'orders', orderId);
-        
-        const statusTimestampKey = `timestamps.${newStatus}At`;
-        
-        const dataToUpdate = {
-            status: newStatus,
-            [statusTimestampKey]: serverTimestamp(),
-            ...details,
-        };
-
-        updateDocumentNonBlocking(orderRef, dataToUpdate);
+        setOrders(prevOrders => prevOrders.map(o => {
+            if (o.id === orderId) {
+                const statusTimestampKey = `${newStatus}At` as const;
+                return {
+                    ...o,
+                    status: newStatus,
+                    timestamps: { ...o.timestamps, [statusTimestampKey]: new Date() },
+                    ...details
+                };
+            }
+            return o;
+        }));
 
         toast({ title: "تم تحديث حالة الطلب", description: `الطلب #${orderId.substring(0,6)} الآن "${statusInfo[newStatus].text}"` });
         if (selectedOrder?.id === orderId) {
@@ -195,11 +265,10 @@ export default function OrdersPage() {
         setSelectedOrder(null);
     };
     
-    const getTimeSinceOrder = (date: Timestamp) => {
-        return formatDistanceToNow(date.toDate(), { addSuffix: true, locale: ar });
+    const getTimeSinceOrder = (date: Date) => {
+        return formatDistanceToNow(date, { addSuffix: true, locale: ar });
     };
     
-    const isLoading = isLoadingOrders || isLoadingDelegates;
     if (isLoading) {
         return <OrdersLoading />;
     }
@@ -216,7 +285,7 @@ export default function OrdersPage() {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
                 <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="incoming" className="gap-2"><Hourglass/>طلبات واردة</TabsTrigger>
+                    <TabsTrigger value="incoming" className="gap-2"><Clock/>طلبات واردة</TabsTrigger>
                     <TabsTrigger value="active" className="gap-2"><Bike/>طلبات نشطة</TabsTrigger>
                     <TabsTrigger value="completed" className="gap-2"><CheckCircle/>الأرشيف</TabsTrigger>
                     <TabsTrigger value="cancelled" className="gap-2"><XCircle/>الملغية</TabsTrigger>
@@ -256,7 +325,7 @@ export default function OrdersPage() {
                                                 <TableCell className="text-center">{order.clientName}</TableCell>
                                                 <TableCell className="text-center">{order.storeName}</TableCell>
                                                 <TableCell className="text-center"><OrderStatusBadge status={order.status} /></TableCell>
-                                                <TableCell className="text-center font-semibold">{order.financials.total.toLocaleString()} ر.ي</TableCell>
+                                                <TableCell className="text-center font-semibold">{order.financials.total.toLocaleString('en-US')} ر.ي</TableCell>
                                                 <TableCell className="text-center">
                                                     <Button variant="outline" size="sm" onClick={() => handleViewDetails(order)}>عرض التفاصيل</Button>
                                                 </TableCell>
@@ -289,20 +358,24 @@ export default function OrdersPage() {
                                     <p className="flex items-center justify-between"><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span> <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4"/></Button></p>
                                 </CardContent>
                             </Card>
-                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin/>عنوان التوصيل</CardTitle></CardHeader>
-                                <CardContent className="space-y-2">
-                                     <p className="text-sm">{selectedOrder.address.description}</p>
-                                     <div className="h-48 rounded-lg overflow-hidden border">
-                                        <MapViewer position={{ lat: selectedOrder.address.latitude, lng: selectedOrder.address.longitude }} />
-                                     </div>
+                            <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2">
+                                    {selectedOrder.status === 'dispatched' ? <Bike/> : <MapPin/> }
+                                    {selectedOrder.status === 'dispatched' ? 'تتبع الطلب' : 'عنوان التوصيل'}
+                                </CardTitle></CardHeader>
+                                <CardContent>
+                                    <p className="text-sm mb-2">{selectedOrder.address.description}</p>
+                                    <LocationMapViewer
+                                        mainPosition={{ lat: selectedOrder.address.latitude, lng: selectedOrder.address.longitude }}
+                                        secondaryPosition={selectedOrder.status === 'dispatched' ? selectedOrder.delegatePosition : undefined}
+                                    />
                                 </CardContent>
                             </Card>
-                             {selectedOrder.delegateId && <Card>
+                            {selectedOrder.delegateId && <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike/>بيانات المندوب</CardTitle></CardHeader>
                                 <CardContent className="text-sm"><p><strong>الاسم:</strong> {selectedOrder.delegateName}</p></CardContent>
                             </Card>}
-                             {selectedOrder.cancellationReason && <Card className="border-destructive/50 bg-destructive/10">
+                            {selectedOrder.cancellationReason && <Card className="border-destructive/50 bg-destructive/10">
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
                                 <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
                             </Card>}
@@ -313,24 +386,24 @@ export default function OrdersPage() {
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Store/>بيانات المتجر</CardTitle></CardHeader>
                                 <CardContent className="text-sm"><p><strong>الاسم:</strong> {selectedOrder.storeName}</p></CardContent>
                             </Card>
-                             <Card>
+                            <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShoppingCart/>محتويات الطلب</CardTitle></CardHeader>
                                 <CardContent>
                                     <Table>
-                                        <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية</TableHead><TableHead>الإجمالي</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead>الكمية</TableHead><TableHead className="text-left">الإجمالي</TableHead></TableRow></TableHeader>
                                         <TableBody>{selectedOrder.items.map(item => (
-                                            <TableRow key={item.productId}><TableCell>{item.productName}</TableCell><TableCell>{item.quantity}</TableCell><TableCell>{(item.price * item.quantity).toLocaleString()}</TableCell></TableRow>
+                                            <TableRow key={item.productId}><TableCell>{item.productName}</TableCell><TableCell>{item.quantity}</TableCell><TableCell className="text-left">{(item.price * item.quantity).toLocaleString('en-US')}</TableCell></TableRow>
                                         ))}</TableBody>
                                     </Table>
                                 </CardContent>
                             </Card>
-                             <Card>
+                            <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign/>الملخص المالي</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span>قيمة المنتجات</span><span>{selectedOrder.financials.subtotal.toLocaleString()} ر.ي</span></div>
-                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span>{selectedOrder.financials.deliveryFee.toLocaleString()} ر.ي</span></div>
-                                    {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span>-{selectedOrder.financials.discount.toLocaleString()} ر.ي</span></div>}
-                                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>الإجمالي</span><span>{selectedOrder.financials.total.toLocaleString()} ر.ي</span></div>
+                                    <div className="flex justify-between"><span>قيمة المنتجات</span><span>{selectedOrder.financials.subtotal.toLocaleString('en-US')} ر.ي</span></div>
+                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span>{selectedOrder.financials.deliveryFee.toLocaleString('en-US')} ر.ي</span></div>
+                                    {selectedOrder.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span>-{selectedOrder.financials.discount.toLocaleString('en-US')} ر.ي</span></div>}
+                                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>الإجمالي</span><span>{selectedOrder.financials.total.toLocaleString('en-US')} ر.ي</span></div>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -349,14 +422,14 @@ export default function OrdersPage() {
                             <Button onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}><Check/> تأكيد الطلب</Button>
                             <Button variant="destructive" onClick={() => handleCancel(selectedOrder)}><X/> إلغاء</Button>
                         </>}
-                         {selectedOrder?.status === 'confirmed' && <>
+                        {selectedOrder?.status === 'confirmed' && <>
                             <Button onClick={() => handleAssign(selectedOrder)}>إسناد لمندوب</Button>
                             <Button variant="destructive" onClick={() => handleCancel(selectedOrder)}><X/> إلغاء</Button>
                         </>}
-                         {selectedOrder?.status === 'preparing' && selectedOrder.delegateId && <>
+                        {selectedOrder?.status === 'preparing' && selectedOrder.delegateId && <>
                             <Button onClick={() => updateOrderStatus(selectedOrder.id, 'dispatched')}>إرسال للمندوب</Button>
-                         </>}
-                         {selectedOrder?.status === 'dispatched' && <>
+                        </>}
+                        {selectedOrder?.status === 'dispatched' && <>
                             <Button onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}>تأكيد التسليم</Button>
                             <Button variant="outline">سحب الطلب من المندوب</Button>
                         </>}
