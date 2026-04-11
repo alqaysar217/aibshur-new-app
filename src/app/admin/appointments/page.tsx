@@ -303,7 +303,7 @@ export default function AppointmentsPage() {
                              <p><strong>الإجمالي:</strong> {selectedAppointment.financials.total.toLocaleString('en-US')} ر.ي</p>
                              <p><strong>وقت الطلب:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a', { locale: ar })}</p>
                              <p><strong>وقت التسليم المجدول:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a', { locale: ar })}</p>
-                             <p><strong>الحالة:</strong> <OrderStatusBadge status={selectedAppointment.status}/></p>
+                             <div className="flex items-center gap-2"><strong>الحالة:</strong> <OrderStatusBadge status={selectedAppointment.status}/></div>
                              <h4 className="font-bold pt-2 border-t">المنتجات</h4>
                              <ul>
                                 {selectedAppointment.items.map(item => <li key={item.productId}>{item.productName} (x{item.quantity})</li>)}
