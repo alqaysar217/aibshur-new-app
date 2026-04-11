@@ -46,6 +46,7 @@ const defaultSettings = {
 
 const now = new Date();
 const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+const daysFuture = (days: number) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
 
 const mockProvinces = [
@@ -111,6 +112,12 @@ const mockOrders: Omit<any, 'id'>[] = [
     
     // 6 days ago
     { clientId: 'client3', clientName: 'خالد صالح', clientPhone: '777000003', storeId: 'store1', storeName: 'مطعم البيت الصنعاني', status: 'delivered', delegateId: 'driver1', delegateName: 'أحمد عبدالله', items: [{productId: 'prod2', productName: 'عقدة لحم', quantity: 1, price: 5000}], financials: { subtotal: 5000, deliveryFee: 500, discount: 0, tip: 0, total: 5500 }, payment: { method: 'cash', status: 'paid' }, address: { description: 'فوق البقالة', latitude: 15.34, longitude: 44.18 }, timestamps: { createdAt: Timestamp.fromDate(daysAgo(6)), dispatchedAt: Timestamp.fromDate(daysAgo(6)), deliveredAt: Timestamp.fromDate(daysAgo(6)) } },
+    
+    // Scheduled Appointments
+    { clientId: 'client1', clientName: 'أحمد علي', clientPhone: '777000001', storeId: 'store1', storeName: 'مطعم البيت الصنعاني', status: 'incoming', items: [{productId: 'prod1', productName: 'مندي دجاج', quantity: 2, price: 2500}], financials: { subtotal: 5000, deliveryFee: 500, discount: 0, tip: 0, total: 5500 }, payment: { method: 'cash', status: 'pending' }, address: { description: 'شارع 15، جوار الجامع', latitude: 15.35, longitude: 44.21 }, timestamps: { createdAt: Timestamp.fromDate(now), scheduledDeliveryTime: Timestamp.fromDate(daysFuture(1)) } },
+    { clientId: 'client2', clientName: 'فاطمة حسن', clientPhone: '777000002', storeId: 'store3', storeName: 'حضرموت للمأكولات', status: 'incoming', items: [{productId: 'prod7', productName: 'مندي لحم', quantity: 4, price: 4500}], financials: { subtotal: 18000, deliveryFee: 600, discount: 0, tip: 0, total: 18600 }, payment: { method: 'wallet', status: 'paid' }, address: { description: 'خلف المستشفى', latitude: 14.53, longitude: 49.12 }, timestamps: { createdAt: Timestamp.fromDate(now), scheduledDeliveryTime: Timestamp.fromDate(daysFuture(2)) } },
+    { clientId: 'client3', clientName: 'خالد صالح', clientPhone: '777000003', storeId: 'store1', storeName: 'مطعم البيت الصنعاني', status: 'delivered', delegateId: 'driver1', delegateName: 'أحمد عبدالله', items: [{ productId: 'prod1', productName: 'مندي دجاج', quantity: 1, price: 2500 }], financials: { subtotal: 2500, deliveryFee: 500, discount: 0, tip: 0, total: 3000 }, payment: { method: 'cash', status: 'paid' }, address: { description: 'فوق البقالة', latitude: 15.34, longitude: 44.18 }, timestamps: { createdAt: Timestamp.fromDate(daysAgo(3)), scheduledDeliveryTime: Timestamp.fromDate(daysAgo(2)), deliveredAt: Timestamp.fromDate(daysAgo(2)) }},
+    { clientId: 'client1', clientName: 'أحمد علي', clientPhone: '777000001', storeId: 'store2', storeName: 'سوبر ماركت العالمية', status: 'cancelled', cancellationReason: 'العميل ألغى الطلب', items: [{ productId: 'prod3', productName: 'ماء معدني', quantity: 10, price: 150 }], financials: { subtotal: 1500, deliveryFee: 200, discount: 0, tip: 0, total: 1700 }, payment: { method: 'wallet', status: 'pending' }, address: { description: 'شارع 15، جوار الجامع', latitude: 15.35, longitude: 44.21 }, timestamps: { createdAt: Timestamp.fromDate(daysAgo(1)), scheduledDeliveryTime: Timestamp.fromDate(daysAgo(0)), cancelledAt: Timestamp.fromDate(daysAgo(1)) }},
 ];
 
 
