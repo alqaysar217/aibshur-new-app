@@ -1,13 +1,15 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
+import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import Link from 'next/link';
+
 import {
     Bell, Send, Users, Globe, MapPin, Link as LinkIcon, Settings, History, Trash, FileEdit, Package, Bike,
-    Radio, Percent, CheckCircle, XCircle
+    Radio, Percent, CheckCircle, XCircle, Inbox
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -22,6 +24,8 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationsLoading from './loading';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { mockNotifications, notificationTypeInfo } from '@/lib/notifications';
+import { cn } from '@/lib/utils';
 
 
 // MOCK DATA for display
@@ -63,7 +67,7 @@ type LogEntry = {
   broadcastData: BroadcastFormValues;
 };
 
-const mockLogs: LogEntry[] = [
+const initialLogs: LogEntry[] = [
     { 
         id: 'log1', 
         readRate: '65%', 
@@ -95,7 +99,7 @@ export default function NotificationsPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [templates, setTemplates] = useState(mockTemplates);
-    const [logs, setLogs] = useState(mockLogs);
+    const [logs, setLogs] = useState(initialLogs);
     const [deleteAlert, setDeleteAlert] = useState<LogEntry | null>(null);
     const [activeTab, setActiveTab] = useState("sender");
 
@@ -267,41 +271,89 @@ export default function NotificationsPage() {
                 <TabsContent value="log" className="mt-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>سجل الإشعارات المرسلة</CardTitle>
+                            <CardTitle>سجل الإشعارات</CardTitle>
+                            <CardDescription>متابعة الإشعارات الواردة إلى النظام وتلك الصادرة منه.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <div className="border rounded-lg">
-                                <Table>
-                                    <TableHeader><TableRow>
-                                        <TableHead className="text-center">عنوان الإشعار</TableHead>
-                                        <TableHead className="text-center">النوع</TableHead>
-                                        <TableHead className="text-center">المرسل إليهم</TableHead>
-                                        <TableHead className="text-center">نسبة الفتح</TableHead>
-                                        <TableHead className="text-center">التاريخ</TableHead>
-                                        <TableHead className="text-center">إجراءات</TableHead>
-                                    </TableRow></TableHeader>
-                                    <TableBody>
-                                        {logs.map(log => {
-                                            const { title, type, targetType, targetValue } = log.broadcastData;
-                                            return (
-                                                <TableRow key={log.id}>
-                                                    <TableCell className="text-center font-medium">{title}</TableCell>
-                                                    <TableCell className="text-center"><Badge variant="secondary">{type}</Badge></TableCell>
-                                                    <TableCell className="text-center">{getTargetText(targetType, targetValue)}</TableCell>
-                                                    <TableCell className="text-center font-mono">{log.readRate}</TableCell>
-                                                    <TableCell className="text-center">{formatDistanceToNow(log.date, { addSuffix: true, locale: ar })}</TableCell>
-                                                    <TableCell className="text-center">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <Button variant="outline" size="icon" onClick={() => handleEditLog(log)}><FileEdit className="h-4 w-4" /></Button>
-                                                            <Button variant="outline" size="icon" onClick={() => handleDeleteLog(log)} className="text-destructive hover:text-destructive"><Trash className="h-4 w-4" /></Button>
-                                                        </div>
-                                                    </TableCell>
+                            <Tabs defaultValue="incoming" dir="rtl">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="incoming" className="gap-2"><Inbox/>إشعارات واردة</TabsTrigger>
+                                    <TabsTrigger value="outgoing" className="gap-2"><Send/>إشعارات صادرة</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="incoming" className="mt-4">
+                                    <div className="border rounded-lg">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="text-right">الإشعار</TableHead>
+                                                    <TableHead className="text-center w-32">النوع</TableHead>
+                                                    <TableHead className="text-center w-48">التاريخ</TableHead>
                                                 </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {mockNotifications.map(notification => {
+                                                    const InfoIcon = notificationTypeInfo[notification.type].icon;
+                                                    return (
+                                                        <TableRow key={notification.id} className={cn(!notification.isRead && "bg-primary/5")}>
+                                                            <TableCell>
+                                                                <div className={cn("font-semibold", !notification.isRead && "text-primary")}>
+                                                                    {notification.link ? (
+                                                                        <Link href={notification.link} className="hover:underline">{notification.title}</Link>
+                                                                    ) : (
+                                                                        notification.title
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-xs text-muted-foreground">{notification.body}</div>
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <Badge variant="outline" className="gap-1.5">
+                                                                    <InfoIcon className="h-3.5 w-3.5" />
+                                                                    {notificationTypeInfo[notification.type].text}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-center text-xs">{formatDistanceToNow(notification.timestamp, { addSuffix: true, locale: ar })}</TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="outgoing" className="mt-4">
+                                    <div className="border rounded-lg">
+                                        <Table>
+                                            <TableHeader><TableRow>
+                                                <TableHead className="text-center">عنوان الإشعار</TableHead>
+                                                <TableHead className="text-center">النوع</TableHead>
+                                                <TableHead className="text-center">المرسل إليهم</TableHead>
+                                                <TableHead className="text-center">نسبة الفتح</TableHead>
+                                                <TableHead className="text-center">التاريخ</TableHead>
+                                                <TableHead className="text-center">إجراءات</TableHead>
+                                            </TableRow></TableHeader>
+                                            <TableBody>
+                                                {logs.map(log => {
+                                                    const { title, type, targetType, targetValue } = log.broadcastData;
+                                                    return (
+                                                        <TableRow key={log.id}>
+                                                            <TableCell className="text-center font-medium">{title}</TableCell>
+                                                            <TableCell className="text-center"><Badge variant="secondary">{type}</Badge></TableCell>
+                                                            <TableCell className="text-center">{getTargetText(targetType, targetValue)}</TableCell>
+                                                            <TableCell className="text-center font-mono">{log.readRate}</TableCell>
+                                                            <TableCell className="text-center">{formatDistanceToNow(log.date, { addSuffix: true, locale: ar })}</TableCell>
+                                                            <TableCell className="text-center">
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    <Button variant="outline" size="icon" onClick={() => handleEditLog(log)}><FileEdit className="h-4 w-4" /></Button>
+                                                                    <Button variant="outline" size="icon" onClick={() => handleDeleteLog(log)} className="text-destructive hover:text-destructive"><Trash className="h-4 w-4" /></Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -322,5 +374,3 @@ export default function NotificationsPage() {
         </>
     );
 }
-
-    
