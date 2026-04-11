@@ -1,5 +1,5 @@
 'use client';
-import { Map, Marker } from 'pigeon-maps';
+import { Map, Marker, Overlay } from 'pigeon-maps';
 import { useEffect, useState } from 'react';
 import { User, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,13 +15,12 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
   
   const calculateCenterAndZoom = () => {
     if (secondaryPosition) {
-      return {
-        center: [
-          (mainPosition.lat + secondaryPosition.lat) / 2,
-          (mainPosition.lng + secondaryPosition.lng) / 2
-        ] as [number, number],
-        zoom: 13,
-      };
+      const center: [number, number] = [
+        (mainPosition.lat + secondaryPosition.lat) / 2,
+        (mainPosition.lng + secondaryPosition.lng) / 2,
+      ];
+      // A reasonable zoom level to see both points, user can adjust
+      return { center, zoom: 12 };
     }
     return {
       center: [mainPosition.lat, mainPosition.lng] as [number, number],
@@ -57,8 +56,33 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
           setCenter(center);
           setZoom(zoom);
         }}
-        onClick={(e) => console.log(e)}
       >
+        {secondaryPosition && (
+          <Overlay>
+            {({ mapState, latLngToPixel }) => {
+              const mainPixel = latLngToPixel([mainPosition.lat, mainPosition.lng]);
+              const secondaryPixel = latLngToPixel([secondaryPosition.lat, secondaryPosition.lng]);
+              return (
+                <svg
+                  width={mapState.width}
+                  height={mapState.height}
+                  style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+                >
+                  <line
+                    x1={mainPixel[0]}
+                    y1={mainPixel[1]}
+                    x2={secondaryPixel[0]}
+                    y2={secondaryPixel[1]}
+                    stroke="#1FAF9A"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                  />
+                </svg>
+              );
+            }}
+          </Overlay>
+        )}
+        
         {/* Main Marker (Client/User) */}
         <Marker width={28} anchor={[mainPosition.lat, mainPosition.lng]}>
             <div className='bg-destructive rounded-full p-1.5 shadow-md'>
