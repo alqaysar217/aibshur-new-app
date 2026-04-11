@@ -3,6 +3,10 @@ import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
+// Firebase and Data
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+
 // Components
 import OrdersLoading from './loading';
 import { Button } from '@/components/ui/button';
@@ -27,12 +31,12 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 
 // Types
 import type { Driver } from '../delegates/page';
+import type { Store as StoreType } from '../stores/page';
 
 const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
@@ -40,117 +44,35 @@ type OrderStatus = 'incoming' | 'confirmed' | 'preparing' | 'dispatched' | 'deli
 type PaymentMethod = 'cash' | 'wallet' | 'bank_transfer';
 type PaymentStatus = 'pending' | 'paid' | 'refunded';
 
-interface Order {
+// This is the shape of the data coming directly from Firestore
+type OrderFS = {
     id: string;
     clientId: string;
     clientName: string;
     clientPhone: string;
     storeId: string;
     storeName: string;
-    storeImage: string;
-    storeImageHint: string;
     delegateId?: string;
     delegateName?: string;
-    delegatePhotoUrl?: string;
     status: OrderStatus;
     items: { productId: string; productName: string; quantity: number; price: number; }[];
     financials: { subtotal: number; deliveryFee: number; discount: number; tip: number; total: number; };
     payment: { method: PaymentMethod; status: PaymentStatus; receiptImageUrl?: string; };
     address: { description: string; latitude: number; longitude: number; addressType?: 'home' | 'work' | 'other'; receiverName?: string; receiverPhone?: string; };
-    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; };
+    timestamps: { createdAt: Timestamp; confirmedAt?: Timestamp; dispatchedAt?: Timestamp; deliveredAt?: Timestamp; cancelledAt?: Timestamp; };
     cancellationReason?: string;
     notes?: string;
     rating?: { store: number; delegate: number; comment: string; };
     tipPayment?: { method: PaymentMethod; bankAccountId?: string; receiptNumber?: string; receiptImageUrl?: string; };
-    delegatePosition?: { lat: number; lng: number };
 }
 
-// Mock Delegates
-const mockDelegates: (Omit<Driver, 'id'> & {id: string, personalPhotoUrl: string, position: {lat: number, lng: number}} )[] = [
-    { id: 'del1', name: 'أحمد علي', phone: '771111111', is_active: true, email: 'ahmed@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: 'https://picsum.photos/seed/del1/100/100', idType: 'card', position: { lat: 14.5450, lng: 49.1350 } },
-    { id: 'del2', name: 'خالد صالح', phone: '772222222', is_active: true, email: 'khalid@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: 'https://picsum.photos/seed/del2/100/100', idType: 'card', position: { lat: 14.5390, lng: 49.1300 } },
-    { id: 'del3', name: 'ياسر محمد', phone: '773333333', is_active: true, email: 'yasser@example.com', address: 'a', idFrontPhotoUrl: '', personalPhotoUrl: 'https://picsum.photos/seed/del3/100/100', idType: 'card', position: { lat: 14.5480, lng: 49.1290 } },
-];
-const mockDelegatesMap = mockDelegates.reduce((acc, d) => ({ ...acc, [d.id]: d }), {});
-
-
-// Mock Orders
-const mockOrdersData: Omit<Order, 'storeImage' | 'storeImageHint'>[] = [
-    {
-        id: 'ORD001',
-        clientId: 'C01', clientName: 'عبدالله الحضرمي', clientPhone: '777123456',
-        storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
-        status: 'incoming',
-        items: [{ productId: 'P01', productName: 'مندي دجاج', quantity: 2, price: 2500 }, {productId: 'P02', productName: 'بيبسي', quantity: 2, price: 300}],
-        financials: { subtotal: 5600, deliveryFee: 500, discount: 0, tip: 0, total: 6100 },
-        payment: { method: 'cash', status: 'pending' },
-        address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333, addressType: 'home' },
-        timestamps: { createdAt: new Date(Date.now() - 5 * 60 * 1000) }, // 5 mins ago
-        notes: 'الرجاء عدم استخدام الجرس، الطفل نائم.'
-    },
-    {
-        id: 'ORD002',
-        clientId: 'C02', clientName: 'فاطمة الكندي', clientPhone: '775654321',
-        storeId: 'S02', storeName: 'سوبر ماركت العالمية',
-        status: 'confirmed',
-        items: [{ productId: 'P02', productName: 'حليب المراعي', quantity: 4, price: 800 }],
-        financials: { subtotal: 3200, deliveryFee: 300, discount: 0, tip: 0, total: 3500 },
-        payment: { method: 'wallet', status: 'paid' },
-        address: { description: 'المكلا، الديس، خلف مول المكلا', latitude: 14.5333, longitude: 49.1412 },
-        timestamps: { createdAt: new Date(Date.now() - 15 * 60 * 1000), confirmedAt: new Date(Date.now() - 10 * 60 * 1000) },
-    },
-    {
-        id: 'ORD003',
-        clientId: 'C03', clientName: 'سالم بن محفوظ', clientPhone: '777888999',
-        storeId: 'S01', storeName: 'مطعم البيت الصنعاني',
-        status: 'dispatched',
-        delegateId: 'del1', delegateName: 'أحمد علي', delegatePhotoUrl: 'https://picsum.photos/seed/del1/100/100',
-        items: [{ productId: 'P03', productName: 'فحسة', quantity: 1, price: 2800 }],
-        financials: { subtotal: 2800, deliveryFee: 400, discount: 0, tip: 0, total: 3200 },
-        payment: { method: 'cash', status: 'pending' },
-        address: { description: 'فوة، حي المساكن، بالقرب من مسجد بن هامل', latitude: 14.60, longitude: 49.15 },
-        timestamps: { createdAt: new Date(Date.now() - 45 * 60 * 1000), confirmedAt: new Date(Date.now() - 40 * 60 * 1000), dispatchedAt: new Date(Date.now() - 20 * 60 * 1000) },
-        delegatePosition: { lat: 14.555, lng: 49.122 }
-    },
-    {
-        id: 'ORD004',
-        clientId: 'C04', clientName: 'نورة باوزير', clientPhone: '774445556',
-        storeId: 'S03', storeName: 'صيدلية الشفاء',
-        status: 'delivered',
-        delegateId: 'del2', delegateName: 'خالد صالح', delegatePhotoUrl: 'https://picsum.photos/seed/del2/100/100',
-        items: [{ productId: 'P04', productName: 'بندول اكسترا', quantity: 1, price: 500 }],
-        financials: { subtotal: 500, deliveryFee: 200, discount: 0, tip: 500, total: 1200 },
-        payment: { method: 'wallet', status: 'paid' },
-        address: { description: 'المكلا، الشرج، مقابل بوابة الميناء', latitude: 14.5380, longitude: 49.1280 },
-        timestamps: { createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), confirmedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000), dispatchedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 25 * 60 * 1000), deliveredAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000) },
-        rating: { store: 5, delegate: 4, comment: "خدمة ممتازة وسريعة، المندوب كان محترفًا جدًا ووصل قبل الوقت المتوقع." },
-        tipPayment: { method: 'wallet' },
-    },
-    {
-        id: 'ORD005',
-        clientId: 'C01', clientName: 'عبدالله الحضرمي', clientPhone: '777123456',
-        storeId: 'S02', storeName: 'سوبر ماركت العالمية',
-        status: 'cancelled',
-        items: [{ productId: 'P05', productName: 'شوكولاتة جالاكسي', quantity: 5, price: 300 }],
-        financials: { subtotal: 1500, deliveryFee: 300, discount: 0, tip: 0, total: 1800 },
-        payment: { method: 'cash', status: 'pending' },
-        address: { description: 'المكلا، حي الشرج، بجانب فندق رامادا', latitude: 14.5424, longitude: 49.1333 },
-        timestamps: { createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), cancelledAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000) },
-        cancellationReason: 'العميل لم يرد على الاتصال.',
-    },
-    {
-        id: 'ORD006',
-        clientId: 'C05', clientName: 'مكتبة الأندلس', clientPhone: '775555555',
-        storeId: 'S02', storeName: 'سوبر ماركت العالمية',
-        status: 'incoming',
-        items: [{ productId: 'P05', productName: 'مياه معدنية', quantity: 10, price: 150 }],
-        financials: { subtotal: 1500, deliveryFee: 300, discount: 0, tip: 0, total: 1800 },
-        payment: { method: 'cash', status: 'pending' },
-        address: { description: 'المكلا، فوة', latitude: 14.5678, longitude: 49.1111, addressType: 'other', receiverName: 'محمد علي', receiverPhone: '771231234'},
-        timestamps: { createdAt: new Date(Date.now() - 2 * 60 * 1000) },
-    },
-].map(o => ({...o, storeImage: 'https://picsum.photos/seed/store-logo/100/100', storeImageHint: 'store logo'}));
-
+// This is the shape of the data after we process it for the UI
+interface Order extends Omit<OrderFS, 'timestamps'> {
+    storeImage?: string;
+    delegatePhotoUrl?: string;
+    delegatePosition?: { lat: number; lng: number };
+    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; };
+}
 
 const statusInfo: Record<OrderStatus, { text: string; icon: React.ElementType; color: string; ringColor: string; }> = {
     incoming: { text: 'طلب وارد', icon: Clock, color: 'text-amber-600', ringColor: 'ring-amber-500' },
@@ -186,9 +108,6 @@ const CancellationDialog = ({ open, onOpenChange, onConfirm }: { open: boolean, 
 };
 
 export default function OrdersPage() {
-    const [orders, setOrders] = useState<Order[]>(mockOrdersData);
-    const [delegates] = useState(mockDelegates);
-
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -196,13 +115,36 @@ export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<string>("incoming");
     const [filters, setFilters] = useState({ searchTerm: '', storeId: 'all', date: undefined as DateRange | undefined });
     const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
+
+    const { data: ordersFS, isLoading: isLoadingOrders } = useCollection<OrderFS>(useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]));
+    const { data: delegates, isLoading: isLoadingDelegates } = useCollection<Driver>(useMemoFirebase(() => firestore ? collection(firestore, 'drivers_v2') : null, [firestore]));
+    const { data: stores, isLoading: isLoadingStores } = useCollection<StoreType>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
+
+    const delegatesMap = useMemo(() => delegates?.reduce((acc, d) => ({...acc, [d.id]: d}), {}) || {}, [delegates]);
+    const storesMap = useMemo(() => stores?.reduce((acc, s) => ({...acc, [s.id]: s}), {}) || {}, [stores]);
     
-    // Defer client-side-only logic
-    useEffect(() => {
-      const timer = setTimeout(() => setIsLoading(false), 1000); // Simulate loading
-      return () => clearTimeout(timer);
-    }, []);
+    const orders: Order[] = useMemo(() => {
+        if (!ordersFS) return [];
+        return ordersFS.map(orderFS => {
+            const store = storesMap[orderFS.storeId];
+            const delegate = delegatesMap[orderFS.delegateId || ''];
+
+            const timestamps: Order['timestamps'] = { createdAt: orderFS.timestamps.createdAt.toDate() };
+            if (orderFS.timestamps.confirmedAt) timestamps.confirmedAt = orderFS.timestamps.confirmedAt.toDate();
+            if (orderFS.timestamps.dispatchedAt) timestamps.dispatchedAt = orderFS.timestamps.dispatchedAt.toDate();
+            if (orderFS.timestamps.deliveredAt) timestamps.deliveredAt = orderFS.timestamps.deliveredAt.toDate();
+            if (orderFS.timestamps.cancelledAt) timestamps.cancelledAt = orderFS.timestamps.cancelledAt.toDate();
+            
+            return {
+                ...orderFS,
+                timestamps,
+                storeImage: store?.imageUrl,
+                delegatePhotoUrl: delegate?.personalPhotoUrl,
+                delegatePosition: (delegate?.latitude && delegate?.longitude) ? { lat: delegate.latitude, lng: delegate.longitude } : undefined,
+            }
+        });
+    }, [ordersFS, storesMap, delegatesMap]);
 
 
     const activeDelegates = useMemo(() => (delegates || []).filter(d => d.is_active), [delegates]);
@@ -244,25 +186,17 @@ export default function OrdersPage() {
         setSelectedOrder(order);
         setIsDetailsOpen(true);
     };
-
+    
     const updateOrderStatus = (orderId: string, newStatus: OrderStatus, details: Record<string, any> = {}) => {
-        setOrders(prevOrders => prevOrders.map(o => {
-            if (o.id === orderId) {
-                const statusTimestampKey = `${newStatus}At` as const;
-                return {
-                    ...o,
-                    status: newStatus,
-                    timestamps: { ...o.timestamps, [statusTimestampKey]: new Date() },
-                    ...details
-                };
-            }
-            return o;
-        }));
-
+        if (!firestore) return;
+        const statusTimestampKey = `${newStatus}At`;
+        const payload = {
+            status: newStatus,
+            [`timestamps.${statusTimestampKey}`]: serverTimestamp(),
+            ...details,
+        };
+        updateDocumentNonBlocking(doc(firestore, 'orders', orderId), payload);
         toast({ title: "تم تحديث حالة الطلب", description: `الطلب #${orderId.substring(0,6)} الآن "${statusInfo[newStatus].text}"` });
-        if (selectedOrder?.id === orderId) {
-            setSelectedOrder(prev => prev ? {...prev, status: newStatus, ...details} : null);
-        }
     };
     
     const handleCancel = (order: Order) => {
@@ -288,7 +222,6 @@ export default function OrdersPage() {
             updateOrderStatus(selectedOrder.id, 'preparing', { 
                 delegateId: delegate.id,
                 delegateName: delegate.name,
-                delegatePhotoUrl: (delegate as any).personalPhotoUrl,
             });
         }
         setIsAssignOpen(false);
@@ -331,14 +264,43 @@ export default function OrdersPage() {
         window.open(`sms:${order.clientPhone}?body=${message}`, '_blank');
     }
     
-    const handleExport = () => {
-        toast({
-            title: "قيد التطوير",
-            description: "سيتم إضافة ميزة تصدير البيانات قريباً.",
-        });
-    }
+     const handleExport = () => {
+        if (!filteredOrders.length) {
+            toast({ title: "لا توجد بيانات للتصدير", description: "قم بتغيير الفلاتر للحصول على نتائج." });
+            return;
+        }
+
+        const headers = ["ID", "Client Name", "Client Phone", "Store Name", "Status", "Total", "Created At", "Items"];
+        const csvRows = [headers.join(",")];
+
+        for (const order of filteredOrders) {
+            const row = [
+                order.id,
+                `"${order.clientName}"`,
+                order.clientPhone,
+                `"${order.storeName}"`,
+                order.status,
+                order.financials.total,
+                order.timestamps.createdAt.toISOString(),
+                `"${order.items.map(i => `${i.productName} (x${i.quantity})`).join("; ")}"`
+            ];
+            csvRows.push(row.join(","));
+        }
+
+        const csvString = csvRows.join("\n");
+        const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({ title: "تم بدء التصدير", description: `يتم تنزيل ${filteredOrders.length} طلب.` });
+    };
     
-    if (isLoading) {
+    if (isLoadingOrders || isLoadingDelegates || isLoadingStores) {
         return <OrdersLoading />;
     }
 
@@ -462,18 +424,21 @@ export default function OrdersPage() {
                         <Card>
                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
                            <CardContent className="text-sm space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4 text-muted-foreground"/>
-                                    <span><strong>الاسم:</strong> {selectedOrder.clientName}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
+                               <div className="flex items-center gap-2">
+                                   <User className="h-4 w-4 text-muted-foreground"/>
+                                   <span><strong>الاسم:</strong> {selectedOrder.clientName}</span>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                   <div className="flex items-center gap-2">
                                     <Phone className="h-4 w-4 text-muted-foreground"/>
-                                    <span><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span></span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
-                                    <span><strong>العنوان:</strong> {selectedOrder.address.description}</span>
-                                </div>
+                                    <span><strong>الهاتف:</strong></span>
+                                   </div>
+                                   <span dir="ltr">{selectedOrder.clientPhone}</span>
+                               </div>
+                               <div className="flex items-start gap-2">
+                                   <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                                   <span><strong>العنوان:</strong> {selectedOrder.address.description}</span>
+                               </div>
                            </CardContent>
                         </Card>
 
@@ -485,10 +450,14 @@ export default function OrdersPage() {
                                        <User className="h-4 w-4 text-muted-foreground"/>
                                        <span><strong>الاسم:</strong> {selectedOrder.address.receiverName}</span>
                                    </div>
-                                   {selectedOrder.address.receiverPhone && <div className="flex items-center gap-2">
-                                       <Phone className="h-4 w-4 text-muted-foreground"/>
-                                       <span><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.address.receiverPhone}</span></span>
-                                   </div>}
+                                   {selectedOrder.address.receiverPhone && 
+                                   <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2">
+                                           <Phone className="h-4 w-4 text-muted-foreground"/>
+                                           <span><strong>الهاتف:</strong></span>
+                                        </div>
+                                       <span dir="ltr">{selectedOrder.address.receiverPhone}</span>
+                                    </div>}
                                </CardContent>
                            </Card>
                         )}
@@ -508,8 +477,11 @@ export default function OrdersPage() {
                                               <p><strong>الاسم:</strong> {selectedOrder.delegateName}</p>
                                             </div>
                                            <div className="flex items-center gap-2">
-                                                <Phone className="h-4 w-4 text-muted-foreground"/>
-                                                <p><strong>الهاتف:</strong> <span dir="ltr">{(mockDelegatesMap as any)[selectedOrder.delegateId]?.phone}</span></p>
+                                                <div className="flex items-center gap-2">
+                                                    <Phone className="h-4 w-4 text-muted-foreground"/>
+                                                    <p><strong>الهاتف:</strong></p>
+                                                </div>
+                                                <span dir="ltr">{(delegatesMap as any)[selectedOrder.delegateId]?.phone}</span>
                                             </div>
                                        </div>
                                    </div>
@@ -530,7 +502,7 @@ export default function OrdersPage() {
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-3">
-                                    <Image src={selectedOrder.storeImage} alt={selectedOrder.storeName} width={40} height={40} className="rounded-md object-cover border" />
+                                    <Image src={selectedOrder.storeImage || '/logo-app.png'} alt={selectedOrder.storeName} width={40} height={40} className="rounded-md object-cover border" />
                                     <CardTitle className="text-base">{selectedOrder.storeName}</CardTitle>
                                 </div>
                             </CardHeader>
@@ -641,7 +613,7 @@ export default function OrdersPage() {
                                     </Avatar>
                                     <div>
                                         <p className="font-semibold">{delegate.name}</p>
-                                        <p className="text-sm text-muted-foreground">{delegate.phone}</p>
+                                        <p className="text-sm text-muted-foreground" dir="ltr">{delegate.phone}</p>
                                     </div>
                                 </div>
                                 <UserCheck className="text-primary"/>
