@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import type { Notification } from '@/lib/notifications';
-import { collection } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
@@ -49,10 +49,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const auth = useAuth();
     const firestore = useFirestore();
     
-    // Temporarily disable notification fetching to prevent crash on load
-    // const notificationsQuery = useMemoFirebase(() => (firestore && user?.uid) ? collection(firestore, 'notifications') : null, [firestore, user?.uid]);
-    // const { data: notifications } = useCollection<Notification>(notificationsQuery);
-    const unreadCount = 0; // useMemo(() => (notifications || []).filter(n => !n.isRead).length, [notifications]);
+    // Check for seeded state before fetching collections that might not exist.
+    const settingsDocRef = useMemoFirebase(() => firestore && user ? doc(firestore, 'systemSettings', 'main') : null, [firestore, user]);
+    const { data: settings } = useDoc(settingsDocRef);
+    const isSeeded = !!settings;
+
+    const notificationsQuery = useMemoFirebase(() => (firestore && user?.uid && isSeeded) ? collection(firestore, 'notifications') : null, [firestore, user?.uid, isSeeded]);
+    const { data: notifications } = useCollection<Notification>(notificationsQuery);
+    const unreadCount = useMemo(() => (notifications || []).filter(n => !n.isRead).length, [notifications]);
 
     const handleLogout = async () => {
         try {

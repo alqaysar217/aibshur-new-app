@@ -2,21 +2,21 @@
 import { useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
 import {
-    Activity, ArrowUp, BarChart2, Calendar, CircleDollarSign, Clock, Users,
-    Hourglass, Map, MapPin, Package, Star, Ticket, TrendingUp, Award, CheckCircle, UserCheck, PlusCircle, ShoppingCart
+    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Order } from '../orders/page';
 import type { Driver } from '../delegates/page';
 import type { Product } from '../products/page';
 import DashboardLoading from './loading';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 
 const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
@@ -35,19 +35,17 @@ const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string
     </div>
 );
 
-export default function DashboardPage() {
+// This component holds the main dashboard content.
+function DashboardContent() {
     const firestore = useFirestore();
     const { user } = useUser();
 
+    // These hooks are now safe to call because we've confirmed the DB is seeded.
     const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
     const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
+    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<any>(useMemoFirebase(() => firestore && user?.uid ? collection(firestore, 'notifications') : null, [firestore, user?.uid]));
     
-    // Temporarily disable notifications fetch to prevent crash on load
-    // const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<any>(useMemoFirebase(() => firestore && user ? collection(firestore, 'notifications') : null, [firestore, user]));
-    const activityFeed: any[] = [];
-    const isLoadingNotifications = false;
-
     const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
 
     const pulseData = useMemo(() => {
@@ -86,7 +84,6 @@ export default function DashboardPage() {
                 dataByDay[dayName] = { sales: 0, profit: 0 };
             }
             dataByDay[dayName].sales += order.financials.total;
-            // Assuming profit is 40% of subtotal for mock purposes
             dataByDay[dayName].profit += (order.financials.subtotal * 0.4) - order.financials.discount;
         });
 
@@ -129,8 +126,6 @@ export default function DashboardPage() {
             });
     }, [orders, products]);
     
-
-
     const salesProfitConfig = {
         sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
         profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
@@ -143,14 +138,13 @@ export default function DashboardPage() {
         delegates: { label: "المناديب", color: "hsl(var(--chart-2))" },
         stores: { label: "المتاجر", color: "hsl(var(--chart-3))" },
     };
-    // Mocked for now as it requires complex calculation
+
     const performanceIndexData = [
         { name: 'المناديب', value: 4.8, fill: 'var(--color-delegates)' },
         { name: 'المتاجر', value: 4.5, fill: 'var(--color-stores)' },
     ];
 
-
-    if (isLoading || isLoadingNotifications) return <DashboardLoading />;
+    if (isLoading) return <DashboardLoading />;
 
     return (
         <div className="space-y-6">
@@ -158,7 +152,6 @@ export default function DashboardPage() {
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">لوحة التحكم الرئيسية</h1>
                 <p className="text-muted-foreground">نظرة شاملة ولحظية على أداء تطبيقك.</p>
             </div>
-            {/* Pulse Section */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -201,8 +194,6 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Financials & Growth Section */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader>
@@ -241,8 +232,6 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-            
-             {/* Geographic & Ops Section */}
              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader>
@@ -280,8 +269,6 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
              </div>
-
-            {/* "The Most" & Activity Section */}
             <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
@@ -324,4 +311,40 @@ export default function DashboardPage() {
             </div>
         </div>
     );
+}
+
+// This is the new main component for the page.
+export default function DashboardPage() {
+    const firestore = useFirestore();
+    const { user } = useUser();
+
+    // Check if the system settings doc exists. This is our proxy for "is the DB seeded?"
+    const settingsDocRef = useMemoFirebase(() => firestore && user ? doc(firestore, 'systemSettings', 'main') : null, [firestore, user]);
+    const { data: settings, isLoading: isLoadingSettings } = useDoc(settingsDocRef);
+    
+    if (isLoadingSettings) {
+        return <DashboardLoading />;
+    }
+
+    // If settings are null and we're done loading, it means the DB is not seeded.
+    if (!settings) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-card rounded-lg border shadow-sm">
+                 <Database className="h-16 w-16 text-primary mb-4" />
+                 <h1 className="text-2xl font-bold">مرحباً بك في لوحة التحكم!</h1>
+                 <p className="mt-2 text-lg text-muted-foreground">
+                    لبدء استخدام النظام، يجب أولاً تهيئة قاعدة البيانات بالبيانات الأولية.
+                 </p>
+                 <p className="mt-1 text-sm text-muted-foreground">
+                    هذه العملية ستنشئ الجداول اللازمة وتضيف بعض البيانات التجريبية.
+                 </p>
+                 <Button asChild className="mt-6 text-lg h-12 px-8">
+                     <Link href="/admin/settings">الانتقال إلى الإعدادات لتهيئة قاعدة البيانات</Link>
+                 </Button>
+            </div>
+        )
+    }
+
+    // If settings exist, render the full dashboard.
+    return <DashboardContent />;
 }
