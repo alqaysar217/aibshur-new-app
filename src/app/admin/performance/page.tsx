@@ -14,7 +14,7 @@ import {
     Search, FileText, MapPin, Phone, Mail, FileDigit, Calendar as CalendarIcon, Briefcase, User, CircleDollarSign
 } from 'lucide-react';
 import PerformanceLoading from './loading';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, Timestamp } from 'firebase/firestore';
 import type { Order } from '../orders/page';
 import type { SupportTicket } from '../support/page';
 import type { Driver } from '../delegates/page';
@@ -81,7 +81,7 @@ export default function PerformancePage() {
 
     // Data fetching
     const { data: drivers, isLoading: l1 } = useCollection<Driver>(useMemoFirebase(() => firestore && collection(firestore, 'drivers_v2'), [firestore]));
-    const { data: orders, isLoading: l2 } = useCollection<Order>(useMemoFirebase(() => firestore && collection(firestore, 'orders'), [firestore]));
+    const { data: rawOrders, isLoading: l2 } = useCollection<Order>(useMemoFirebase(() => firestore && collection(firestore, 'orders'), [firestore]));
     const { data: tickets, isLoading: l3 } = useCollection<SupportTicket>(useMemoFirebase(() => firestore && collection(firestore, 'supportTickets'), [firestore]));
     // Mocking support staff for now as there's no collection for them
     const supportStaffList: Omit<SupportPerformanceData, 'ticketsResolved' | 'avgResponseTime' >[] = [
@@ -91,13 +91,38 @@ export default function PerformancePage() {
     
     const isLoading = l1 || l2 || l3;
     
+    const orders: Order[] = useMemo(() => {
+        if (!rawOrders) return [];
+        return rawOrders.map((orderFS: any) => {
+            const timestamps: any = {};
+            if(orderFS.timestamps) {
+                for (const key in orderFS.timestamps) {
+                    if (orderFS.timestamps[key] instanceof Timestamp) {
+                        timestamps[key] = orderFS.timestamps[key].toDate();
+                    } else {
+                        timestamps[key] = orderFS.timestamps[key];
+                    }
+                }
+            }
+            return {
+                ...orderFS,
+                timestamps,
+            };
+        });
+    }, [rawOrders]);
+
     const delegatePerformance: DelegatePerformanceData[] = useMemo(() => {
         if (!drivers || !orders) return [];
         return drivers.map(driver => {
             const driverOrders = orders.filter(o => o.delegateId === driver.id && o.status === 'delivered');
             const totalDeliveries = driverOrders.length;
             const avgTime = totalDeliveries > 0 
-                ? driverOrders.reduce((sum, o) => sum + ((o.timestamps.deliveredAt!.getTime() - o.timestamps.dispatchedAt!.getTime()) / 60000), 0) / totalDeliveries
+                ? driverOrders.reduce((sum, o) => {
+                    if (o.timestamps?.deliveredAt && o.timestamps?.dispatchedAt) {
+                        return sum + (o.timestamps.deliveredAt.getTime() - o.timestamps.dispatchedAt.getTime()) / 60000;
+                    }
+                    return sum;
+                }, 0) / totalDeliveries
                 : 0;
             const rating = totalDeliveries > 0
                 ? driverOrders.reduce((sum, o) => sum + (o.rating?.delegate || 0), 0) / driverOrders.filter(o => o.rating?.delegate).length
@@ -137,7 +162,7 @@ export default function PerformancePage() {
 
     const topDelegate = useMemo(() => !delegatePerformance.length ? null : delegatePerformance.reduce((prev, current) => (prev.deliveries > current.deliveries) ? prev : current), [delegatePerformance]);
     const topSupport = useMemo(() => !supportPerformance.length ? null : supportPerformance.reduce((prev, current) => (prev.ticketsResolved > current.ticketsResolved) ? prev : current), [supportPerformance]);
-    const totalDeliveriesToday = useMemo(() => (orders || []).filter(o => o.status === 'delivered' && new Date(o.timestamps.deliveredAt!).toDateString() === new Date().toDateString()).length, [orders]);
+    const totalDeliveriesToday = useMemo(() => (orders || []).filter(o => o.status === 'delivered' && o.timestamps.deliveredAt && new Date(o.timestamps.deliveredAt).toDateString() === new Date().toDateString()).length, [orders]);
     const avgRatingAllDelegates = useMemo(() => {
         const rated = delegatePerformance.filter(d => d.rating > 0);
         return rated.length > 0 ? rated.reduce((sum, d) => sum + d.rating, 0) / rated.length : 0;
