@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
-import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase'; 
+import { doc, collection } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -32,12 +32,17 @@ export default function ProfilePage() {
     const { toast } = useToast();
     const [isFirstTime, setIsFirstTime] = useState(false);
 
-    const adminDocRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, 'admins', user.uid);
-    }, [firestore, user]);
+    // Fetch the entire 'admins' collection
+    const adminsCollectionRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'admins');
+    }, [firestore]);
+    
+    const { data: allAdmins, isLoading: isLoadingProfile } = useCollection<Admin>(adminsCollectionRef);
 
-    const { data: adminProfile, isLoading: isLoadingProfile } = useDoc<Admin>(adminDocRef);
+    // For simplicity, we'll assume the first admin in the collection is our current user.
+    // This is a workaround for the unlinked anonymous auth.
+    const adminProfile = useMemo(() => allAdmins?.[0], [allAdmins]);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -65,13 +70,27 @@ export default function ProfilePage() {
     }, [adminProfile, isLoadingProfile, form]);
 
     const onSubmit = (values: ProfileFormValues) => {
-        if (!adminDocRef) return;
-        setDocumentNonBlocking(adminDocRef, values, { merge: true });
+        if (!firestore) return;
+
+        // If a profile was loaded, use its ID. If not (first time), use the current auth user's ID to create a new doc.
+        const docId = adminProfile ? adminProfile.id : user?.uid;
+        if (!docId) {
+             toast({
+                variant: "destructive",
+                title: "خطأ",
+                description: "لا يمكن تحديد المستخدم للحفظ.",
+            });
+            return;
+        }
+
+        const docToUpdateRef = doc(firestore, 'admins', docId);
+
+        setDocumentNonBlocking(docToUpdateRef, values, { merge: true });
         toast({
             title: isFirstTime ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
             description: "تم حفظ بياناتك بنجاح.",
         });
-        setIsFirstTime(false); // After first save, it's no longer the first time.
+        setIsFirstTime(false);
     };
 
     const isLoading = isUserLoading || isLoadingProfile;
@@ -93,9 +112,9 @@ export default function ProfilePage() {
                     <CardHeader className="flex flex-row items-center gap-3 space-y-0">
                         <AlertCircle className="h-6 w-6 text-blue-700" />
                         <div>
-                            <CardTitle className="text-blue-900">مرحباً بك! هذه هي خطوة إعداد ملفك الشخصي.</CardTitle>
+                            <CardTitle className="text-blue-900">مرحباً بك! قم بإنشاء ملفك الشخصي كمسؤول.</CardTitle>
                             <CardDescription className="text-blue-800">
-                                بما أنها زيارتك الأولى، يرجى إكمال بياناتك أدناه. سيتم حفظها في مجموعة `admins` الخاصة بالمسؤولين.
+                                يبدو أنه لا يوجد أي مسؤول في النظام. يرجى إكمال بياناتك لإنشاء أول حساب مسؤول.
                             </CardDescription>
                         </div>
                     </CardHeader>
