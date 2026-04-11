@@ -55,6 +55,7 @@ const templateSchema = z.object({
 type BroadcastFormValues = z.infer<typeof broadcastSchema>;
 type BroadcastLog = BroadcastFormValues & { id: string; createdAt: Timestamp; readRate: string; };
 type Template = { id: string, title: string, icon: string, template: string, isActive: boolean };
+type NotificationFromFirestore = Omit<Notification, 'timestamp'> & { timestamp: Timestamp };
 
 // Component
 export default function NotificationsPage() {
@@ -66,7 +67,15 @@ export default function NotificationsPage() {
     const { data: provinces, isLoading: isLoadingProvinces } = useCollection<AppProvince>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
     const { data: templates, isLoading: isLoadingTemplates } = useCollection<Template>(useMemoFirebase(() => firestore ? collection(firestore, 'notificationTemplates') : null, [firestore]));
     const { data: logs, isLoading: isLoadingLogs } = useCollection<BroadcastLog>(useMemoFirebase(() => firestore ? collection(firestore, 'broadcasts') : null, [firestore]));
-    const { data: incomingNotifications, isLoading: isLoadingIncoming } = useCollection<Notification>(useMemoFirebase(() => firestore ? collection(firestore, 'notifications') : null, [firestore]));
+    const { data: incomingNotificationsFS, isLoading: isLoadingIncoming } = useCollection<NotificationFromFirestore>(useMemoFirebase(() => firestore ? collection(firestore, 'notifications') : null, [firestore]));
+
+    const incomingNotifications = useMemo(() => {
+        if (!incomingNotificationsFS) return [];
+        return incomingNotificationsFS.map(n => ({
+            ...n,
+            timestamp: n.timestamp.toDate(),
+        }));
+    }, [incomingNotificationsFS]);
 
     const isLoading = isLoadingProvinces || isLoadingTemplates || isLoadingLogs || isLoadingIncoming;
 
