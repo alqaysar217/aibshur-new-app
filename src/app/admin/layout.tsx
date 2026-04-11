@@ -17,22 +17,22 @@ import { signOut } from 'firebase/auth';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
-    { label: 'إدارة الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
-    { label: 'إدارة المحافظات', href: '/admin/governorates', icon: Map },
-    { label: 'إدارة الفئات', href: '/admin/categories', icon: LayoutGrid },
-    { label: 'إدارة المتاجر', href: '/admin/stores', icon: Store },
-    { label: 'إدارة المنتجات', href: '/admin/products', icon: ShoppingBasket },
+    { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart2 },
     { label: 'إدارة الطلبات', href: '/admin/orders', icon: ClipboardList },
     { label: 'إدارة المواعيد', href: '/admin/appointments', icon: Calendar },
+    { label: 'إدارة المتاجر', href: '/admin/stores', icon: Store },
+    { label: 'إدارة المنتجات', href: '/admin/products', icon: ShoppingBasket },
+    { label: 'إدارة الفئات', href: '/admin/categories', icon: LayoutGrid },
     { label: 'إدارة المستخدمين', href: '/admin/users', icon: Users },
     { label: 'طلبات المناديب', href: '/admin/delegates', icon: Bike },
-    { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Gem },
-    { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
     { label: 'إدارة الإعلانات', href: '/admin/ads', icon: Megaphone },
     { label: 'إدارة الكوبونات', href: '/admin/coupons', icon: Ticket },
-    { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
     { label: 'إدارة التبرعات', href: '/admin/donations', icon: HandHeart },
-    { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart2 },
+    { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
+    { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Gem },
+    { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
+    { label: 'إدارة المحافظات', href: '/admin/governorates', icon: Map },
+    { label: 'إدارة الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
     { label: 'إدارة أداء الموظفين', href: '/admin/performance', icon: TrendingUp },
     { label: 'إعدادات النظام', href: '/admin/settings', icon: Settings },
     { label: 'الدعم الفني', href: '/admin/support', icon: LifeBuoy },
@@ -70,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         );
     }
 
-    const NavLink = ({ href, icon: Icon, text, isCollapsed }) => {
+    const NavLink = ({ href, icon: Icon, text, isCollapsed }: { href: string, icon: React.ElementType, text: string, isCollapsed: boolean }) => {
         const isActive = pathname === href;
         return (
           <Link href={href} title={isCollapsed ? text : ''}>
