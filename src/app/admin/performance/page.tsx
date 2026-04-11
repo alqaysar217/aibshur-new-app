@@ -24,24 +24,30 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import type { Order } from '../orders/page';
+import type { SupportTicket } from '../support/page';
+import type { Driver } from '../delegates/page';
+
 
 const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-48 w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
 // Type Definitions
-type Delegate = {
+type DelegatePerformanceData = {
     id: string;
     role: 'delegate';
     name: string;
     avatar: string;
     deliveries: number;
-    avgTime: number;
+    avgTime: number; // in minutes
     rating: number;
     cashCollected: number;
     deficit: number;
     phone: string;
     email: string;
     address: string;
-    governorate: string;
+    governorate: string; // This would need to be fetched/joined
     latitude: number;
     longitude: number;
     personalPhotoUrl: string;
@@ -50,54 +56,97 @@ type Delegate = {
     idBackPhotoUrl?: string;
 };
 
-type SupportStaff = {
+type SupportPerformanceData = {
     id: string;
     role: 'support';
     name: string;
     avatar: string;
     ticketsResolved: number;
     avgResponseTime: number; // in minutes
-    attendance: string;
+    attendance: string; // Mocked for now
     phone: string;
     email: string;
     address: string;
     governorate: string;
 };
 
-type Employee = Delegate | SupportStaff;
-
-// Mock Data
-const delegatePerformance: Delegate[] = [
-    { id: 'del1', role: 'delegate', name: 'أحمد علي', avatar: '/profile.png', deliveries: 120, avgTime: 28, rating: 4.9, cashCollected: 550000, deficit: 0, phone: '777111222', email: 'ahmed.ali@example.com', address: 'شارع حدة', governorate: 'صنعاء', latitude: 15.33, longitude: 44.20, personalPhotoUrl: '/profile.png', idType: 'card', idFrontPhotoUrl: 'https://picsum.photos/seed/id1f/400/250', idBackPhotoUrl: 'https://picsum.photos/seed/id1b/400/250' },
-    { id: 'del2', role: 'delegate', name: 'خالد صالح', avatar: '/profile.png', deliveries: 95, avgTime: 32, rating: 4.7, cashCollected: 420000, deficit: 500, phone: '777222333', email: 'khalid.s@example.com', address: 'شارع الزبيري', governorate: 'صنعاء', latitude: 15.35, longitude: 44.21, personalPhotoUrl: '/profile.png', idType: 'passport', idFrontPhotoUrl: 'https://picsum.photos/seed/id2f/400/250' },
-    { id: 'del3', role: 'delegate', name: 'محمد ناصر', avatar: '/profile.png', deliveries: 88, avgTime: 35, rating: 4.6, cashCollected: 390000, deficit: 0, phone: '777444555', email: 'mo.nasser@example.com', address: 'المنصورة', governorate: 'عدن', latitude: 12.83, longitude: 45.01, personalPhotoUrl: '/profile.png', idType: 'card', idFrontPhotoUrl: 'https://picsum.photos/seed/id3f/400/250', idBackPhotoUrl: 'https://picsum.photos/seed/id3b/400/250' },
-    { id: 'del4', role: 'delegate', name: 'سعيد عبدالله', avatar: '/profile.png', deliveries: 150, avgTime: 25, rating: 4.95, cashCollected: 720000, deficit: 0, phone: '777666777', email: 'saeed.a@example.com', address: 'المكلا', governorate: 'حضرموت', latitude: 14.54, longitude: 49.13, personalPhotoUrl: '/profile.png', idType: 'card', idFrontPhotoUrl: 'https://picsum.photos/seed/id4f/400/250', idBackPhotoUrl: 'https://picsum.photos/seed/id4b/400/250' },
-];
-
-const supportPerformance: SupportStaff[] = [
-    { id: 'sup1', role: 'support', name: 'فاطمة حسن', avatar: '/profile.png', ticketsResolved: 85, avgResponseTime: 15, attendance: '98%', phone: '777888999', email: 'fatima.h@example.com', address: 'قسم الدعم الفني', governorate: 'صنعاء' },
-    { id: 'sup2', role: 'support', name: 'سارة عبدالله', avatar: '/profile.png', ticketsResolved: 72, avgResponseTime: 20, attendance: '95%', phone: '777999000', email: 'sara.a@example.com', address: 'قسم الدعم الفني', governorate: 'عدن' },
-    { id: 'sup3', role: 'support', name: 'علياء محمد', avatar: '/profile.png', ticketsResolved: 95, avgResponseTime: 12, attendance: '100%', phone: '777000111', email: 'alia.m@example.com', address: 'قسم الدعم الفني', governorate: 'صنعاء' },
-];
+type Employee = DelegatePerformanceData | SupportPerformanceData;
 
 // Main Component
 export default function PerformancePage() {
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
     const [delegateSearch, setDelegateSearch] = useState('');
     const [supportSearch, setSupportSearch] = useState('');
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+
+    // Data fetching
+    const { data: drivers, isLoading: l1 } = useCollection<Driver>(useMemoFirebase(() => firestore && collection(firestore, 'drivers_v2'), [firestore]));
+    const { data: orders, isLoading: l2 } = useCollection<Order>(useMemoFirebase(() => firestore && collection(firestore, 'orders'), [firestore]));
+    const { data: tickets, isLoading: l3 } = useCollection<SupportTicket>(useMemoFirebase(() => firestore && collection(firestore, 'supportTickets'), [firestore]));
+    // Mocking support staff for now as there's no collection for them
+    const supportStaffList: Omit<SupportPerformanceData, 'ticketsResolved' | 'avgResponseTime' >[] = [
+        { id: 'sup1', role: 'support', name: 'فاطمة حسن', avatar: '/profile.png', attendance: '98%', phone: '777888999', email: 'fatima.h@example.com', address: 'قسم الدعم الفني', governorate: 'صنعاء' },
+        { id: 'sup2', role: 'support', name: 'سارة عبدالله', avatar: '/profile.png', attendance: '95%', phone: '777999000', email: 'sara.a@example.com', address: 'قسم الدعم الفني', governorate: 'عدن' },
+    ];
     
-    // Simulate loading
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1500);
-        return () => clearTimeout(timer);
-    }, []);
+    const isLoading = l1 || l2 || l3;
+    
+    const delegatePerformance: DelegatePerformanceData[] = useMemo(() => {
+        if (!drivers || !orders) return [];
+        return drivers.map(driver => {
+            const driverOrders = orders.filter(o => o.delegateId === driver.id && o.status === 'delivered');
+            const totalDeliveries = driverOrders.length;
+            const avgTime = totalDeliveries > 0 
+                ? driverOrders.reduce((sum, o) => sum + ((o.timestamps.deliveredAt!.getTime() - o.timestamps.dispatchedAt!.getTime()) / 60000), 0) / totalDeliveries
+                : 0;
+            const rating = totalDeliveries > 0
+                ? driverOrders.reduce((sum, o) => sum + (o.rating?.delegate || 0), 0) / driverOrders.filter(o => o.rating?.delegate).length
+                : 0;
+            const cashCollected = driverOrders.filter(o => o.payment.method === 'cash').reduce((sum, o) => sum + o.financials.total, 0);
 
-    const topDelegate = useMemo(() => delegatePerformance.reduce((prev, current) => (prev.deliveries > current.deliveries) ? prev : current), []);
-    const topSupport = useMemo(() => supportPerformance.reduce((prev, current) => (prev.ticketsResolved > current.ticketsResolved) ? prev : current), []);
+            return {
+                ...driver,
+                role: 'delegate',
+                avatar: driver.personalPhotoUrl,
+                deliveries: totalDeliveries,
+                avgTime: Math.round(avgTime),
+                rating: parseFloat(rating.toFixed(2)) || 0,
+                cashCollected,
+                deficit: 0, // Mocked
+                governorate: 'N/A'
+            };
+        });
+    }, [drivers, orders]);
 
-    const filteredDelegates = useMemo(() => delegatePerformance.filter(d => d.name.toLowerCase().includes(delegateSearch.toLowerCase())), [delegateSearch]);
-    const filteredSupport = useMemo(() => supportPerformance.filter(s => s.name.toLowerCase().includes(supportSearch.toLowerCase())), [supportSearch]);
+    const supportPerformance: SupportPerformanceData[] = useMemo(() => {
+        if (!tickets) return [];
+        return supportStaffList.map(staff => {
+             // Simplified logic: assume all tickets are handled by the first staff for demo
+            const staffTickets = staff.id === 'sup1' ? tickets.filter(t => t.status === 'closed') : [];
+            const ticketsResolved = staffTickets.length;
+            // avgResponseTime is complex, mocking for now
+            const avgResponseTime = ticketsResolved > 0 ? 15 : 0;
+            return {
+                ...staff,
+                ticketsResolved,
+                avgResponseTime,
+            };
+        });
+    }, [tickets]);
+
+
+    const topDelegate = useMemo(() => !delegatePerformance.length ? null : delegatePerformance.reduce((prev, current) => (prev.deliveries > current.deliveries) ? prev : current), [delegatePerformance]);
+    const topSupport = useMemo(() => !supportPerformance.length ? null : supportPerformance.reduce((prev, current) => (prev.ticketsResolved > current.ticketsResolved) ? prev : current), [supportPerformance]);
+    const totalDeliveriesToday = useMemo(() => (orders || []).filter(o => o.status === 'delivered' && new Date(o.timestamps.deliveredAt!).toDateString() === new Date().toDateString()).length, [orders]);
+    const avgRatingAllDelegates = useMemo(() => {
+        const rated = delegatePerformance.filter(d => d.rating > 0);
+        return rated.length > 0 ? rated.reduce((sum, d) => sum + d.rating, 0) / rated.length : 0;
+    }, [delegatePerformance]);
+    const closedTicketsToday = useMemo(() => (tickets || []).filter(t => t.status === 'closed' && new Date(t.createdAt).toDateString() === new Date().toDateString()).length, [tickets]);
+
+
+    const filteredDelegates = useMemo(() => delegatePerformance.filter(d => d.name.toLowerCase().includes(delegateSearch.toLowerCase())), [delegatePerformance, delegateSearch]);
+    const filteredSupport = useMemo(() => supportPerformance.filter(s => s.name.toLowerCase().includes(supportSearch.toLowerCase())), [supportPerformance, supportSearch]);
 
     const handleViewProfile = (employee: Employee) => {
         setSelectedEmployee(employee);
@@ -123,21 +172,21 @@ export default function PerformancePage() {
                             <CardTitle className="text-sm font-medium">إجمالي الطلبات المكتملة (اليوم)</CardTitle>
                             <PackageCheck className="h-4 w-4 text-muted-foreground"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">245</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">{totalDeliveriesToday}</div></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium">متوسط تقييم المناديب</CardTitle>
                             <Star className="h-4 w-4 text-muted-foreground"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">4.8 / 5</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">{avgRatingAllDelegates.toFixed(1)} / 5</div></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium">التذاكر المغلقة (اليوم)</CardTitle>
                             <UserCheck className="h-4 w-4 text-muted-foreground"/>
                         </CardHeader>
-                        <CardContent><div className="text-2xl font-bold">32</div></CardContent>
+                        <CardContent><div className="text-2xl font-bold">+{closedTicketsToday}</div></CardContent>
                     </Card>
                 </div>
 
@@ -147,7 +196,7 @@ export default function PerformancePage() {
                             <CardTitle className="flex items-center gap-2"><Award />قائمة الشرف للأفضل أداءً</CardTitle>
                         </CardHeader>
                          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="p-4 bg-primary/10 rounded-lg flex items-center gap-4">
+                            {topDelegate && <div className="p-4 bg-primary/10 rounded-lg flex items-center gap-4">
                                 <Avatar className="h-12 w-12 border-2 border-primary">
                                     <AvatarImage src={topDelegate.avatar} alt={topDelegate.name} />
                                     <AvatarFallback>{topDelegate.name.charAt(0)}</AvatarFallback>
@@ -156,8 +205,8 @@ export default function PerformancePage() {
                                     <p className="font-bold text-primary">{topDelegate.name}</p>
                                     <p className="text-sm text-muted-foreground">المندوب الأكثر توصيلاً</p>
                                 </div>
-                            </div>
-                            <div className="p-4 bg-primary/10 rounded-lg flex items-center gap-4">
+                            </div>}
+                            {topSupport && <div className="p-4 bg-primary/10 rounded-lg flex items-center gap-4">
                                 <Avatar className="h-12 w-12 border-2 border-primary">
                                     <AvatarImage src={topSupport.avatar} alt={topSupport.name} />
                                     <AvatarFallback>{topSupport.name.charAt(0)}</AvatarFallback>
@@ -166,21 +215,13 @@ export default function PerformancePage() {
                                     <p className="font-bold text-primary">{topSupport.name}</p>
                                     <p className="text-sm text-muted-foreground">نجم الدعم الفني</p>
                                 </div>
-                            </div>
+                            </div>}
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert />تنبيهات الأداء</CardTitle></CardHeader>
                         <CardContent className="space-y-3">
-                            <p className="text-sm text-muted-foreground">موظفون انخفض أداؤهم اليوم:</p>
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8"><AvatarImage src="/profile.png" alt="User" /><AvatarFallback>M</AvatarFallback></Avatar>
-                                <span className="text-sm font-medium">مندوب 1 (-25%)</span>
-                            </div>
-                             <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8"><AvatarImage src="/profile.png" alt="User" /><AvatarFallback>S</AvatarFallback></Avatar>
-                                <span className="text-sm font-medium">دعم فني 2 (-30%)</span>
-                            </div>
+                            <p className="text-sm text-muted-foreground">لا توجد تنبيهات حالياً.</p>
                         </CardContent>
                     </Card>
                 </div>

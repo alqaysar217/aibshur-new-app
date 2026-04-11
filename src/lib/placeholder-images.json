@@ -27,7 +27,7 @@
     {
       "id": "otp-illustration",
       "description": "An illustration for the OTP verification screen",
-      "imageUrl": "https://picsum.photos/seed/otp-verify/300/200",
+      "imageUrl": "/otp.png",
       "imageHint": "security code"
     },
     {

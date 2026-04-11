@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
 import {
     Activity, ArrowUp, BarChart2, Calendar, CircleDollarSign, Clock, Users,
@@ -9,65 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-// MOCK DATA
-
-const pulseData = {
-    activeOrders: { value: 120, trend: [{ value: 5 }, { value: 10 }, { value: 8 }, { value: 15 }, { value: 12 }] },
-    liveSales: { value: 2450000, trend: [{ value: 1000 }, { value: 3000 }, { value: 2000 }, { value: 4000 }, { value: 5000 }] },
-    onlineDrivers: { value: 45, trend: [{ value: 3 }, { value: 5 }, { value: 4 }, { value: 7 }, { value: 6 }] },
-    pendingQueue: { value: 8, trend: [{ value: 1 }, { value: 3 }, { value: 2 }, { value: 4 }, { value: 2 }] },
-};
-
-const salesProfitData = [
-  { name: 'السبت', sales: 400000, profit: 240000 },
-  { name: 'الأحد', sales: 300000, profit: 139800 },
-  { name: 'الإثنين', sales: 200000, profit: 98000 },
-  { name: 'الثلاثاء', sales: 278000, profit: 180000 },
-  { name: 'الأربعاء', sales: 189000, profit: 110000 },
-  { name: 'الخميس', sales: 239000, profit: 160000 },
-  { name: 'الجمعة', sales: 349000, profit: 210000 },
-];
-const salesProfitConfig = {
-    sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
-    profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
-};
-
-const orderStatusData = [
-    { name: 'صنعاء', completed: 400, cancelled: 24 },
-    { name: 'عدن', completed: 300, cancelled: 13 },
-    { name: 'حضرموت', completed: 200, cancelled: 9 },
-    { name: 'تعز', completed: 278, cancelled: 39 },
-    { name: 'إب', completed: 189, cancelled: 48 },
-];
-const orderStatusConfig = {
-    completed: { label: "مكتمل", color: "hsl(var(--primary))" },
-    cancelled: { label: "ملغي", color: "hsl(var(--destructive))" },
-};
-
-const performanceIndexData = [
-    { name: 'المناديب', value: 4.8, fill: 'var(--color-delegates)' },
-    { name: 'المتاجر', value: 4.5, fill: 'var(--color-stores)' },
-];
-const performanceIndexConfig = {
-    delegates: { label: "المناديب", color: "hsl(var(--chart-2))" },
-    stores: { label: "المتاجر", color: "hsl(var(--chart-3))" },
-};
-
-const topProducts = [
-    { name: 'عقدة دجاج', sales: '150 طلب', image: 'https://picsum.photos/seed/ogda-dajaj/40/40' },
-    { name: 'مندي لحم', sales: '120 طلب', image: 'https://picsum.photos/seed/mandi-laham/40/40' },
-    { name: 'برجر دبل', sales: '95 طلب', image: 'https://picsum.photos/seed/burger-double/40/40' },
-    { name: 'بيتزا مارجريتا', sales: '80 طلب', image: 'https://picsum.photos/seed/pizza/40/40' },
-    { name: 'عصير مانجو', sales: '180 طلب', image: 'https://picsum.photos/seed/mango/40/40' },
-];
-
-const activityFeed = [
-    { id: 1, text: 'تم قبول الطلب #120 بواسطة مطعم البيت الصنعاني', time: 'منذ دقيقة', icon: CheckCircle },
-    { id: 2, text: 'سجل المندوب "أحمد علي" دخوله للنظام', time: 'منذ 3 دقائق', icon: UserCheck },
-    { id: 3, text: 'تم إضافة منتج جديد: "شاورما دجاج" لمتجر كينج فلافل', time: 'منذ 5 دقائق', icon: PlusCircle },
-    { id: 4, text: 'تم استلام طلب جديد #121 من العميل "سارة قائد"', time: 'منذ 8 دقائق', icon: ShoppingCart },
-];
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import type { Order } from '../orders/page';
+import type { Driver } from '../delegates/page';
+import type { Product } from '../products/page';
+import DashboardLoading from './loading';
 
 
 const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
@@ -87,6 +36,118 @@ const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string
 );
 
 export default function DashboardPage() {
+    const firestore = useFirestore();
+
+    const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]));
+    const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore ? collection(firestore, 'drivers_v2') : null, [firestore]));
+    const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]));
+
+    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts;
+
+    const pulseData = useMemo(() => {
+        if (!orders || !drivers) return { activeOrders: { value: 0, trend: [] }, liveSales: { value: 0, trend: [] }, onlineDrivers: { value: 0, trend: [] }, pendingQueue: { value: 0, trend: [] }};
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
+        const liveSales = orders.filter(o => o.timestamps.createdAt >= today).reduce((sum, o) => sum + o.financials.total, 0);
+        const onlineDrivers = drivers.filter(d => d.is_active); // Simplified logic
+        const pendingQueue = orders.filter(o => o.status === 'incoming');
+
+        // Simplified trend data
+        const generateTrend = (currentValue: number) => [
+            { value: currentValue * 0.8 }, { value: currentValue * 1.1 }, { value: currentValue * 0.9 }, { value: currentValue * 1.2 }, { value: currentValue }
+        ];
+
+        return {
+            activeOrders: { value: activeOrders.length, trend: generateTrend(activeOrders.length) },
+            liveSales: { value: liveSales, trend: generateTrend(liveSales / 1000) },
+            onlineDrivers: { value: onlineDrivers.length, trend: generateTrend(onlineDrivers.length) },
+            pendingQueue: { value: pendingQueue.length, trend: generateTrend(pendingQueue.length) },
+        };
+    }, [orders, drivers]);
+
+    const salesProfitData = useMemo(() => {
+        if (!orders) return [];
+        const dataByDay: { [key: string]: { sales: number; profit: number } } = {};
+        const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+        orders.forEach(order => {
+            const date = new Date(order.timestamps.createdAt);
+            const dayName = weekDays[date.getDay()];
+            if (!dataByDay[dayName]) {
+                dataByDay[dayName] = { sales: 0, profit: 0 };
+            }
+            dataByDay[dayName].sales += order.financials.total;
+            // Assuming profit is 40% of subtotal for mock purposes
+            dataByDay[dayName].profit += (order.financials.subtotal * 0.4) - order.financials.discount;
+        });
+
+        return weekDays.map(day => ({ name: day, ...dataByDay[day] || {sales: 0, profit: 0} }));
+    }, [orders]);
+
+    const orderStatusData = useMemo(() => {
+        if (!orders) return [];
+        const dataByProvince: { [key: string]: { completed: number; cancelled: number } } = {};
+        orders.forEach(order => {
+            const provinceName = order.storeName; // Simplified: using store name as province for demo
+             if (!dataByProvince[provinceName]) {
+                dataByProvince[provinceName] = { completed: 0, cancelled: 0 };
+            }
+            if (order.status === 'delivered') dataByProvince[provinceName].completed += 1;
+            if (order.status === 'cancelled') dataByProvince[provinceName].cancelled += 1;
+        });
+        return Object.entries(dataByProvince).map(([name, data]) => ({name, ...data})).slice(0, 5); // Take top 5
+    }, [orders]);
+
+    const topProducts = useMemo(() => {
+        if (!orders || !products) return [];
+        const productSales: { [key: string]: number } = {};
+        orders.forEach(order => {
+            order.items.forEach(item => {
+                productSales[item.productId] = (productSales[item.productId] || 0) + item.quantity;
+            });
+        });
+
+        return Object.entries(productSales)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([productId, sales]) => {
+                const product = products.find(p => p.id === productId);
+                return {
+                    name: product?.name || 'منتج محذوف',
+                    sales: `${sales} طلب`,
+                    image: product?.mainImageUrl || 'https://picsum.photos/seed/product/40/40'
+                };
+            });
+    }, [orders, products]);
+    
+    // Using notifications as activity feed
+    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection(useMemoFirebase(() => firestore ? collection(firestore, 'notifications') : null, [firestore]));
+
+
+    const salesProfitConfig = {
+        sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
+        profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
+    };
+    const orderStatusConfig = {
+        completed: { label: "مكتمل", color: "hsl(var(--primary))" },
+        cancelled: { label: "ملغي", color: "hsl(var(--destructive))" },
+    };
+     const performanceIndexConfig = {
+        delegates: { label: "المناديب", color: "hsl(var(--chart-2))" },
+        stores: { label: "المتاجر", color: "hsl(var(--chart-3))" },
+    };
+    // Mocked for now as it requires complex calculation
+    const performanceIndexData = [
+        { name: 'المناديب', value: 4.8, fill: 'var(--color-delegates)' },
+        { name: 'المتاجر', value: 4.5, fill: 'var(--color-stores)' },
+    ];
+
+
+    if (isLoading || isLoadingNotifications) return <DashboardLoading />;
+
     return (
         <div className="space-y-6">
              <div className="space-y-0.5">
@@ -181,8 +242,8 @@ export default function DashboardPage() {
              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader>
-                        <CardTitle>توزيع الطلبات على المحافظات</CardTitle>
-                        <CardDescription>كثافة الطلبات في المناطق الرئيسية.</CardDescription>
+                        <CardTitle>توزيع الطلبات على المتاجر</CardTitle>
+                        <CardDescription>كثافة الطلبات في المتاجر الرئيسية.</CardDescription>
                     </CardHeader>
                     <CardContent>
                        <ChartContainer config={{}} className="h-[250px] w-full">
@@ -219,7 +280,7 @@ export default function DashboardPage() {
             {/* "The Most" & Activity Section */}
             <div className="grid gap-4 md:grid-cols-2">
                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً وتقييماً</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
@@ -240,14 +301,14 @@ export default function DashboardPage() {
                  <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Activity/>آخر الأنشطة في النظام</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                       {activityFeed.map(item => {
-                           const Icon = item.icon;
+                       {(activityFeed || []).slice(0, 4).map((item: any) => {
+                           const Icon = CheckCircle; // Simplified
                            return (
                             <div key={item.id} className="flex items-center gap-3">
                                 <div className="p-2 bg-muted rounded-full"><Icon className="h-4 w-4 text-muted-foreground" /></div>
                                 <div className="flex-1">
-                                    <p className="text-sm">{item.text}</p>
-                                    <p className="text-xs text-muted-foreground">{item.time}</p>
+                                    <p className="text-sm">{item.title}</p>
+                                    <p className="text-xs text-muted-foreground">{item.body}</p>
                                 </div>
                             </div>
                            )

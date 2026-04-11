@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
 import {
-    Settings as SettingsIcon, AppWindow, Palette, Bot, SlidersHorizontal, Bell, Mail, MessageSquare, BadgeInfo, CircleDollarSign, Tractor, Power, Upload, Phone, CheckCircle, XCircle
+    Settings as SettingsIcon, AppWindow, Palette, Bot, SlidersHorizontal, Bell, Mail, MessageSquare, BadgeInfo, CircleDollarSign, Tractor, Power, Upload, Phone, CheckCircle, XCircle, Database, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -12,35 +12,79 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { seedDatabase } from '@/lib/seed';
+import { useState } from 'react';
+import SettingsLoading from './loading';
 
 const settingsSchema = z.object({
-    // General
     appName: z.string().min(2, "اسم التطبيق مطلوب"),
     supportEmail: z.string().email("بريد إلكتروني غير صالح"),
     supportPhone: z.string().min(9, "رقم هاتف غير صالح"),
     currencySymbol: z.string().min(1, "رمز العملة مطلوب"),
-
-    // Appearance
     primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "لون غير صالح"),
     appLogo: z.string().optional(),
-
-    // Operational
     defaultDeliveryFee: z.coerce.number().min(0, "يجب أن تكون قيمة موجبة"),
     maintenanceMode: z.boolean(),
-
-    // Notifications
     enableEmailNotifications: z.boolean(),
     enablePushNotifications: z.boolean(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
+function SeederCard() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isSeeding, setIsSeeding] = useState(false);
+
+    const handleSeedDatabase = async () => {
+        if (!firestore) return;
+        setIsSeeding(true);
+        toast({ title: 'بدء عملية تهيئة البيانات...', description: 'قد تستغرق هذه العملية بضع لحظات.' });
+
+        try {
+            await seedDatabase(firestore);
+            toast({ title: 'اكتملت التهيئة بنجاح!', description: 'تمت إضافة البيانات الوهمية إلى قاعدة البيانات.' });
+        } catch (error) {
+            console.error("Seeding failed: ", error);
+            toast({ variant: 'destructive', title: 'فشلت عملية التهيئة', description: 'حدث خطأ أثناء كتابة البيانات.' });
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>تهيئة بيانات النظام</CardTitle>
+                <CardDescription>
+                    استخدم هذا الخيار لإضافة مجموعة من البيانات المبدئية والوهمية (مثل منتجات، متاجر، تذاكر دعم) إلى قاعدة البيانات. هذا يساعد في اختبار الواجهات وتجربتها دون الحاجة لإدخال كل شيء يدوياً.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-destructive font-semibold">تحذير: هذه العملية ستقوم بالكتابة فوق أي بيانات موجودة بنفس المعرفات (IDs). استخدمها فقط في بيئة التطوير.</p>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleSeedDatabase} disabled={isSeeding} variant="destructive">
+                    {isSeeding ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Database className="ml-2"/>}
+                    تهيئة قاعدة البيانات بالبيانات المبدئية
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
 export default function SettingsPage() {
     const { toast } = useToast();
+    const firestore = useFirestore();
 
+    const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
+    const { data: currentSettings, isLoading } = useDoc<SettingsFormValues>(settingsDocRef);
+    
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
-        defaultValues: {
+        values: currentSettings || {
             appName: 'تطبيق أبشر',
             supportEmail: 'support@absher.com',
             supportPhone: '+967 777 777 777',
@@ -55,11 +99,16 @@ export default function SettingsPage() {
     });
 
     function onSubmit(data: SettingsFormValues) {
-        console.log(data);
+        if (!settingsDocRef) return;
+        updateDocumentNonBlocking(settingsDocRef, data);
         toast({
             title: "تم حفظ الإعدادات",
             description: "تم تحديث إعدادات النظام بنجاح.",
         });
+    }
+
+    if (isLoading) {
+        return <SettingsLoading />;
     }
 
     return (
@@ -72,7 +121,7 @@ export default function SettingsPage() {
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <Tabs defaultValue="general" dir="rtl">
-                        <TabsList className="mb-6">
+                        <TabsList className="mb-6 grid w-full grid-cols-2 sm:grid-cols-4">
                             <TabsTrigger value="general" className="gap-2"><SettingsIcon/>الإعدادات العامة</TabsTrigger>
                             <TabsTrigger value="appearance" className="gap-2"><Palette/>المظهر والهوية</TabsTrigger>
                             <TabsTrigger value="operational" className="gap-2"><SlidersHorizontal/>الإعدادات التشغيلية</TabsTrigger>
@@ -216,6 +265,9 @@ export default function SettingsPage() {
                     </Tabs>
                 </form>
             </Form>
+            <div className="pt-6">
+                <SeederCard />
+            </div>
         </div>
     );
 }

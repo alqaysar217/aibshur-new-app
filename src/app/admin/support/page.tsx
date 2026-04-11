@@ -26,24 +26,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import SupportLoading from './loading';
+import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 
-// Mock Data
-const mockTickets = [
-    { id: 'TICKET-001', subject: 'مشكلة في تسجيل الدخول', userName: 'أحمد علي', userEmail: 'ahmed@example.com', priority: 'high', status: 'open', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), description: 'لا أستطيع تسجيل الدخول إلى حسابي، تظهر لي رسالة خطأ في كلمة المرور مع أنها صحيحة.', replies: [] },
-    { id: 'TICKET-002', subject: 'تأخر وصول الطلب #123', userName: 'فاطمة حسن', userEmail: 'fatima@example.com', priority: 'medium', status: 'in_progress', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), description: 'طلبت من مطعم البيت الصنعاني ولم يصل الطلب بعد، مع أنه تجاوز الوقت المتوقع.', replies: [{ authorName: 'فريق الدعم', message: 'مرحباً فاطمة، نعتذر عن التأخير. جاري المتابعة مع المندوب وسنعود إليك بالتحديثات.', createdAt: new Date(Date.now() - 23 * 60 * 60 * 1000) }] },
-    { id: 'TICKET-003', subject: 'استفسار عن كوبون خصم', userName: 'خالد صالح', userEmail: 'khalid@example.com', priority: 'low', status: 'closed', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), description: 'هل يمكن استخدام كوبون "WELCOME10" أكثر من مرة؟', replies: [{ authorName: 'فريق الدعم', message: 'مرحباً خالد، كوبون الترحيب يستخدم لمرة واحدة فقط لكل حساب. شكراً لتفهمك.', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }] },
-];
-
-const mockFaqs = [
-    { id: 'FAQ1', category: 'الحساب', question: 'كيف يمكنني تغيير رقم هاتفي؟', answer: 'لتغيير رقم هاتفك، يرجى الذهاب إلى صفحة "حسابي"، ثم الضغط على "تعديل الملف الشخصي" وإدخال الرقم الجديد. ستحتاج إلى تأكيد الرقم الجديد عبر رمز يتم إرساله إليك.' },
-    { id: 'FAQ2', category: 'الدفع', question: 'ما هي طرق الدفع المتاحة؟', answer: 'نحن ندعم الدفع نقدًا عند الاستلام، والدفع عبر المحافظ الإلكترونية، وكذلك التحويلات البنكية المباشرة.' },
-    { id: 'FAQ3', category: 'الطلبات', question: 'كيف يمكنني تتبع طلبي؟', answer: 'بعد تأكيد طلبك، يمكنك تتبعه مباشرة من قسم "طلباتي" في التطبيق. سترى حالة الطلب الحالية وموقع المندوب عندما يكون في الطريق إليك.' },
-];
 
 type TicketStatus = 'open' | 'in_progress' | 'closed';
 type TicketPriority = 'low' | 'medium' | 'high';
-type Reply = { authorName: string; message: string; createdAt: Date; };
-type SupportTicket = { id: string; subject: string; userName: string; userEmail: string; priority: TicketPriority; status: TicketStatus; createdAt: Date; description: string; replies: Reply[] };
+type Reply = { authorName: string; message: string; createdAt: Timestamp; };
+export type SupportTicket = { id: string; subject: string; userName: string; userEmail: string; priority: TicketPriority; status: TicketStatus; createdAt: Timestamp; updatedAt: Timestamp; description: string; replies: Reply[], attachments?: string[] };
 type Faq = { id: string; category: string; question: string; answer: string; };
 
 const statusMap: Record<TicketStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -65,61 +55,62 @@ const faqFormSchema = z.object({
 });
 
 export default function SupportPage() {
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
     const [activeTab, setActiveTab] = useState<'tickets' | 'faq'>('tickets');
     
     // Tickets State
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
+    const {data: tickets, isLoading: isLoadingTickets} = useCollection<SupportTicket>(useMemoFirebase(() => firestore && collection(firestore, 'supportTickets'), [firestore]));
     const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [filters, setFilters] = useState({ status: 'all', priority: 'all', search: '' });
 
     // FAQ State
-    const [faqs, setFaqs] = useState<Faq[]>([]);
+    const {data: faqs, isLoading: isLoadingFaqs} = useCollection<Faq>(useMemoFirebase(() => firestore && collection(firestore, 'faqs'), [firestore]));
     const [faqDialog, setFaqDialog] = useState<{ open: boolean, isEditing: boolean, data: Faq | null }>({ open: false, isEditing: false, data: null });
     const [deleteFaqAlert, setDeleteFaqAlert] = useState<Faq | null>(null);
 
     const { toast } = useToast();
+    const isLoading = isLoadingTickets || isLoadingFaqs;
 
     const faqForm = useForm<z.infer<typeof faqFormSchema>>({
         resolver: zodResolver(faqFormSchema),
         defaultValues: { question: '', answer: '', category: '' },
     });
 
-    useEffect(() => {
-        setTimeout(() => {
-            setTickets(mockTickets);
-            setFaqs(mockFaqs);
-            setIsLoading(false);
-        }, 1000);
-    }, []);
-
     const filteredTickets = useMemo(() => {
-        return tickets.filter(t => 
+        return (tickets || []).filter(t => 
             (filters.status === 'all' || t.status === filters.status) &&
             (filters.priority === 'all' || t.priority === filters.priority) &&
             (t.subject.includes(filters.search) || t.userName.includes(filters.search) || t.id.includes(filters.search))
-        ).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+        ).sort((a,b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
     }, [tickets, filters]);
     
     const stats = useMemo(() => ({
-        open: tickets.filter(t => t.status === 'open').length,
-        inProgress: tickets.filter(t => t.status === 'in_progress').length,
-        closedToday: tickets.filter(t => t.status === 'closed' && format(t.createdAt, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')).length,
+        open: (tickets || []).filter(t => t.status === 'open').length,
+        inProgress: (tickets || []).filter(t => t.status === 'in_progress').length,
+        closedToday: (tickets || []).filter(t => t.status === 'closed' && format(t.createdAt.toDate(), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')).length,
         avgResponseTime: '3 ساعات', // Mock
     }), [tickets]);
 
-    const faqCategories = useMemo(() => [...new Set(faqs.map(f => f.category))], [faqs]);
+    const faqCategories = useMemo(() => [...new Set((faqs || []).map(f => f.category))], [faqs]);
     
     const handleFaqSubmit = (values: z.infer<typeof faqFormSchema>) => {
+        if (!firestore) return;
         if (faqDialog.isEditing && faqDialog.data) {
-            setFaqs(faqs.map(f => f.id === faqDialog.data!.id ? { ...f, ...values } : f));
+            updateDocumentNonBlocking(doc(firestore, 'faqs', faqDialog.data.id), values);
             toast({ title: 'تم تحديث السؤال بنجاح' });
         } else {
-            const newFaq: Faq = { id: `FAQ${Date.now()}`, ...values };
-            setFaqs([...faqs, newFaq]);
+            addDocumentNonBlocking(collection(firestore, 'faqs'), values);
             toast({ title: 'تمت إضافة السؤال بنجاح' });
         }
         setFaqDialog({ open: false, isEditing: false, data: null });
+    };
+
+    const confirmDeleteFaq = () => {
+        if(deleteFaqAlert && firestore) {
+            deleteDocumentNonBlocking(doc(firestore, 'faqs', deleteFaqAlert.id));
+            toast({title: "تم الحذف بنجاح"});
+            setDeleteFaqAlert(null);
+        }
     };
 
     if (isLoading) {
@@ -184,7 +175,7 @@ export default function SupportPage() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center"><Badge className={cn("text-white border-none", statusMap[t.status].color)}>{statusMap[t.status].label}</Badge></TableCell>
-                                                    <TableCell className="text-center">{formatDistanceToNow(t.createdAt, { addSuffix: true, locale: ar })}</TableCell>
+                                                    <TableCell className="text-center">{formatDistanceToNow(t.createdAt.toDate(), { addSuffix: true, locale: ar })}</TableCell>
                                                 </TableRow>
                                             );
                                         })}
@@ -207,7 +198,7 @@ export default function SupportPage() {
                                 {faqCategories.map(category => (
                                     <div key={category}>
                                         <h3 className="font-bold my-4 text-primary">{category}</h3>
-                                        {faqs.filter(f => f.category === category).map(faq => (
+                                        {(faqs || []).filter(f => f.category === category).map(faq => (
                                              <AccordionItem value={faq.id} key={faq.id}>
                                                 <AccordionTrigger className="text-right justify-between">
                                                     <div className="flex-1 text-right">{faq.question}</div>
@@ -254,7 +245,7 @@ export default function SupportPage() {
                                     <div className="flex-1 p-3 rounded-lg bg-muted">
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="font-bold">{reply.authorName}</span>
-                                            <span className="text-muted-foreground">{formatDistanceToNow(reply.createdAt, { addSuffix: true, locale: ar })}</span>
+                                            <span className="text-muted-foreground">{formatDistanceToNow(reply.createdAt.toDate(), { addSuffix: true, locale: ar })}</span>
                                         </div>
                                         <p className="text-sm mt-1">{reply.message}</p>
                                     </div>
@@ -296,7 +287,7 @@ export default function SupportPage() {
                 <AlertDialogContent dir="rtl">
                     <AlertDialogHeader className="text-right"><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف هذا السؤال؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter className="flex-row-reverse sm:justify-start">
-                        <AlertDialogAction onClick={() => { if(deleteFaqAlert) { setFaqs(faqs.filter(f => f.id !== deleteFaqAlert.id)); toast({title: "تم الحذف بنجاح"}); setDeleteFaqAlert(null); }}}>تأكيد</AlertDialogAction>
+                        <AlertDialogAction onClick={confirmDeleteFaq}>تأكيد</AlertDialogAction>
                         <AlertDialogCancel>إلغاء</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>

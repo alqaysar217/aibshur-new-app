@@ -1396,6 +1396,65 @@
         "category",
         "isActive"
       ]
+    },
+    "SystemSettings": {
+      "title": "System Settings",
+      "type": "object",
+      "description": "Stores global configuration for the application.",
+      "properties": {
+        "appName": { "type": "string" },
+        "supportEmail": { "type": "string", "format": "email" },
+        "supportPhone": { "type": "string" },
+        "currencySymbol": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "appLogo": { "type": "string", "format": "uri" },
+        "defaultDeliveryFee": { "type": "number" },
+        "maintenanceMode": { "type": "boolean" },
+        "enableEmailNotifications": { "type": "boolean" },
+        "enablePushNotifications": { "type": "boolean" }
+      }
+    },
+    "NotificationTemplate": {
+      "title": "Notification Template",
+      "type": "object",
+      "description": "Templates for automated system notifications.",
+      "properties": {
+        "title": { "type": "string" },
+        "template": { "type": "string" },
+        "icon": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["title", "template", "isActive"]
+    },
+    "Broadcast": {
+      "title": "Broadcast Notification",
+      "type": "object",
+      "description": "A notification manually sent to a target audience.",
+      "properties": {
+        "type": { "type": "string", "enum": ["promotion", "system", "update"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["all", "user", "province"] },
+        "targetValue": { "type": "string" },
+        "link": { "type": "string", "format": "uri-reference" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "readRate": { "type": "string" }
+      },
+      "required": ["type", "title", "body", "targetType", "createdAt"]
+    },
+    "Notification": {
+      "title": "Admin Notification",
+      "type": "object",
+      "description": "A notification for an admin user.",
+      "properties": {
+        "type": { "type": "string", "enum": ["order_status", "promotion", "system"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isRead": { "type": "boolean" },
+        "link": { "type": "string", "format": "uri-reference" }
+      },
+      "required": ["type", "title", "body", "timestamp", "isRead"]
     }
   },
   "auth": {
@@ -1674,6 +1733,38 @@
             "$ref": "#/backend/entities/FAQ"
           },
           "description": "Stores frequently asked questions for the knowledge base. Publicly readable, admin-managed."
+        }
+      },
+      {
+        "path": "/systemSettings/main",
+        "definition": {
+          "entityName": "SystemSettings",
+          "schema": { "$ref": "#/backend/entities/SystemSettings" },
+          "description": "A single document to hold all global system settings."
+        }
+      },
+      {
+        "path": "/notificationTemplates/{templateId}",
+        "definition": {
+          "entityName": "NotificationTemplate",
+          "schema": { "$ref": "#/backend/entities/NotificationTemplate" },
+          "description": "Stores templates for automated notifications (e.g., order status)."
+        }
+      },
+      {
+        "path": "/broadcasts/{broadcastId}",
+        "definition": {
+          "entityName": "Broadcast",
+          "schema": { "$ref": "#/backend/entities/Broadcast" },
+          "description": "Log of all manually sent broadcast notifications."
+        }
+      },
+      {
+        "path": "/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": { "$ref": "#/backend/entities/Notification" },
+          "description": "Stores incoming notifications for admins (e.g., new order)."
         }
       }
     ],

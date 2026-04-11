@@ -30,26 +30,6 @@ import {
 } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 
-// Mock Data
-const MOCK_PROVINCES: AppProvince[] = [
-    { id: 'prov1', province_name: 'صنعاء', customer_service_number: '111', whatsapp_number: '777111111', is_active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'prov2', province_name: 'حضرموت', customer_service_number: '222', whatsapp_number: '777222222', is_active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-];
-
-const MOCK_STORES: Store[] = [
-    { id: 'store1', name: 'مطعم البيت الصنعاني', provinceId: 'prov1', categoryId: 'cat1', imageUrl: '', deliveryTime: '20-30', rating: 4.5, latitude: 15.3, longitude: 44.2, is_active: true, workingHours: [] },
-    { id: 'store2', name: 'سوبر ماركت العالمية', provinceId: 'prov2', categoryId: 'cat2', imageUrl: '', deliveryTime: '15-25', rating: 4.8, latitude: 14.5, longitude: 49.1, is_active: true, workingHours: [] },
-];
-
-const now = new Date();
-const MOCK_ORDERS: OrderFS[] = [
-    { id: 'ord1', clientId: 'c1', clientName: 'أحمد علي', clientPhone: '777000001', storeId: 'store1', storeName: 'مطعم البيت الصنعاني', status: 'delivered', items: [], financials: { subtotal: 8000, deliveryFee: 500, discount: 0, tip: 0, total: 8500 }, payment: { method: 'cash', status: 'paid' }, address: { description: '...', latitude: 0, longitude: 0 }, timestamps: { createdAt: Timestamp.fromDate(new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000)) } },
-    { id: 'ord2', clientId: 'c2', clientName: 'فاطمة حسن', clientPhone: '777000002', storeId: 'store2', storeName: 'سوبر ماركت العالمية', status: 'delivered', items: [], financials: { subtotal: 12000, deliveryFee: 300, discount: 1000, tip: 0, total: 11300 }, payment: { method: 'wallet', status: 'paid' }, address: { description: '...', latitude: 0, longitude: 0 }, timestamps: { createdAt: Timestamp.fromDate(new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000)) } },
-    { id: 'ord3', clientId: 'c3', clientName: 'خالد صالح', clientPhone: '777000003', storeId: 'store1', storeName: 'مطعم البيت الصنعاني', status: 'cancelled', items: [], financials: { subtotal: 5000, deliveryFee: 500, discount: 0, tip: 0, total: 5500 }, payment: { method: 'bank_transfer', status: 'pending' }, address: { description: '...', latitude: 0, longitude: 0 }, timestamps: { createdAt: Timestamp.fromDate(new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)) } },
-    { id: 'ord4', clientId: 'c4', clientName: 'سارة عبدالله', clientPhone: '777000004', storeId: 'store2', storeName: 'سوبر ماركت العالمية', status: 'delivered', items: [], financials: { subtotal: 25000, deliveryFee: 0, discount: 2000, tip: 0, total: 23000 }, payment: { method: 'cash', status: 'paid' }, address: { description: '...', latitude: 0, longitude: 0 }, timestamps: { createdAt: Timestamp.fromDate(now) } },
-     { id: 'ord5', clientId: 'c5', clientName: 'محمد ناصر', clientPhone: '777000005', storeId: 'store1', storeName: 'مطعم البيت الصنعاني', status: 'delivered', items: [], financials: { subtotal: 15000, deliveryFee: 500, discount: 500, tip: 0, total: 15000 }, payment: { method: 'wallet', status: 'paid' }, address: { description: '...', latitude: 0, longitude: 0 }, timestamps: { createdAt: Timestamp.fromDate(new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000)) } },
-];
-
 
 // Main Component
 export default function SalesReportsPage() {
@@ -74,16 +54,12 @@ export default function SalesReportsPage() {
     });
 
     // Data Fetching
-    const { data: fetchedOrders, isLoading: l1 } = useCollection<OrderFS>(useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]));
-    const { data: fetchedStores, isLoading: l2 } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
-    const { data: fetchedProvinces, isLoading: l3 } = useCollection<AppProvince>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
-    const isLoading = l1 || l2 || l3;
+    const { data: orders, isLoading: isLoadingOrders } = useCollection<OrderFS>(useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]));
+    const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
+    const { data: provinces, isLoading: isLoadingProvinces } = useCollection<AppProvince>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
+    const isLoading = isLoadingOrders || isLoadingStores || isLoadingProvinces;
     
     // Memos for data processing
-    const orders = !l1 && (!fetchedOrders || fetchedOrders.length === 0) ? MOCK_ORDERS : fetchedOrders;
-    const stores = !l2 && (!fetchedStores || fetchedStores.length === 0) ? MOCK_STORES : fetchedStores;
-    const provinces = !l3 && (!fetchedProvinces || fetchedProvinces.length === 0) ? MOCK_PROVINCES : fetchedProvinces;
-
     const storesMap = useMemo(() => stores?.reduce((acc, s) => ({ ...acc, [s.id]: s }), {}) || {}, [stores]);
 
     const filteredOrders = useMemo(() => {
@@ -177,7 +153,7 @@ export default function SalesReportsPage() {
         toast({ title: "تم بدء التصدير", description: `يتم تنزيل ${filteredOrders.length} سجل.` });
     };
 
-    if (isLoading && (!orders || orders.length === 0)) return <SalesReportsLoading />;
+    if (isLoading) return <SalesReportsLoading />;
 
     return (
         <div className="space-y-6">

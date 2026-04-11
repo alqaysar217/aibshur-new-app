@@ -102,10 +102,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}>
                 <div className={cn("flex items-center h-16 border-b shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
                     <Image 
-                        src="/logo-app.png" 
+                        src="/logo.png" 
                         alt="أبشر Logo" 
-                        width={32} 
-                        height={32} 
+                        width={35} 
+                        height={35} 
                         className="rounded-[10px] object-cover"
                     />
                     <span className={cn(
