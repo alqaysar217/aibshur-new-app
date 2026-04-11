@@ -1278,6 +1278,124 @@
         }
       },
       "required": ["clientId", "storeId", "status", "items", "financials", "payment", "address", "timestamps"]
+    },
+    "SupportTicket": {
+      "title": "Support Ticket",
+      "type": "object",
+      "description": "Represents a support request from a user.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "userEmail": {
+          "type": "string",
+          "format": "email"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "closed"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "replies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "authorId": {
+                "type": "string"
+              },
+              "authorName": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "authorId",
+              "authorName",
+              "message",
+              "createdAt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "subject",
+        "description",
+        "priority",
+        "status",
+        "createdAt"
+      ]
+    },
+    "FAQ": {
+      "title": "Frequently Asked Question",
+      "type": "object",
+      "description": "A frequently asked question and its answer for the knowledge base.",
+      "properties": {
+        "question": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "displayOrder": {
+          "type": "number"
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "question",
+        "answer",
+        "category",
+        "isActive"
+      ]
     }
   },
   "auth": {
@@ -1536,6 +1654,26 @@
             "$ref": "#/backend/entities/Order"
           },
           "description": "Stores all customer orders."
+        }
+      },
+      {
+        "path": "/supportTickets/{ticketId}",
+        "definition": {
+          "entityName": "SupportTicket",
+          "schema": {
+            "$ref": "#/backend/entities/SupportTicket"
+          },
+          "description": "Stores user support tickets. Managed by admins."
+        }
+      },
+      {
+        "path": "/faqs/{faqId}",
+        "definition": {
+          "entityName": "FAQ",
+          "schema": {
+            "$ref": "#/backend/entities/FAQ"
+          },
+          "description": "Stores frequently asked questions for the knowledge base. Publicly readable, admin-managed."
         }
       }
     ],

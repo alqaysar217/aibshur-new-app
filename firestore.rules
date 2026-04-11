@@ -33,6 +33,7 @@ service cloud.firestore {
     match /point_requests/{docId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{docId} { allow read, write: if isAdmin(); }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
+    match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
     
     // --- Public Read / Admin Write Collections ---
     match /adBanners/{docId} { 
@@ -48,6 +49,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     match /donationCampaigns/{docId} { 
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /faqs/{faqId} {
       allow read: if true;
       allow write: if isAdmin();
     }
