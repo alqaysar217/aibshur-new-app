@@ -1,5 +1,5 @@
 'use client';
-import { Map, Marker, Line } from 'pigeon-maps';
+import { Map, Marker } from 'pigeon-maps';
 import { useEffect, useState } from 'react';
 import { User, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,6 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
       const latDiff = Math.abs(mainPosition.lat - secondaryPosition.lat);
       const lngDiff = Math.abs(mainPosition.lng - secondaryPosition.lng);
       
-      // Heuristic to determine zoom level. This can be fine-tuned.
       const maxDiff = Math.max(latDiff, lngDiff);
       let zoom = 11;
       if (maxDiff < 0.01) zoom = 15;
@@ -46,7 +45,7 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
 
   useEffect(() => {
     setIsClient(true);
-    const { center: newCenter, newZoom } = calculateCenterAndZoom();
+    const { center: newCenter, zoom: newZoom } = calculateCenterAndZoom();
     setCenter(newCenter);
     setZoom(newZoom);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,32 +66,38 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
           setZoom(zoom);
         }}
       >
-        {secondaryPosition && (
-          <Line
-            points={[
-              [mainPosition.lat, mainPosition.lng],
-              [secondaryPosition.lat, secondaryPosition.lng],
-            ]}
-            color="#1FAF9A"
-            strokeWidth={2}
-            dash={[5, 5]}
-          />
-        )}
-        
-        {/* Main Marker (Client/User) */}
-        <Marker width={28} anchor={[mainPosition.lat, mainPosition.lng]}>
-            <div className='bg-destructive rounded-full p-1.5 shadow-md'>
-                <User className="h-4 w-4 text-white" />
-            </div>
-        </Marker>
-
-        {/* Secondary Marker (Delegate) */}
-        {secondaryPosition && (
-            <Marker width={28} anchor={[secondaryPosition.lat, secondaryPosition.lng]}>
-                <div className='bg-primary rounded-full p-1.5 shadow-md'>
-                    <Bike className="h-4 w-4 text-white" />
+        {({ width, height, latLngToPixel }) => (
+          <>
+            {secondaryPosition && (
+              <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+                <line
+                  x1={latLngToPixel([mainPosition.lat, mainPosition.lng])[0]}
+                  y1={latLngToPixel([mainPosition.lat, mainPosition.lng])[1]}
+                  x2={latLngToPixel([secondaryPosition.lat, secondaryPosition.lng])[0]}
+                  y2={latLngToPixel([secondaryPosition.lat, secondaryPosition.lng])[1]}
+                  stroke="#1FAF9A"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                />
+              </svg>
+            )}
+            
+            {/* Main Marker (Client/User) */}
+            <Marker width={28} anchor={[mainPosition.lat, mainPosition.lng]}>
+                <div className='bg-destructive rounded-full p-1.5 shadow-md'>
+                    <User className="h-4 w-4 text-white" />
                 </div>
             </Marker>
+
+            {/* Secondary Marker (Delegate) */}
+            {secondaryPosition && (
+                <Marker width={28} anchor={[secondaryPosition.lat, secondaryPosition.lng]}>
+                    <div className='bg-primary rounded-full p-1.5 shadow-md'>
+                        <Bike className="h-4 w-4 text-white" />
+                    </div>
+                </Marker>
+            )}
+          </>
         )}
       </Map>
     </div>
