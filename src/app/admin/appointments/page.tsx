@@ -89,7 +89,7 @@ const mockAppointments: OrderType[] = [
             scheduledDeliveryTime: new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000),
             cancelledAt: new Date(new Date().setDate(new Date().getDate() - 1)),
         },
-        address: { description: 'الدائري، جوار مول العاصمة', latitude: 15.36, longitude: 44.19 },
+        address: { description: 'الدائري، جوار مول العاصمة', latitude: 15.36, longitude: 44.19, addressType: 'other', receiverName: 'أحمد سالم', receiverPhone: '777111222' },
         payment: { method: 'cash', status: 'pending' },
         cancellationReason: 'العميل ألغى الطلب',
         clientId: 'c3',
