@@ -39,9 +39,14 @@ service cloud.firestore {
     match /loyaltyLogs/{docId} { allow read, write: if isAdmin(); }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
-    match /systemSettings/{docId} { allow read, write: if isAdmin(); }
     match /notificationTemplates/{docId} { allow read, write: if isAdmin(); }
     match /broadcasts/{docId} { allow read, write: if isAdmin(); }
+    
+    // --- Public Read to unblock seeding flow, Admin Write ---
+    match /systemSettings/{docId} { 
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     
     // --- Public Read / Admin Write Collections ---
     match /adBanners/{docId} { 
