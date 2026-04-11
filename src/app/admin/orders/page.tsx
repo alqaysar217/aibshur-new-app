@@ -34,7 +34,7 @@ import { Separator } from '@/components/ui/separator';
 // Types
 import type { Driver } from '../delegates/page';
 
-const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-48 w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
+const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
 type OrderStatus = 'incoming' | 'confirmed' | 'preparing' | 'dispatched' | 'delivered' | 'cancelled';
 type PaymentMethod = 'cash' | 'wallet' | 'bank_transfer';
@@ -108,7 +108,7 @@ const mockOrdersData: Omit<Order, 'storeImage' | 'storeImageHint'>[] = [
         items: [{ productId: 'P03', productName: 'فحسة', quantity: 1, price: 2800 }],
         financials: { subtotal: 2800, deliveryFee: 400, discount: 0, tip: 0, total: 3200 },
         payment: { method: 'cash', status: 'pending' },
-        address: { description: 'فوة، حي المساكن، بالقرب من مسجد بن هامل', latitude: 14.5678, longitude: 49.1111 },
+        address: { description: 'فوة، حي المساكن، بالقرب من مسجد بن هامل', latitude: 14.58, longitude: 49.10 },
         timestamps: { createdAt: new Date(Date.now() - 45 * 60 * 1000), confirmedAt: new Date(Date.now() - 40 * 60 * 1000), dispatchedAt: new Date(Date.now() - 20 * 60 * 1000) },
         delegatePosition: { lat: 14.555, lng: 49.122 }
     },
@@ -457,7 +457,6 @@ export default function OrdersPage() {
                     {selectedOrder && (
                     <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
                         
-                        {/* Section 1: Client and Delivery Info */}
                         <Card>
                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
                            <CardContent className="text-sm space-y-3">
@@ -511,9 +510,6 @@ export default function OrdersPage() {
                            </CardContent>
                         </Card>
 
-                        <Separator className="my-4" />
-
-                        {/* Section 2: Order & Financials */}
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-3">
@@ -550,12 +546,7 @@ export default function OrdersPage() {
                                {selectedOrder.payment.receiptImageUrl && <Image src={selectedOrder.payment.receiptImageUrl} alt="إيصال" width={100} height={100} className="rounded-md border mt-2"/>}
                            </CardContent>
                         </Card>
-
-                        {(selectedOrder.status === 'delivered' || selectedOrder.notes || selectedOrder.cancellationReason) && (
-                            <Separator className="my-4" />
-                        )}
                         
-                        {/* Section 3: Post-delivery and Notes */}
                         {selectedOrder.status === 'delivered' && (
                             <Card>
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Star className="h-5 w-5 text-primary"/>التقييم والإكرامية</CardTitle></CardHeader>
