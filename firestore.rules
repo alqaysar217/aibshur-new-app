@@ -37,9 +37,12 @@ service cloud.firestore {
     match /systemSettings/{docId} { allow read, write: if isAdmin(); }
     match /notificationTemplates/{docId} { allow read, write: if isAdmin(); }
     match /broadcasts/{docId} { allow read, write: if isAdmin(); }
-    match /notifications/{docId} { allow read, write: if isAdmin(); }
     
     // --- Public Read / Admin Write Collections ---
+    match /notifications/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /adBanners/{docId} { 
       allow read: if true;
       allow write: if isAdmin();
