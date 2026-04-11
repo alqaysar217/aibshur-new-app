@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { User, Phone, MapPin, Save, Upload } from 'lucide-react';
+import { User, Phone, MapPin, Save, Upload, AlertCircle } from 'lucide-react';
 import ProfileLoading from './loading';
 import type { Admin } from '../users/page';
 
@@ -30,6 +30,7 @@ export default function ProfilePage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [isFirstTime, setIsFirstTime] = useState(false);
 
     const adminDocRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -49,7 +50,11 @@ export default function ProfilePage() {
     });
 
     useEffect(() => {
+        if (!isLoadingProfile && !adminProfile) {
+            setIsFirstTime(true);
+        }
         if (adminProfile) {
+            setIsFirstTime(false);
             form.reset({
                 name: adminProfile.name,
                 phone: adminProfile.phone,
@@ -57,15 +62,16 @@ export default function ProfilePage() {
                 personalPhotoUrl: adminProfile.personalPhotoUrl || '',
             });
         }
-    }, [adminProfile, form]);
+    }, [adminProfile, isLoadingProfile, form]);
 
     const onSubmit = (values: ProfileFormValues) => {
         if (!adminDocRef) return;
         setDocumentNonBlocking(adminDocRef, values, { merge: true });
         toast({
-            title: "تم تحديث الملف الشخصي",
+            title: isFirstTime ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
             description: "تم حفظ بياناتك بنجاح.",
         });
+        setIsFirstTime(false); // After first save, it's no longer the first time.
     };
 
     const isLoading = isUserLoading || isLoadingProfile;
@@ -79,14 +85,29 @@ export default function ProfilePage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-black text-foreground">الملف الشخصي</h1>
-                <p className="text-muted-foreground mt-1">عرض وتحديث معلومات حسابك الشخصي.</p>
+                <p className="text-muted-foreground mt-1">عرض وتحديث معلومات حسابك كمسؤول في النظام.</p>
             </div>
+            
+            {isFirstTime && (
+                 <Card className="border-blue-500 bg-blue-50">
+                    <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+                        <AlertCircle className="h-6 w-6 text-blue-700" />
+                        <div>
+                            <CardTitle className="text-blue-900">مرحباً بك! هذه هي خطوة إعداد ملفك الشخصي.</CardTitle>
+                            <CardDescription className="text-blue-800">
+                                بما أنها زيارتك الأولى، يرجى إكمال بياناتك أدناه. سيتم حفظها في مجموعة `admins` الخاصة بالمسؤولين.
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                </Card>
+            )}
+
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <Card>
                         <CardHeader>
-                            <CardTitle>بيانات الحساب</CardTitle>
-                            <CardDescription>هذه هي المعلومات التي تظهر في النظام.</CardDescription>
+                            <CardTitle>بيانات حساب المسؤول</CardTitle>
+                            <CardDescription>هذه المعلومات خاصة بحسابك الإداري.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2">
                             <div className="md:col-span-2 space-y-6">
@@ -149,7 +170,7 @@ export default function ProfilePage() {
                         </CardContent>
                         <CardFooter>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
-                                <Save /> حفظ التغييرات
+                                <Save /> {isFirstTime ? 'إنشاء وحفظ الملف الشخصي' : 'حفظ التغييرات'}
                             </Button>
                         </CardFooter>
                     </Card>
