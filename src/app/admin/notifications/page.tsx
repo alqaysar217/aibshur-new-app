@@ -1,11 +1,13 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
+import { ar } from 'date-fns/locale';
 import {
     Bell, Send, Users, Globe, MapPin, Link as LinkIcon, Settings, History, Trash, FileEdit, Package, Bike,
-    Radio, Percent, CheckCircle
+    Radio, Percent, CheckCircle, XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -16,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import NotificationsLoading from './loading';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +29,21 @@ const mockProvinces = [
     { id: 'prov3', name: 'عدن' },
 ];
 
-const mockLogs = [
-    { id: 'log1', title: 'خصم 20% على مطاعم محددة', type: 'promotion', target: '5,000 مستخدم', readRate: '65%', date: 'اليوم' },
-    { id: 'log2', title: 'تحديث جديد متوفر!', type: 'system', target: 'الكل', readRate: '80%', date: 'الأمس' },
-    { id: 'log3', title: 'طلبك #123 في الطريق', type: 'order_status', target: 'أحمد علي', readRate: '100%', date: 'الأمس' },
+type LogEntry = {
+  id: string;
+  title: string;
+  type: 'promotion' | 'system' | 'update' | 'order_status';
+  target: string;
+  readRate: string;
+  date: Date;
+};
+
+const mockLogs: LogEntry[] = [
+    { id: 'log1', title: 'خصم 20% على مطاعم محددة', type: 'promotion', target: '5,000 مستخدم', readRate: '65%', date: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+    { id: 'log2', title: 'تحديث جديد متوفر!', type: 'system', target: 'الكل', readRate: '80%', date: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    { id: 'log3', title: 'طلبك #123 في الطريق', type: 'order_status', target: 'أحمد علي', readRate: '100%', date: new Date(Date.now() - 25 * 60 * 60 * 1000) },
 ];
+
 
 const mockTemplates = [
     { id: 'accepted', title: 'عند قبول الطلب', icon: Package, template: 'تم قبول طلبك #{orderId} من متجر {storeName} وهو قيد التجهيز.', isActive: true },
@@ -62,6 +73,7 @@ export default function NotificationsPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [templates, setTemplates] = useState(mockTemplates);
+    const [logs, setLogs] = useState(mockLogs);
 
     // Forms
     const broadcastForm = useForm<z.infer<typeof broadcastSchema>>({
@@ -76,14 +88,37 @@ export default function NotificationsPage() {
         }
     });
 
-    useState(() => {
+    useEffect(() => {
         setTimeout(() => setIsLoading(false), 1000);
-    });
+    }, []);
 
     const targetType = broadcastForm.watch('targetType');
 
+    const getTargetText = (targetType: 'all' | 'user' | 'province', targetValue?: string) => {
+        switch(targetType) {
+            case 'all': return 'الكل';
+            case 'user': return `مستخدم: ${targetValue}`;
+            case 'province':
+                const province = mockProvinces.find(p => p.id === targetValue);
+                return province ? province.name : 'محافظة محددة';
+            default: return 'غير محدد';
+        }
+    }
+
     function onBroadcastSubmit(values: z.infer<typeof broadcastSchema>) {
         console.log("Sending notification:", values);
+
+        const newLog: LogEntry = {
+            id: `log${Date.now()}`,
+            title: values.title,
+            type: values.type,
+            target: getTargetText(values.targetType, values.targetValue),
+            readRate: '0%',
+            date: new Date(),
+        };
+
+        setLogs(prevLogs => [newLog, ...prevLogs]);
+        
         toast({
             title: 'تم إرسال الإشعار بنجاح',
             description: `تم إرسال "${values.title}" إلى الجمهور المستهدف.`,
@@ -167,7 +202,16 @@ export default function NotificationsPage() {
                                                 <Icon className="h-6 w-6 text-primary"/>
                                                 <CardTitle className="text-base">{template.title}</CardTitle>
                                             </div>
-                                            <Switch checked={template.isActive} onCheckedChange={(checked) => setTemplates(current => current.map(t => t.id === template.id ? {...t, isActive: checked} : t))} />
+                                            <div className="flex gap-2">
+                                                <Button size="sm" variant={template.isActive ? 'default' : 'outline'} onClick={() => setTemplates(current => current.map(t => t.id === template.id ? {...t, isActive: true} : t))}>
+                                                    <CheckCircle/>
+                                                    فعّال
+                                                </Button>
+                                                <Button size="sm" variant={!template.isActive ? 'destructive' : 'outline'} onClick={() => setTemplates(current => current.map(t => t.id === template.id ? {...t, isActive: false} : t))}>
+                                                    <XCircle/>
+                                                    معطّل
+                                                </Button>
+                                            </div>
                                         </CardHeader>
                                         <CardContent>
                                             <Textarea defaultValue={template.template} onBlur={(e) => onTemplateSave(template.id, e.target.value)} />
@@ -197,13 +241,13 @@ export default function NotificationsPage() {
                                         <TableHead className="text-center">التاريخ</TableHead>
                                     </TableRow></TableHeader>
                                     <TableBody>
-                                        {mockLogs.map(log => (
+                                        {logs.map(log => (
                                             <TableRow key={log.id}>
                                                 <TableCell className="text-center font-medium">{log.title}</TableCell>
                                                 <TableCell className="text-center"><Badge variant="secondary">{log.type}</Badge></TableCell>
                                                 <TableCell className="text-center">{log.target}</TableCell>
                                                 <TableCell className="text-center font-mono">{log.readRate}</TableCell>
-                                                <TableCell className="text-center">{log.date}</TableCell>
+                                                <TableCell className="text-center">{formatDistanceToNow(log.date, { addSuffix: true, locale: ar })}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
