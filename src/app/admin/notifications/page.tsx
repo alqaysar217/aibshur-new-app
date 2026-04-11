@@ -171,9 +171,9 @@ export default function NotificationsPage() {
                                         </CardHeader>
                                         <CardContent>
                                             <Textarea defaultValue={template.template} onBlur={(e) => onTemplateSave(template.id, e.target.value)} />
-                                            <FormDescription className="text-xs pt-2">
+                                            <p className="text-xs text-muted-foreground pt-2">
                                                 المتغيرات المتاحة: `'{'{orderId}'}'`, `'{'{storeName}'}'`, `'{'{delegateName}'}'`
-                                            </FormDescription>
+                                            </p>
                                         </CardContent>
                                     </Card>
                                 )
