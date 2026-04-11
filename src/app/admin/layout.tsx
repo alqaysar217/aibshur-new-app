@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, Banknote, Map, LayoutGrid, Store, ShoppingBasket, ClipboardList, 
-  Calendar, Users, Bike, Gem, Star, Megaphone, Ticket, HandHeart, 
-  BarChart2, TrendingUp, Settings, LifeBuoy, LogOut, Bell, PanelRightClose, PanelRightOpen, Loader2
+  Calendar, UsersRound, Bike, Diamond, Star, Megaphone, TicketPercent, HandHeart, 
+  BarChart3, TrendingUp, Settings, LifeBuoy, LogOut, Bell, PanelRightClose, PanelRightOpen, Loader2
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -20,20 +20,20 @@ import type { Admin } from '../users/page';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
-    { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart2 },
+    { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart3 },
     { label: 'إدارة الطلبات', href: '/admin/orders', icon: ClipboardList },
     { label: 'إدارة المواعيد', href: '/admin/appointments', icon: Calendar },
     { label: 'إدارة المتاجر', href: '/admin/stores', icon: Store },
     { label: 'إدارة المنتجات', href: '/admin/products', icon: ShoppingBasket },
     { label: 'إدارة الفئات', href: '/admin/categories', icon: LayoutGrid },
-    { label: 'إدارة المستخدمين', href: '/admin/users', icon: Users },
+    { label: 'إدارة المستخدمين', href: '/admin/users', icon: UsersRound },
     { label: 'طلبات المناديب', href: '/admin/delegates', icon: Bike },
     { label: 'إدارة الإعلانات', href: '/admin/ads', icon: Megaphone },
-    { label: 'إدارة الكوبونات', href: '/admin/coupons', icon: Ticket },
+    { label: 'إدارة الكوبونات', href: '/admin/coupons', icon: TicketPercent },
     { label: 'إدارة الإشعارات', href: '/admin/notifications', icon: Bell },
     { label: 'إدارة التبرعات', href: '/admin/donations', icon: HandHeart },
     { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
-    { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Gem },
+    { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Diamond },
     { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
     { label: 'إدارة المحافظات', href: '/admin/governorates', icon: Map },
     { label: 'إدارة الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
@@ -96,8 +96,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href={href} title={isCollapsed ? text : ''}>
             <span
               className={cn(
-                'flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200',
-                isActive ? 'bg-primary/10 text-primary' : 'text-foreground/70 hover:bg-muted hover:text-foreground',
+                'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors duration-200',
+                isActive ? 'bg-sidebar-accent text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 isCollapsed ? 'justify-center' : 'justify-start'
               )}
             >
@@ -111,21 +111,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       };
 
     return (
-        <div className="min-h-screen w-full bg-muted/40 flex" dir="rtl">
+        <div className="min-h-screen w-full bg-background flex" dir="rtl">
             <aside className={cn(
-                "h-screen z-10 bg-card border-l flex flex-col transition-all duration-300 ease-in-out sticky top-0 shadow-sm",
+                "h-screen z-10 bg-sidebar border-l border-sidebar-border flex flex-col transition-all duration-300 ease-in-out sticky top-0",
                 isCollapsed ? 'w-20' : 'w-72'
             )}>
-                <div className={cn("flex items-center h-16 border-b shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
+                <div className={cn("flex items-center h-16 border-b border-sidebar-border shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
                     <Image 
                         src="/logo.png" 
                         alt="أبشر Logo" 
                         width={35} 
                         height={35} 
-                        className="rounded-[10px] object-cover"
+                        className="object-cover"
                     />
                     <span className={cn(
-                        "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-primary",
+                        "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-sidebar-primary-foreground",
                         isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100'
                     )}>
                         لوحة التحكم
@@ -138,12 +138,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     ))}
                 </nav>
                 
-                <div className="px-4 py-4 border-t shrink-0">
+                <div className="px-4 py-4 border-t border-sidebar-border shrink-0">
                     <Button
                         variant="ghost"
                         onClick={handleLogout}
                         className={cn(
-                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold rounded-lg transition-colors duration-200 text-destructive hover:bg-destructive/10',
+                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 text-red-500/80 hover:bg-destructive/20 hover:text-red-400',
                             isCollapsed ? 'justify-center' : 'justify-start'
                         )}
                     >
@@ -156,14 +156,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </aside>
 
             <div className="flex flex-col flex-1 min-w-0">
-                <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6">
-                    <Button variant="outline" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="shrink-0 border-gray-100">
+                <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card px-4 sm:px-6 shadow-sm">
+                    <Button variant="outline" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="shrink-0">
                         {isCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
                         <span className="sr-only">Toggle sidebar</span>
                     </Button>
                     
                     <div className="flex items-center gap-2 mr-auto">
-                        <Button variant="ghost" size="icon" className="rounded-full relative" asChild>
+                        <Button variant="ghost" size="icon" className="relative" asChild>
                             <Link href="/admin/notifications">
                                 <Bell className="h-5 w-5 text-gray-500" />
                                 {unreadCount > 0 && (
@@ -176,7 +176,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border-2 border-primary/10">
+                                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border">
                                     <Avatar className="h-full w-full">
                                         <AvatarImage src={adminProfile?.personalPhotoUrl || "/profile.png"} alt={adminProfile?.name || "Admin"}/>
                                         <AvatarFallback>{adminProfile?.name.charAt(0) || 'A'}</AvatarFallback>
@@ -195,7 +195,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </header>
 
-                <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-gray-50/30">
+                <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
                     {children}
                 </main>
             </div>
