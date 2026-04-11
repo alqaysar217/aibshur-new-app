@@ -40,7 +40,7 @@ service cloud.firestore {
     
     // --- Public Read / Admin Write Collections ---
     match /notifications/{notificationId} {
-      allow get, list: if true;
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
     match /adBanners/{docId} { 
