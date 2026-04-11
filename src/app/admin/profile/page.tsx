@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
-import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -61,7 +61,7 @@ export default function ProfilePage() {
 
     const onSubmit = (values: ProfileFormValues) => {
         if (!adminDocRef) return;
-        updateDocumentNonBlocking(adminDocRef, values);
+        setDocumentNonBlocking(adminDocRef, values, { merge: true });
         toast({
             title: "تم تحديث الملف الشخصي",
             description: "تم حفظ بياناتك بنجاح.",
