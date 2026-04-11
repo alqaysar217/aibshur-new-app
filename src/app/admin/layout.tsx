@@ -27,6 +27,7 @@ const sidebarNavItems = [
     { label: 'طلبات المناديب', href: '/admin/delegates', icon: Bike },
     { label: 'إدارة الإعلانات', href: '/admin/ads', icon: Megaphone },
     { label: 'إدارة الكوبونات', href: '/admin/coupons', icon: Ticket },
+    { label: 'إدارة الإشعارات', href: '/admin/notifications', icon: Bell },
     { label: 'إدارة التبرعات', href: '/admin/donations', icon: HandHeart },
     { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
     { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Gem },
