@@ -2,6 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image';
 import {
     Settings as SettingsIcon, AppWindow, Palette, Bot, SlidersHorizontal, Bell, Mail, MessageSquare, BadgeInfo, CircleDollarSign, Tractor, Power, Upload, Phone
 } from 'lucide-react';
@@ -22,7 +23,7 @@ const settingsSchema = z.object({
 
     // Appearance
     primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "لون غير صالح"),
-    appLogo: z.any().optional(),
+    appLogo: z.string().optional(),
 
     // Operational
     defaultDeliveryFee: z.coerce.number().min(0, "يجب أن تكون قيمة موجبة"),
@@ -46,6 +47,7 @@ export default function SettingsPage() {
             supportPhone: '+967 777 777 777',
             currencySymbol: 'ر.ي',
             primaryColor: '#1FAF9A',
+            appLogo: '/logo.png',
             defaultDeliveryFee: 500,
             maintenanceMode: false,
             enableEmailNotifications: true,
@@ -121,9 +123,16 @@ export default function SettingsPage() {
                                             </FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="appLogo" render={({ field }) => (
-                                            <FormItem><FormLabel className="flex items-center gap-2"><Upload/>شعار التطبيق</FormLabel><FormControl>
-                                                <Input type="file" accept="image/png, image/jpeg, image/svg+xml" />
-                                            </FormControl><FormDescription>ارفع شعارًا جديدًا ليظهر في التطبيق.</FormDescription></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Upload/>شعار التطبيق (رابط)</FormLabel>
+                                                <FormControl><Input {...field} placeholder="https://example.com/logo.png أو /logo.png" dir="ltr" /></FormControl>
+                                                {field.value && (
+                                                    <div className="mt-2 flex justify-center rounded-lg border border-dashed p-2">
+                                                        <Image src={field.value} alt="معاينة الشعار" width={80} height={80} className="rounded-md object-contain" unoptimized/>
+                                                    </div>
+                                                )}
+                                                <FormDescription>أدخل رابطًا لشعار التطبيق (داخلي أو خارجي).</FormDescription>
+                                            </FormItem>
                                         )} />
                                     </div>
                                 </CardContent>
