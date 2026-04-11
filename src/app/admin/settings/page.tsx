@@ -4,13 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
 import {
-    Settings as SettingsIcon, AppWindow, Palette, Bot, SlidersHorizontal, Bell, Mail, MessageSquare, BadgeInfo, CircleDollarSign, Tractor, Power, Upload, Phone
+    Settings as SettingsIcon, AppWindow, Palette, Bot, SlidersHorizontal, Bell, Mail, MessageSquare, BadgeInfo, CircleDollarSign, Tractor, Power, Upload, Phone, CheckCircle, XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 
@@ -150,13 +149,20 @@ export default function SettingsPage() {
                                      <FormField control={form.control} name="defaultDeliveryFee" render={({ field }) => (
                                         <FormItem><FormLabel className="flex items-center gap-2"><Tractor/>رسوم التوصيل الافتراضية</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
-                                    <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                            <div className="space-y-0.5">
-                                                <FormLabel className="text-base flex items-center gap-2"><Power/>وضع الصيانة</FormLabel>
-                                                <FormDescription>عند التفعيل، سيظهر للمستخدمين أن التطبيق تحت الصيانة.</FormDescription>
-                                            </div>
-                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                     <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                                        <FormItem className="rounded-lg border p-4">
+                                            <FormLabel className="text-base flex items-center gap-2"><Power/>وضع الصيانة</FormLabel>
+                                            <FormDescription>عند التفعيل، سيظهر للمستخدمين أن التطبيق تحت الصيانة.</FormDescription>
+                                            <FormControl>
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    <Button type="button" variant={field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(true)}>
+                                                        <Power /> تفعيل
+                                                    </Button>
+                                                    <Button type="button" variant={!field.value ? 'default' : 'outline'} onClick={() => field.onChange(false)}>
+                                                        <CheckCircle /> إيقاف
+                                                    </Button>
+                                                </div>
+                                            </FormControl>
                                         </FormItem>
                                     )} />
                                 </CardContent>
@@ -172,21 +178,35 @@ export default function SettingsPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <FormField control={form.control} name="enablePushNotifications" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                            <div className="space-y-0.5">
-                                                <FormLabel className="text-base flex items-center gap-2"><MessageSquare/>إشعارات التطبيق (Push)</FormLabel>
-                                                <FormDescription>إرسال إشعارات مباشرة إلى هواتف المستخدمين.</FormDescription>
-                                            </div>
-                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        <FormItem className="rounded-lg border p-4">
+                                            <FormLabel className="text-base flex items-center gap-2"><MessageSquare/>إشعارات التطبيق (Push)</FormLabel>
+                                            <FormDescription>إرسال إشعارات مباشرة إلى هواتف المستخدمين.</FormDescription>
+                                            <FormControl>
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)}>
+                                                        <CheckCircle /> تفعيل
+                                                    </Button>
+                                                    <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)}>
+                                                        <XCircle /> تعطيل
+                                                    </Button>
+                                                </div>
+                                            </FormControl>
                                         </FormItem>
                                     )} />
                                      <FormField control={form.control} name="enableEmailNotifications" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                            <div className="space-y-0.5">
-                                                <FormLabel className="text-base flex items-center gap-2"><Mail/>إشعارات البريد الإلكتروني</FormLabel>
-                                                <FormDescription>إرسال تحديثات هامة عبر البريد الإلكتروني.</FormDescription>
-                                            </div>
-                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        <FormItem className="rounded-lg border p-4">
+                                            <FormLabel className="text-base flex items-center gap-2"><Mail/>إشعارات البريد الإلكتروني</FormLabel>
+                                            <FormDescription>إرسال تحديثات هامة عبر البريد الإلكتروني.</FormDescription>
+                                            <FormControl>
+                                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                                    <Button type="button" variant={field.value ? 'default' : 'outline'} onClick={() => field.onChange(true)}>
+                                                        <CheckCircle /> تفعيل
+                                                    </Button>
+                                                    <Button type="button" variant={!field.value ? 'destructive' : 'outline'} onClick={() => field.onChange(false)}>
+                                                        <XCircle /> تعطيل
+                                                    </Button>
+                                                </div>
+                                            </FormControl>
                                         </FormItem>
                                     )} />
                                 </CardContent>
