@@ -12,11 +12,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { seedDatabase } from '@/lib/seed';
-import { useState } from 'react';
-import SettingsLoading from './loading';
+import { useState, useEffect } from 'react';
 
 const settingsSchema = z.object({
     appName: z.string().min(2, "اسم التطبيق مطلوب"),
@@ -32,6 +31,20 @@ const settingsSchema = z.object({
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+const defaultSettings: SettingsFormValues = {
+    appName: 'تطبيق أبشر',
+    supportEmail: 'support@absher.com',
+    supportPhone: '+967 777 777 777',
+    currencySymbol: 'ر.ي',
+    primaryColor: '#1FAF9A',
+    appLogo: '/logo.png',
+    defaultDeliveryFee: 500,
+    maintenanceMode: false,
+    enableEmailNotifications: true,
+    enablePushNotifications: true,
+};
+
 
 function SeederCard() {
     const firestore = useFirestore();
@@ -80,35 +93,21 @@ export default function SettingsPage() {
     const firestore = useFirestore();
 
     const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
-    const { data: currentSettings, isLoading } = useDoc<SettingsFormValues>(settingsDocRef);
     
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
-        values: currentSettings || {
-            appName: 'تطبيق أبشر',
-            supportEmail: 'support@absher.com',
-            supportPhone: '+967 777 777 777',
-            currencySymbol: 'ر.ي',
-            primaryColor: '#1FAF9A',
-            appLogo: '/logo.png',
-            defaultDeliveryFee: 500,
-            maintenanceMode: false,
-            enableEmailNotifications: true,
-            enablePushNotifications: true,
-        },
+        defaultValues: defaultSettings,
     });
 
     function onSubmit(data: SettingsFormValues) {
         if (!settingsDocRef) return;
-        updateDocumentNonBlocking(settingsDocRef, data);
+        
+        setDocumentNonBlocking(settingsDocRef, data, { merge: true });
+
         toast({
             title: "تم حفظ الإعدادات",
             description: "تم تحديث إعدادات النظام بنجاح.",
         });
-    }
-
-    if (isLoading) {
-        return <SettingsLoading />;
     }
 
     return (
