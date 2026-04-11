@@ -16,6 +16,7 @@ import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase, useDoc 
 import { signOut } from 'firebase/auth';
 import type { Notification } from '@/lib/notifications';
 import { collection, doc } from 'firebase/firestore';
+import type { Admin } from '../users/page';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
@@ -49,6 +50,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const auth = useAuth();
     const firestore = useFirestore();
     
+    const adminDocRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'admins', user.uid);
+    }, [firestore, user]);
+    const { data: adminProfile } = useDoc<Admin>(adminDocRef);
+
     // Check if the DB is seeded before fetching collections that might not exist.
     const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
     const { data: settings } = useDoc(settingsDocRef);
@@ -171,13 +178,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border-2 border-primary/10">
                                     <Avatar className="h-full w-full">
-                                        <AvatarImage src="/profile.png" alt="Admin"/>
-                                        <AvatarFallback>AD</AvatarFallback>
+                                        <AvatarImage src={adminProfile?.personalPhotoUrl || "/profile.png"} alt={adminProfile?.name || "Admin"}/>
+                                        <AvatarFallback>{adminProfile?.name.charAt(0) || 'A'}</AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="font-bold">
-                                <DropdownMenuItem className="text-right">الملف الشخصي</DropdownMenuItem>
+                                <DropdownMenuItem asChild className="text-right cursor-pointer">
+                                    <Link href="/admin/profile">الملف الشخصي</Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleLogout} className="text-right cursor-pointer">
                                     تسجيل الخروج
                                 </DropdownMenuItem>
