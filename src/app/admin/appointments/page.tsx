@@ -47,64 +47,6 @@ type Appointment = OrderType & {
     };
 };
 
-// MOCK DATA for demonstration when Firestore is empty
-const mockAppointments: OrderType[] = [
-    {
-        id: 'APP001',
-        clientName: 'علي محمد',
-        clientPhone: '771234567',
-        storeName: 'مطعم البيت الصنعاني',
-        status: 'incoming',
-        financials: { subtotal: 10000, deliveryFee: 500, discount: 0, tip: 0, total: 10500 },
-        items: [{ productId: 'p1', productName: 'مندي دجاج', quantity: 5, price: 2000 }],
-        timestamps: {
-            createdAt: new Date(new Date().setDate(new Date().getDate() - 1)),
-            scheduledDeliveryTime: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), // In 2 days
-        },
-        address: { description: 'شارع حدة، أمام متجر الزهور', latitude: 15.34, longitude: 44.20 },
-        payment: { method: 'cash', status: 'pending' },
-        clientId: 'c1',
-        storeId: 's1',
-    },
-    {
-        id: 'APP002',
-        clientName: 'فاطمة عبدالله',
-        clientPhone: '731234567',
-        storeName: 'حلويات النجمة',
-        status: 'delivered',
-        financials: { subtotal: 25000, deliveryFee: 1000, discount: 2000, tip: 0, total: 24000 },
-        items: [{ productId: 'p2', productName: 'كيكة عيد ميلاد', quantity: 1, price: 25000 }],
-        timestamps: {
-            createdAt: new Date(new Date().setDate(new Date().getDate() - 5)),
-            scheduledDeliveryTime: new Date(new Date().setDate(new Date().getDate() - 2)),
-            deliveredAt: new Date(new Date().setDate(new Date().getDate() - 2)),
-        },
-        address: { description: 'حي الجامعة الجديد', latitude: 15.35, longitude: 44.21 },
-        payment: { method: 'wallet', status: 'paid' },
-        clientId: 'c2',
-        storeId: 's2',
-    },
-    {
-        id: 'APP003',
-        clientName: 'سالم أحمد',
-        clientPhone: '711234567',
-        storeName: 'كافيتيريا مزاج',
-        status: 'cancelled',
-        financials: { subtotal: 5000, deliveryFee: 300, discount: 0, tip: 0, total: 5300 },
-        items: [{ productId: 'p3', productName: 'قهوة وحلويات متنوعة', quantity: 10, price: 500 }],
-        timestamps: {
-            createdAt: new Date(new Date().setDate(new Date().getDate() - 3)),
-            scheduledDeliveryTime: new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000),
-            cancelledAt: new Date(new Date().setDate(new Date().getDate() - 1)),
-        },
-        address: { description: 'الدائري، جوار مول العاصمة', latitude: 15.36, longitude: 44.19, addressType: 'other', receiverName: 'أحمد سالم', receiverPhone: '777111222' },
-        payment: { method: 'cash', status: 'pending' },
-        cancellationReason: 'العميل ألغى الطلب',
-        clientId: 'c3',
-        storeId: 's3',
-    }
-];
-
 
 export default function AppointmentsPage() {
     const [filters, setFilters] = useState({ searchTerm: '', storeId: 'all', date: undefined as DateRange | undefined });
@@ -123,8 +65,7 @@ export default function AppointmentsPage() {
     const isLoading = isLoadingAppointments || isLoadingStores;
 
     const appointments: Appointment[] = useMemo(() => {
-        // Use mock data if firestore returns nothing, to make the page look populated
-        const dataToProcess = (!rawAppointments || rawAppointments.length === 0) ? mockAppointments : rawAppointments;
+        const dataToProcess = rawAppointments;
         if (!dataToProcess) return [];
 
         return dataToProcess
@@ -208,8 +149,7 @@ export default function AppointmentsPage() {
     };
 
     const handleConfirm = (appointment: Appointment) => {
-        if (!firestore || (!rawAppointments || rawAppointments.length === 0)) { // Don't run on mock data
-            toast({ title: 'لا يمكن تأكيد موعد وهمي', description: 'هذا الإجراء متاح للبيانات الحقيقية فقط.' });
+        if (!firestore) {
             return;
         }
         updateDocumentNonBlocking(doc(firestore, 'orders', appointment.id), {
@@ -225,12 +165,7 @@ export default function AppointmentsPage() {
     };
 
     const confirmCancel = () => {
-        if (!selectedAppointment) return;
-        if (!firestore || (!rawAppointments || rawAppointments.length === 0)) { // Don't run on mock data
-            toast({ variant: 'destructive', title: 'لا يمكن إلغاء موعد وهمي', description: 'هذا الإجراء متاح للبيانات الحقيقية فقط.' });
-            setIsCancelOpen(false);
-            return;
-        }
+        if (!selectedAppointment || !firestore) return;
         updateDocumentNonBlocking(doc(firestore, 'orders', selectedAppointment.id), {
             status: 'cancelled',
             'timestamps.cancelledAt': serverTimestamp(),
@@ -280,7 +215,7 @@ export default function AppointmentsPage() {
         return `${day}, ${time}`;
     };
 
-    if (isLoading && !mockAppointments.length) {
+    if (isLoading) {
         return <AppointmentsLoading />;
     }
     
@@ -524,4 +459,3 @@ export default function AppointmentsPage() {
         </>
     );
 }
-
