@@ -1,5 +1,5 @@
 'use client';
-import { Map, Marker, Overlay } from 'pigeon-maps';
+import { Map, Marker, Line } from 'pigeon-maps';
 import { useEffect, useState } from 'react';
 import { User, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,8 +19,19 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
         (mainPosition.lat + secondaryPosition.lat) / 2,
         (mainPosition.lng + secondaryPosition.lng) / 2,
       ];
-      // A reasonable zoom level to see both points, user can adjust
-      return { center, zoom: 12 };
+      
+      const latDiff = Math.abs(mainPosition.lat - secondaryPosition.lat);
+      const lngDiff = Math.abs(mainPosition.lng - secondaryPosition.lng);
+      
+      // Heuristic to determine zoom level. This can be fine-tuned.
+      const maxDiff = Math.max(latDiff, lngDiff);
+      let zoom = 11;
+      if (maxDiff < 0.01) zoom = 15;
+      else if (maxDiff < 0.05) zoom = 14;
+      else if (maxDiff < 0.1) zoom = 13;
+      else if (maxDiff < 0.2) zoom = 12;
+
+      return { center, zoom };
     }
     return {
       center: [mainPosition.lat, mainPosition.lng] as [number, number],
@@ -35,8 +46,7 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
 
   useEffect(() => {
     setIsClient(true);
-    // Recalculate and set map state when positions change
-    const { center: newCenter, zoom: newZoom } = calculateCenterAndZoom();
+    const { center: newCenter, newZoom } = calculateCenterAndZoom();
     setCenter(newCenter);
     setZoom(newZoom);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,29 +68,15 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
         }}
       >
         {secondaryPosition && (
-          <Overlay>
-            {({ mapState, latLngToPixel }) => {
-              const mainPixel = latLngToPixel([mainPosition.lat, mainPosition.lng]);
-              const secondaryPixel = latLngToPixel([secondaryPosition.lat, secondaryPosition.lng]);
-              return (
-                <svg
-                  width={mapState.width}
-                  height={mapState.height}
-                  style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
-                >
-                  <line
-                    x1={mainPixel[0]}
-                    y1={mainPixel[1]}
-                    x2={secondaryPixel[0]}
-                    y2={secondaryPixel[1]}
-                    stroke="#1FAF9A"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                  />
-                </svg>
-              );
-            }}
-          </Overlay>
+          <Line
+            points={[
+              [mainPosition.lat, mainPosition.lng],
+              [secondaryPosition.lat, secondaryPosition.lng],
+            ]}
+            color="#1FAF9A"
+            strokeWidth={2}
+            dash={[5, 5]}
+          />
         )}
         
         {/* Main Marker (Client/User) */}
