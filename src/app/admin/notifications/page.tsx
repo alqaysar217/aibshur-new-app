@@ -21,6 +21,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import NotificationsLoading from './loading';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 // MOCK DATA for display
 const mockProvinces = [
@@ -28,22 +30,6 @@ const mockProvinces = [
     { id: 'prov2', name: 'حضرموت' },
     { id: 'prov3', name: 'عدن' },
 ];
-
-type LogEntry = {
-  id: string;
-  title: string;
-  type: 'promotion' | 'system' | 'update' | 'order_status';
-  target: string;
-  readRate: string;
-  date: Date;
-};
-
-const mockLogs: LogEntry[] = [
-    { id: 'log1', title: 'خصم 20% على مطاعم محددة', type: 'promotion', target: '5,000 مستخدم', readRate: '65%', date: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-    { id: 'log2', title: 'تحديث جديد متوفر!', type: 'system', target: 'الكل', readRate: '80%', date: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    { id: 'log3', title: 'طلبك #123 في الطريق', type: 'order_status', target: 'أحمد علي', readRate: '100%', date: new Date(Date.now() - 25 * 60 * 60 * 1000) },
-];
-
 
 const mockTemplates = [
     { id: 'accepted', title: 'عند قبول الطلب', icon: Package, template: 'تم قبول طلبك #{orderId} من متجر {storeName} وهو قيد التجهيز.', isActive: true },
@@ -68,15 +54,53 @@ const broadcastSchema = z.object({
     }
 });
 
+type BroadcastFormValues = z.infer<typeof broadcastSchema>;
+
+type LogEntry = {
+  id: string;
+  readRate: string;
+  date: Date;
+  broadcastData: BroadcastFormValues;
+};
+
+const mockLogs: LogEntry[] = [
+    { 
+        id: 'log1', 
+        readRate: '65%', 
+        date: new Date(Date.now() - 2 * 60 * 60 * 1000), 
+        broadcastData: {
+            type: 'promotion',
+            title: 'خصم 20% على مطاعم محددة',
+            body: 'استمتع بخصم كبير على وجباتك المفضلة!',
+            targetType: 'province',
+            targetValue: 'prov1',
+            link: '/stores/1'
+        } 
+    },
+    { 
+        id: 'log2', 
+        readRate: '80%', 
+        date: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        broadcastData: {
+            type: 'system',
+            title: 'تحديث جديد متوفر!',
+            body: 'لقد قمنا بتحسينات وإضافة مزايا جديدة. قم بالتحديث الآن.',
+            targetType: 'all',
+        }
+    },
+];
+
 // Component
 export default function NotificationsPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [templates, setTemplates] = useState(mockTemplates);
     const [logs, setLogs] = useState(mockLogs);
+    const [deleteAlert, setDeleteAlert] = useState<LogEntry | null>(null);
+    const [activeTab, setActiveTab] = useState("sender");
 
     // Forms
-    const broadcastForm = useForm<z.infer<typeof broadcastSchema>>({
+    const broadcastForm = useForm<BroadcastFormValues>({
         resolver: zodResolver(broadcastSchema),
         defaultValues: {
             type: 'promotion',
@@ -105,16 +129,14 @@ export default function NotificationsPage() {
         }
     }
 
-    function onBroadcastSubmit(values: z.infer<typeof broadcastSchema>) {
+    function onBroadcastSubmit(values: BroadcastFormValues) {
         console.log("Sending notification:", values);
 
         const newLog: LogEntry = {
             id: `log${Date.now()}`,
-            title: values.title,
-            type: values.type,
-            target: getTargetText(values.targetType, values.targetValue),
             readRate: '0%',
             date: new Date(),
+            broadcastData: values,
         };
 
         setLogs(prevLogs => [newLog, ...prevLogs]);
@@ -131,18 +153,35 @@ export default function NotificationsPage() {
          toast({ title: 'تم حفظ القالب بنجاح' });
     }
 
+    const handleEditLog = (log: LogEntry) => {
+        broadcastForm.reset(log.broadcastData);
+        setActiveTab('sender');
+    };
+    
+    const handleDeleteLog = (log: LogEntry) => {
+        setDeleteAlert(log);
+    };
+
+    const confirmDeleteLog = () => {
+        if (!deleteAlert) return;
+        setLogs(prevLogs => prevLogs.filter(log => log.id !== deleteAlert.id));
+        setDeleteAlert(null);
+        toast({ title: "تم حذف سجل الإشعار" });
+    };
+
     if (isLoading) {
         return <NotificationsLoading />;
     }
     
     return (
+        <>
         <div className="space-y-6">
              <div>
                 <h1 className="text-3xl font-black text-foreground">إدارة الإشعارات</h1>
                 <p className="text-muted-foreground mt-1">إرسال إشعارات مخصصة وتعديل القوالب التلقائية ومراقبة السجلات.</p>
             </div>
             
-            <Tabs defaultValue="sender" dir="rtl">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} dir="rtl">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="sender" className="gap-2"><Send/>إرسال إشعار</TabsTrigger>
                     <TabsTrigger value="triggers" className="gap-2"><Settings/>الإشعارات التلقائية</TabsTrigger>
@@ -179,7 +218,7 @@ export default function NotificationsPage() {
                                     {targetType === 'user' && <FormField control={broadcastForm.control} name="targetValue" render={({ field }) => (<FormItem><FormLabel>معرف المستخدم (UID)</FormLabel><FormControl><Input {...field} placeholder="أدخل معرف المستخدم..."/></FormControl><FormMessage/></FormItem>)} />}
                                     {targetType === 'province' && <FormField control={broadcastForm.control} name="targetValue" render={({ field }) => (<FormItem><FormLabel>اختر المحافظة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..."/></SelectTrigger></FormControl><SelectContent>{mockProvinces.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)} />}
 
-                                    <FormField control={broadcastForm.control} name="link" render={({ field }) => (<FormItem><FormLabel>رابط التوجيه (اختياري)</FormLabel><div className="relative"><LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/><FormControl><Input {...field} placeholder="/store/STORE_ID or /orders" className="pr-10" dir="ltr"/></FormControl></div><FormMessage/></FormItem>)}/>
+                                    <FormField control={broadcastForm.control} name="link" render={({ field }) => (<FormItem><FormLabel>رابط التوجيه (اختياري)</FormLabel><div className="relative"><LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/><FormControl><Input {...field} placeholder="/store/STORE_ID or /orders" className="pr-10" dir="ltr"/></FormControl></div></FormItem>)}/>
                                 </CardContent>
                                 <CardFooter><Button type="submit"><Send/> إرسال الإشعار</Button></CardFooter>
                             </Card>
@@ -239,17 +278,27 @@ export default function NotificationsPage() {
                                         <TableHead className="text-center">المرسل إليهم</TableHead>
                                         <TableHead className="text-center">نسبة الفتح</TableHead>
                                         <TableHead className="text-center">التاريخ</TableHead>
+                                        <TableHead className="text-center">إجراءات</TableHead>
                                     </TableRow></TableHeader>
                                     <TableBody>
-                                        {logs.map(log => (
-                                            <TableRow key={log.id}>
-                                                <TableCell className="text-center font-medium">{log.title}</TableCell>
-                                                <TableCell className="text-center"><Badge variant="secondary">{log.type}</Badge></TableCell>
-                                                <TableCell className="text-center">{log.target}</TableCell>
-                                                <TableCell className="text-center font-mono">{log.readRate}</TableCell>
-                                                <TableCell className="text-center">{formatDistanceToNow(log.date, { addSuffix: true, locale: ar })}</TableCell>
-                                            </TableRow>
-                                        ))}
+                                        {logs.map(log => {
+                                            const { title, type, targetType, targetValue } = log.broadcastData;
+                                            return (
+                                                <TableRow key={log.id}>
+                                                    <TableCell className="text-center font-medium">{title}</TableCell>
+                                                    <TableCell className="text-center"><Badge variant="secondary">{type}</Badge></TableCell>
+                                                    <TableCell className="text-center">{getTargetText(targetType, targetValue)}</TableCell>
+                                                    <TableCell className="text-center font-mono">{log.readRate}</TableCell>
+                                                    <TableCell className="text-center">{formatDistanceToNow(log.date, { addSuffix: true, locale: ar })}</TableCell>
+                                                    <TableCell className="text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <Button variant="outline" size="icon" onClick={() => handleEditLog(log)}><FileEdit className="h-4 w-4" /></Button>
+                                                            <Button variant="outline" size="icon" onClick={() => handleDeleteLog(log)} className="text-destructive hover:text-destructive"><Trash className="h-4 w-4" /></Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -258,5 +307,20 @@ export default function NotificationsPage() {
                 </TabsContent>
             </Tabs>
         </div>
+        <AlertDialog open={!!deleteAlert} onOpenChange={(isOpen) => !isOpen && setDeleteAlert(null)}>
+            <AlertDialogContent dir="rtl">
+                <AlertDialogHeader className="text-right">
+                    <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                    <AlertDialogDescription>هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-row-reverse sm:justify-start gap-2">
+                    <AlertDialogAction onClick={confirmDeleteLog}>نعم، قم بالحذف</AlertDialogAction>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }
+
+    
