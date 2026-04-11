@@ -33,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { OrderStatusBadge, type OrderStatus } from '@/components/order-status-badge';
 
 // Types
 import type { Driver } from '../delegates/page';
@@ -40,7 +41,6 @@ import type { Store as StoreType } from '../stores/page';
 
 const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
-type OrderStatus = 'incoming' | 'confirmed' | 'preparing' | 'dispatched' | 'delivered' | 'cancelled';
 type PaymentMethod = 'cash' | 'wallet' | 'bank_transfer';
 type PaymentStatus = 'pending' | 'paid' | 'refunded';
 
@@ -59,7 +59,7 @@ type OrderFS = {
     financials: { subtotal: number; deliveryFee: number; discount: number; tip: number; total: number; };
     payment: { method: PaymentMethod; status: PaymentStatus; receiptImageUrl?: string; };
     address: { description: string; latitude: number; longitude: number; addressType?: 'home' | 'work' | 'other'; receiverName?: string; receiverPhone?: string; };
-    timestamps: { createdAt: Timestamp; confirmedAt?: Timestamp; dispatchedAt?: Timestamp; deliveredAt?: Timestamp; cancelledAt?: Timestamp; };
+    timestamps: { createdAt: Timestamp; confirmedAt?: Timestamp; dispatchedAt?: Timestamp; deliveredAt?: Timestamp; cancelledAt?: Timestamp; scheduledDeliveryTime?: Timestamp; };
     cancellationReason?: string;
     notes?: string;
     rating?: { store: number; delegate: number; comment: string; };
@@ -67,26 +67,13 @@ type OrderFS = {
 }
 
 // This is the shape of the data after we process it for the UI
-interface Order extends Omit<OrderFS, 'timestamps'> {
+export interface Order extends Omit<OrderFS, 'timestamps'> {
     storeImage?: string;
     delegatePhotoUrl?: string;
     delegatePosition?: { lat: number; lng: number };
-    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; };
+    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; scheduledDeliveryTime?: Date; };
 }
 
-const statusInfo: Record<OrderStatus, { text: string; icon: React.ElementType; color: string; ringColor: string; }> = {
-    incoming: { text: 'طلب وارد', icon: Clock, color: 'text-amber-600', ringColor: 'ring-amber-500' },
-    confirmed: { text: 'مؤكد', icon: Check, color: 'text-sky-600', ringColor: 'ring-sky-500' },
-    preparing: { text: 'جاري التجهيز', icon: CookingPot, color: 'text-orange-600', ringColor: 'ring-orange-500' },
-    dispatched: { text: 'مع المندوب', icon: Bike, color: 'text-indigo-600', ringColor: 'ring-indigo-500' },
-    delivered: { text: 'مكتمل', icon: CheckCircle, color: 'text-green-600', ringColor: 'ring-green-500' },
-    cancelled: { text: 'ملغي', icon: XCircle, color: 'text-red-600', ringColor: 'ring-red-500' },
-};
-
-const OrderStatusBadge = ({ status }: { status: OrderStatus }) => {
-    const { text, icon: Icon, color } = statusInfo[status];
-    return <Badge variant="outline" className={`gap-1.5 border-current ${color}`}><Icon className="h-3.5 w-3.5"/>{text}</Badge>;
-};
 
 const CancellationDialog = ({ open, onOpenChange, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, onConfirm: (reason: string) => void }) => {
     const [reason, setReason] = useState('');
@@ -135,6 +122,7 @@ export default function OrdersPage() {
             if (orderFS.timestamps.dispatchedAt) timestamps.dispatchedAt = orderFS.timestamps.dispatchedAt.toDate();
             if (orderFS.timestamps.deliveredAt) timestamps.deliveredAt = orderFS.timestamps.deliveredAt.toDate();
             if (orderFS.timestamps.cancelledAt) timestamps.cancelledAt = orderFS.timestamps.cancelledAt.toDate();
+            if (orderFS.timestamps.scheduledDeliveryTime) timestamps.scheduledDeliveryTime = orderFS.timestamps.scheduledDeliveryTime.toDate();
             
             return {
                 ...orderFS,
@@ -164,7 +152,7 @@ export default function OrdersPage() {
         if (!orders) return [];
         let currentOrders: Order[];
         switch (activeTab) {
-            case 'incoming': currentOrders = orders.filter(o => o.status === 'incoming'); break;
+            case 'incoming': currentOrders = orders.filter(o => o.status === 'incoming' && !o.timestamps.scheduledDeliveryTime); break;
             case 'active': currentOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status)); break;
             case 'completed': currentOrders = orders.filter(o => o.status === 'delivered'); break;
             case 'cancelled': currentOrders = orders.filter(o => o.status === 'cancelled'); break;
@@ -196,7 +184,7 @@ export default function OrdersPage() {
             ...details,
         };
         updateDocumentNonBlocking(doc(firestore, 'orders', orderId), payload);
-        toast({ title: "تم تحديث حالة الطلب", description: `الطلب #${orderId.substring(0,6)} الآن "${statusInfo[newStatus].text}"` });
+        toast({ title: "تم تحديث حالة الطلب" });
     };
     
     const handleCancel = (order: Order) => {

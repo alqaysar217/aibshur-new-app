@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarCheck, Clock, CheckCircle, XCircle, Search, Calendar, FileText, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { OrderStatusBadge } from '@/app/admin/orders/page';
+import { OrderStatusBadge } from '@/components/order-status-badge';
 import type { Order as OrderType } from '../orders/page'; // Re-using the processed type from orders page
 
 // We will consider orders with a 'scheduledDeliveryTime' in the future as appointments.
