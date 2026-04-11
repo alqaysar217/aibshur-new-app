@@ -108,7 +108,7 @@ const mockOrdersData: Omit<Order, 'storeImage' | 'storeImageHint'>[] = [
         items: [{ productId: 'P03', productName: 'فحسة', quantity: 1, price: 2800 }],
         financials: { subtotal: 2800, deliveryFee: 400, discount: 0, tip: 0, total: 3200 },
         payment: { method: 'cash', status: 'pending' },
-        address: { description: 'فوة، حي المساكن، بالقرب من مسجد بن هامل', latitude: 14.58, longitude: 49.10 },
+        address: { description: 'فوة، حي المساكن، بالقرب من مسجد بن هامل', latitude: 14.60, longitude: 49.15 },
         timestamps: { createdAt: new Date(Date.now() - 45 * 60 * 1000), confirmedAt: new Date(Date.now() - 40 * 60 * 1000), dispatchedAt: new Date(Date.now() - 20 * 60 * 1000) },
         delegatePosition: { lat: 14.555, lng: 49.122 }
     },
@@ -448,7 +448,9 @@ export default function OrdersPage() {
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                        <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
+                        <div className="flex justify-between items-start">
+                            <DialogTitle className="text-2xl font-bold text-right">تفاصيل الطلب: #{selectedOrder?.id.substring(0, 8)}</DialogTitle>
+                        </div>
                         <div className="flex justify-start items-center gap-4 text-sm pt-1">
                             {selectedOrder && <OrderStatusBadge status={selectedOrder.status} />}
                             {selectedOrder && <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-4 w-4"/>{getTimeSinceOrder(selectedOrder.timestamps.createdAt)}</span>}
@@ -460,8 +462,14 @@ export default function OrdersPage() {
                         <Card>
                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
                            <CardContent className="text-sm space-y-3">
-                                <div className="flex justify-between items-center"><span><strong>الاسم:</strong> {selectedOrder.clientName}</span></div>
-                                <div className="flex justify-between items-center"><span><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span></span> <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4 text-muted-foreground"/></Button></div>
+                                <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground"/>
+                                    <span><strong>الاسم:</strong> {selectedOrder.clientName}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-muted-foreground"/>
+                                    <span><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.clientPhone}</span></span>
+                                </div>
                                 <div className="flex items-start gap-2">
                                     <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                                     <span><strong>العنوان:</strong> {selectedOrder.address.description}</span>
@@ -473,31 +481,40 @@ export default function OrdersPage() {
                            <Card>
                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>بيانات المستلم</CardTitle></CardHeader>
                                <CardContent className="text-sm space-y-3">
-                                   <div className="flex justify-between items-center"><span><strong>الاسم:</strong> {selectedOrder.address.receiverName}</span></div>
-                                   {selectedOrder.address.receiverPhone && <div className="flex justify-between items-center"><span><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.address.receiverPhone}</span></span> <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4 text-muted-foreground"/></Button></div>}
+                                   <div className="flex items-center gap-2">
+                                       <User className="h-4 w-4 text-muted-foreground"/>
+                                       <span><strong>الاسم:</strong> {selectedOrder.address.receiverName}</span>
+                                   </div>
+                                   {selectedOrder.address.receiverPhone && <div className="flex items-center gap-2">
+                                       <Phone className="h-4 w-4 text-muted-foreground"/>
+                                       <span><strong>الهاتف:</strong> <span dir="ltr">{selectedOrder.address.receiverPhone}</span></span>
+                                   </div>}
                                </CardContent>
                            </Card>
                         )}
 
                         {selectedOrder.delegateId && (
                            <Card>
-                           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike className="h-5 w-5 text-primary"/>بيانات المندوب</CardTitle></CardHeader>
-                           <CardContent className="text-sm">
-                               <div className="flex items-center gap-3">
-                                   <Avatar>
-                                       <AvatarImage src={selectedOrder.delegatePhotoUrl} alt={selectedOrder.delegateName}/>
-                                       <AvatarFallback>{selectedOrder.delegateName?.charAt(0)}</AvatarFallback>
-                                   </Avatar>
-                                   <div className="flex-grow">
-                                       <p><strong>الاسم:</strong> {selectedOrder.delegateName}</p>
-                                       <div className="flex justify-between items-center">
-                                            <p><strong>الهاتف:</strong> <span dir="ltr">{(mockDelegatesMap as any)[selectedOrder.delegateId]?.phone}</span></p>
-                                            <Button size="icon" variant="ghost" className="h-7 w-7"><Phone className="h-4 w-4 text-muted-foreground"/></Button>
-                                        </div>
+                               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike className="h-5 w-5 text-primary"/>بيانات المندوب</CardTitle></CardHeader>
+                               <CardContent className="text-sm">
+                                   <div className="flex items-center gap-3">
+                                       <Avatar>
+                                           <AvatarImage src={selectedOrder.delegatePhotoUrl} alt={selectedOrder.delegateName}/>
+                                           <AvatarFallback>{selectedOrder.delegateName?.charAt(0)}</AvatarFallback>
+                                       </Avatar>
+                                       <div className="flex-grow space-y-2">
+                                           <div className="flex items-center gap-2">
+                                              <User className="h-4 w-4 text-muted-foreground"/>
+                                              <p><strong>الاسم:</strong> {selectedOrder.delegateName}</p>
+                                            </div>
+                                           <div className="flex items-center gap-2">
+                                                <Phone className="h-4 w-4 text-muted-foreground"/>
+                                                <p><strong>الهاتف:</strong> <span dir="ltr">{(mockDelegatesMap as any)[selectedOrder.delegateId]?.phone}</span></p>
+                                            </div>
+                                       </div>
                                    </div>
-                               </div>
-                           </CardContent>
-                       </Card>
+                               </CardContent>
+                           </Card>
                         )}
                         
                         <Card>
