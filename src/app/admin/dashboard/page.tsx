@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Order } from '../orders/page';
@@ -37,12 +37,14 @@ const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string
 
 export default function DashboardPage() {
     const firestore = useFirestore();
+    const { user } = useUser();
 
-    const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore ? collection(firestore, 'orders') : null, [firestore]));
-    const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore ? collection(firestore, 'drivers_v2') : null, [firestore]));
-    const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]));
+    const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
+    const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
+    const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
+    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<any>(useMemoFirebase(() => firestore && user ? collection(firestore, 'notifications') : null, [firestore, user]));
 
-    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts;
+    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
 
     const pulseData = useMemo(() => {
         if (!orders || !drivers) return { activeOrders: { value: 0, trend: [] }, liveSales: { value: 0, trend: [] }, onlineDrivers: { value: 0, trend: [] }, pendingQueue: { value: 0, trend: [] }};
@@ -123,8 +125,6 @@ export default function DashboardPage() {
             });
     }, [orders, products]);
     
-    // Using notifications as activity feed
-    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection(useMemoFirebase(() => firestore ? collection(firestore, 'notifications') : null, [firestore]));
 
 
     const salesProfitConfig = {

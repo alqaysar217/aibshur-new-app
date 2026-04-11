@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from '@/firebase';
 import { collection, query, where, Timestamp, doc, serverTimestamp } from 'firebase/firestore';
 import { format, formatDistanceToNow, isToday, isFuture } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -57,10 +57,11 @@ export default function AppointmentsPage() {
     
     const { toast } = useToast();
     const firestore = useFirestore();
+    const { user } = useUser();
 
-    const appointmentsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'orders'), where('timestamps.scheduledDeliveryTime', '!=', null)) : null, [firestore]);
+    const appointmentsQuery = useMemoFirebase(() => firestore && user ? query(collection(firestore, 'orders'), where('timestamps.scheduledDeliveryTime', '!=', null)) : null, [firestore, user]);
     const { data: rawAppointments, isLoading: isLoadingAppointments } = useCollection<OrderType>(appointmentsQuery);
-    const { data: stores, isLoading: isLoadingStores } = useCollection<StoreType>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
+    const { data: stores, isLoading: isLoadingStores } = useCollection<StoreType>(useMemoFirebase(() => firestore && user ? collection(firestore, 'stores') : null, [firestore, user]));
     
     const isLoading = isLoadingAppointments || isLoadingStores;
 

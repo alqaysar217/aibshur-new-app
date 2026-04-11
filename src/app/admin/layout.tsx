@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -12,9 +12,10 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { mockNotifications } from '@/lib/notifications';
+import type { Notification } from '@/lib/notifications';
+import { collection } from 'firebase/firestore';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
@@ -46,8 +47,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
+    const firestore = useFirestore();
     
-    const unreadCount = mockNotifications.filter(n => !n.isRead).length;
+    const notificationsQuery = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'notifications') : null, [firestore, user]);
+    const { data: notifications } = useCollection<Notification>(notificationsQuery);
+    const unreadCount = useMemo(() => (notifications || []).filter(n => !n.isRead).length, [notifications]);
 
     const handleLogout = async () => {
         try {

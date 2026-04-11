@@ -3,25 +3,25 @@
     {
       "id": "login-illustration",
       "description": "An illustration for the login screen",
-      "imageUrl": "https://picsum.photos/seed/delivery-login/300/200",
+      "imageUrl": "/login.png",
       "imageHint": "delivery illustration"
     },
     {
       "id": "governorate-selection-illustration",
       "description": "An illustration for the governorate selection screen",
-      "imageUrl": "https://picsum.photos/seed/yemen-map/300/200",
+      "imageUrl": "/select-governorate.png",
       "imageHint": "location map"
     },
     {
       "id": "register-user-illustration",
       "description": "An illustration for the user registration screen",
-      "imageUrl": "https://picsum.photos/seed/register-user/250/150",
+      "imageUrl": "/register.png",
       "imageHint": "happy customer"
     },
     {
       "id": "register-delegate-illustration",
       "description": "An illustration for the delegate registration screen",
-      "imageUrl": "https://picsum.photos/seed/register-delegate/250/150",
+      "imageUrl": "/register-1.png",
       "imageHint": "delivery driver"
     },
     {
