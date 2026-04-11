@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
@@ -171,16 +171,23 @@ export default function SupportPage() {
                                         <TableHead className="text-center">تاريخ الإنشاء</TableHead>
                                     </TableRow></TableHeader>
                                     <TableBody>
-                                        {filteredTickets.map(t => (
-                                            <TableRow key={t.id} onClick={() => setSelectedTicket(t)} className="cursor-pointer">
-                                                <TableCell className="text-center font-mono">{t.id}</TableCell>
-                                                <TableCell className="text-center font-medium">{t.subject}</TableCell>
-                                                <TableCell className="text-center">{t.userName}</TableCell>
-                                                <TableCell className="text-center"><div className={cn("flex items-center justify-center gap-1", priorityMap[t.priority].color)}><priorityMap[t.priority].icon className="h-4 w-4"/> {priorityMap[t.priority].label}</div></TableCell>
-                                                <TableCell className="text-center"><Badge className={cn("text-white border-none", statusMap[t.status].color)}>{statusMap[t.status].label}</Badge></TableCell>
-                                                <TableCell className="text-center">{formatDistanceToNow(t.createdAt, { addSuffix: true, locale: ar })}</TableCell>
-                                            </TableRow>
-                                        ))}
+                                        {filteredTickets.map(t => {
+                                            const PriorityIcon = priorityMap[t.priority].icon;
+                                            return (
+                                                <TableRow key={t.id} onClick={() => setSelectedTicket(t)} className="cursor-pointer">
+                                                    <TableCell className="text-center font-mono">{t.id}</TableCell>
+                                                    <TableCell className="text-center font-medium">{t.subject}</TableCell>
+                                                    <TableCell className="text-center">{t.userName}</TableCell>
+                                                    <TableCell className="text-center">
+                                                        <div className={cn("flex items-center justify-center gap-1", priorityMap[t.priority].color)}>
+                                                            <PriorityIcon className="h-4 w-4"/> {priorityMap[t.priority].label}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center"><Badge className={cn("text-white border-none", statusMap[t.status].color)}>{statusMap[t.status].label}</Badge></TableCell>
+                                                    <TableCell className="text-center">{formatDistanceToNow(t.createdAt, { addSuffix: true, locale: ar })}</TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>
