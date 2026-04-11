@@ -56,7 +56,7 @@ function DashboardContent() {
         today.setHours(0, 0, 0, 0);
 
         const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
-        const liveSales = orders.filter(o => o.timestamps.createdAt.toDate() >= today).reduce((sum, o) => sum + o.financials.total, 0);
+        const liveSales = orders.filter(o => (o.timestamps.createdAt as any).toDate() >= today).reduce((sum, o) => sum + o.financials.total, 0);
         const onlineDrivers = drivers.filter(d => d.is_active); // Simplified logic
         const pendingQueue = orders.filter(o => o.status === 'incoming');
 
@@ -79,7 +79,7 @@ function DashboardContent() {
         const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
         orders.forEach(order => {
-            const date = order.timestamps.createdAt instanceof Date ? order.timestamps.createdAt : order.timestamps.createdAt.toDate();
+            const date = (order.timestamps.createdAt as any) instanceof Date ? order.timestamps.createdAt : (order.timestamps.createdAt as any).toDate();
             const dayName = weekDays[date.getDay()];
             if (!dataByDay[dayName]) {
                 dataByDay[dayName] = { sales: 0, profit: 0 };
@@ -221,13 +221,14 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                          <ChartContainer config={orderStatusConfig} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={orderStatusData} layout="vertical" stackOffset="expand">
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} width={60}/>
-                                <Tooltip content={<ChartTooltipContent hideLabel />} />
+                            <BarChart accessibilityLayer data={orderStatusData}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 10)} />
+                                <YAxis />
+                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Bar dataKey="completed" stackId="a" fill="var(--color-completed)" radius={[0, 4, 4, 0]} />
-                                <Bar dataKey="cancelled" stackId="a" fill="var(--color-cancelled)" radius={[4, 0, 0, 4]} />
+                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                                <Bar dataKey="cancelled" fill="var(--color-cancelled)" radius={4} />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>
@@ -237,31 +238,17 @@ function DashboardContent() {
                 <Card className="lg:col-span-4">
                     <CardHeader>
                         <CardTitle>توزيع الطلبات على المتاجر</CardTitle>
-                        <CardDescription>نسبة الطلبات المكتملة في المتاجر الرئيسية.</CardDescription>
+                        <CardDescription>إجمالي الطلبات المكتملة في المتاجر الرئيسية.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex justify-center items-center">
-                       <ChartContainer config={{}} className="mx-auto aspect-square h-[250px]">
-                            <PieChart>
-                                <Tooltip
-                                  cursor={false}
-                                  content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Pie
-                                  data={orderStatusData}
-                                  dataKey="completed"
-                                  nameKey="name"
-                                  innerRadius={60}
-                                  strokeWidth={2}
-                                >
-                                    {orderStatusData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${index + 1}))`} className="focus:outline-none" />
-                                    ))}
-                                </Pie>
-                                <ChartLegend
-                                  content={<ChartLegendContent nameKey="name" />}
-                                  className="[&_.recharts-legend-item]:w-1/2 [&_.recharts-legend-item]:justify-center"
-                                />
-                            </PieChart>
+                    <CardContent>
+                       <ChartContainer config={{ completed: { label: "مكتمل", color: "hsl(var(--chart-1))" } }} className="h-[250px] w-full">
+                            <BarChart accessibilityLayer data={orderStatusData} margin={{ left: 12, right: 12, top: 5, bottom: 5}}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0,10)} />
+                                <YAxis />
+                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                            </BarChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
@@ -335,9 +322,9 @@ export default function DashboardPage() {
 
     // Check if the system settings doc exists. This is our proxy for "is the DB seeded?"
     const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
-    const { data: settings, isLoading: isLoadingSettings } = useDoc(settingsDocRef);
+    const { data: settings } = useDoc(settingsDocRef);
     
-    if (isLoadingSettings || isUserLoading) {
+    if (isUserLoading) {
         return <DashboardLoading />;
     }
 
