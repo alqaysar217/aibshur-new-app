@@ -66,38 +66,37 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
           setZoom(zoom);
         }}
       >
+        {/* Render prop for SVG overlay */}
         {({ width, height, latLngToPixel }) => (
-          <>
-            {secondaryPosition && (
-              <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                <line
-                  x1={latLngToPixel([mainPosition.lat, mainPosition.lng])[0]}
-                  y1={latLngToPixel([mainPosition.lat, mainPosition.lng])[1]}
-                  x2={latLngToPixel([secondaryPosition.lat, secondaryPosition.lng])[0]}
-                  y2={latLngToPixel([secondaryPosition.lat, secondaryPosition.lng])[1]}
-                  stroke="#1FAF9A"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                />
-              </svg>
-            )}
-            
-            {/* Main Marker (Client/User) */}
-            <Marker width={28} anchor={[mainPosition.lat, mainPosition.lng]}>
-                <div className='bg-destructive rounded-full p-1.5 shadow-md'>
-                    <User className="h-4 w-4 text-white" />
+          secondaryPosition && (
+            <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+              <line
+                x1={latLngToPixel([mainPosition.lat, mainPosition.lng])[0]}
+                y1={latLngToPixel([mainPosition.lat, mainPosition.lng])[1]}
+                x2={latLngToPixel([secondaryPosition.lat, secondaryPosition.lng])[0]}
+                y2={latLngToPixel([secondaryPosition.lat, secondaryPosition.lng])[1]}
+                stroke="#1FAF9A"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+              />
+            </svg>
+          )
+        )}
+        
+        {/* Main Marker (Client/User) */}
+        <Marker width={28} anchor={[mainPosition.lat, mainPosition.lng]}>
+            <div className='bg-destructive rounded-full p-1.5 shadow-md'>
+                <User className="h-4 w-4 text-white" />
+            </div>
+        </Marker>
+
+        {/* Secondary Marker (Delegate) */}
+        {secondaryPosition && (
+            <Marker width={28} anchor={[secondaryPosition.lat, secondaryPosition.lng]}>
+                <div className='bg-primary rounded-full p-1.5 shadow-md'>
+                    <Bike className="h-4 w-4 text-white" />
                 </div>
             </Marker>
-
-            {/* Secondary Marker (Delegate) */}
-            {secondaryPosition && (
-                <Marker width={28} anchor={[secondaryPosition.lat, secondaryPosition.lng]}>
-                    <div className='bg-primary rounded-full p-1.5 shadow-md'>
-                        <Bike className="h-4 w-4 text-white" />
-                    </div>
-                </Marker>
-            )}
-          </>
         )}
       </Map>
     </div>
