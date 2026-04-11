@@ -42,7 +42,11 @@ export default function DashboardPage() {
     const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
     const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
-    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<any>(useMemoFirebase(() => firestore && user ? collection(firestore, 'notifications') : null, [firestore, user]));
+    
+    // Temporarily disable notifications fetch to prevent crash on load
+    // const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<any>(useMemoFirebase(() => firestore && user ? collection(firestore, 'notifications') : null, [firestore, user]));
+    const activityFeed: any[] = [];
+    const isLoadingNotifications = false;
 
     const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
 
@@ -301,7 +305,7 @@ export default function DashboardPage() {
                  <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Activity/>آخر الأنشطة في النظام</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                       {(activityFeed || []).slice(0, 4).map((item: any) => {
+                       {(activityFeed && activityFeed.length > 0) ? activityFeed.slice(0, 4).map((item: any) => {
                            const Icon = CheckCircle; // Simplified
                            return (
                             <div key={item.id} className="flex items-center gap-3">
@@ -312,7 +316,9 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                            )
-                       })}
+                       }) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">لا توجد أنشطة لعرضها. قم بتهيئة قاعدة البيانات لعرض البيانات.</p>
+                       )}
                     </CardContent>
                 </Card>
             </div>

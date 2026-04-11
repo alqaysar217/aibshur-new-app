@@ -49,9 +49,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const auth = useAuth();
     const firestore = useFirestore();
     
-    const notificationsQuery = useMemoFirebase(() => (firestore && user?.uid) ? collection(firestore, 'notifications') : null, [firestore, user?.uid]);
-    const { data: notifications } = useCollection<Notification>(notificationsQuery);
-    const unreadCount = useMemo(() => (notifications || []).filter(n => !n.isRead).length, [notifications]);
+    // Temporarily disable notification fetching to prevent crash on load
+    // const notificationsQuery = useMemoFirebase(() => (firestore && user?.uid) ? collection(firestore, 'notifications') : null, [firestore, user?.uid]);
+    // const { data: notifications } = useCollection<Notification>(notificationsQuery);
+    const unreadCount = 0; // useMemo(() => (notifications || []).filter(n => !n.isRead).length, [notifications]);
 
     const handleLogout = async () => {
         try {
