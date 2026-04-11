@@ -1247,7 +1247,12 @@
             "confirmedAt": { "type": "string", "format": "date-time" },
             "dispatchedAt": { "type": "string", "format": "date-time" },
             "deliveredAt": { "type": "string", "format": "date-time" },
-            "cancelledAt": { "type": "string", "format": "date-time" }
+            "cancelledAt": { "type": "string", "format": "date-time" },
+            "scheduledDeliveryTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The requested time for a scheduled delivery."
+            }
           },
           "required": ["createdAt"]
         },
