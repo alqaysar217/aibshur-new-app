@@ -72,7 +72,7 @@ export default function DashboardPage() {
                         <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{kpiData.totalRevenue.toLocaleString()}&nbsp;ر.ي</div>
+                        <div className="text-2xl font-bold">{kpiData.totalRevenue.value.toLocaleString()}&nbsp;ر.ي</div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <span className={kpiData.totalRevenue.change > 0 ? 'text-green-500' : 'text-red-500'}>{kpiData.totalRevenue.change}%</span>
                             {kpiData.totalRevenue.change > 0 ? <ArrowUp className="h-3 w-3 text-green-500"/> : <ArrowDown className="h-3 w-3 text-red-500"/>}
@@ -86,7 +86,7 @@ export default function DashboardPage() {
                         <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+{kpiData.totalOrders.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">+{kpiData.totalOrders.value.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <span className={kpiData.totalOrders.change > 0 ? 'text-green-500' : 'text-red-500'}>{kpiData.totalOrders.change}%</span>
                             {kpiData.totalOrders.change > 0 ? <ArrowUp className="h-3 w-3 text-green-500"/> : <ArrowDown className="h-3 w-3 text-red-500"/>}
@@ -100,7 +100,7 @@ export default function DashboardPage() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+{kpiData.newUsers}</div>
+                        <div className="text-2xl font-bold">+{kpiData.newUsers.value}</div>
                          <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <span className={kpiData.newUsers.change > 0 ? 'text-green-500' : 'text-red-500'}>{kpiData.newUsers.change}%</span>
                             {kpiData.newUsers.change > 0 ? <ArrowUp className="h-3 w-3 text-green-500"/> : <ArrowDown className="h-3 w-3 text-red-500"/>}
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{kpiData.avgOrderValue.toLocaleString()}&nbsp;ر.ي</div>
+                        <div className="text-2xl font-bold">{kpiData.avgOrderValue.value.toLocaleString()}&nbsp;ر.ي</div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <span className={kpiData.avgOrderValue.change > 0 ? 'text-green-500' : 'text-red-500'}>{kpiData.avgOrderValue.change}%</span>
                             {kpiData.avgOrderValue.change > 0 ? <ArrowUp className="h-3 w-3 text-green-500"/> : <ArrowDown className="h-3 w-3 text-red-500"/>}
