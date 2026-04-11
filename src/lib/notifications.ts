@@ -15,6 +15,15 @@ export type Notification = {
 
 export const mockNotifications: Notification[] = [
   {
+    id: 'n_new_order',
+    type: 'order_status',
+    title: 'طلب جديد وارد!',
+    body: 'وصل طلب جديد من العميل "محمد عبدالله". الرجاء المراجعة.',
+    timestamp: new Date(), // Now
+    isRead: false,
+    link: '/admin/orders',
+  },
+  {
     id: 'n1',
     type: 'order_status',
     title: 'طلبك في الطريق!',
