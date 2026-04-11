@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
@@ -79,7 +79,7 @@ function DashboardContent() {
         const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
         orders.forEach(order => {
-            const date = order.timestamps.createdAt.toDate();
+            const date = order.timestamps.createdAt instanceof Date ? order.timestamps.createdAt : order.timestamps.createdAt.toDate();
             const dayName = weekDays[date.getDay()];
             if (!dataByDay[dayName]) {
                 dataByDay[dayName] = { sales: 0, profit: 0 };
@@ -237,17 +237,31 @@ function DashboardContent() {
                 <Card className="lg:col-span-4">
                     <CardHeader>
                         <CardTitle>توزيع الطلبات على المتاجر</CardTitle>
-                        <CardDescription>كثافة الطلبات في المتاجر الرئيسية.</CardDescription>
+                        <CardDescription>نسبة الطلبات المكتملة في المتاجر الرئيسية.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                       <ChartContainer config={{}} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={orderStatusData}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-                                <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Bar dataKey="completed" fill="hsl(var(--primary))" radius={8} />
-                            </BarChart>
+                    <CardContent className="flex justify-center items-center">
+                       <ChartContainer config={{}} className="mx-auto aspect-square h-[250px]">
+                            <PieChart>
+                                <Tooltip
+                                  cursor={false}
+                                  content={<ChartTooltipContent hideLabel />}
+                                />
+                                <Pie
+                                  data={orderStatusData}
+                                  dataKey="completed"
+                                  nameKey="name"
+                                  innerRadius={60}
+                                  strokeWidth={2}
+                                >
+                                    {orderStatusData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${index + 1}))`} className="focus:outline-none" />
+                                    ))}
+                                </Pie>
+                                <ChartLegend
+                                  content={<ChartLegendContent nameKey="name" />}
+                                  className="[&_.recharts-legend-item]:w-1/2 [&_.recharts-legend-item]:justify-center"
+                                />
+                            </PieChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
