@@ -1,5 +1,5 @@
 'use client';
-import { Map, Marker, Overlay } from 'pigeon-maps';
+import { Map, Marker } from 'pigeon-maps';
 import { useEffect, useState } from 'react';
 import { User, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,16 +12,37 @@ interface LocationMapViewerProps {
 
 export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPosition, secondaryPosition, className }) => {
   const [isClient, setIsClient] = useState(false);
-  useEffect(() => { setIsClient(true) }, []);
   
-  const initialCenter: [number, number] = secondaryPosition
-    ? [ (mainPosition.lat + secondaryPosition.lat) / 2, (mainPosition.lng + secondaryPosition.lng) / 2 ]
-    : [mainPosition.lat, mainPosition.lng];
-    
-  const initialZoom = secondaryPosition ? 13 : 15;
+  const calculateCenterAndZoom = () => {
+    if (secondaryPosition) {
+      return {
+        center: [
+          (mainPosition.lat + secondaryPosition.lat) / 2,
+          (mainPosition.lng + secondaryPosition.lng) / 2
+        ] as [number, number],
+        zoom: 13,
+      };
+    }
+    return {
+      center: [mainPosition.lat, mainPosition.lng] as [number, number],
+      zoom: 15,
+    };
+  };
+
+  const { center: initialCenter, zoom: initialZoom } = calculateCenterAndZoom();
 
   const [center, setCenter] = useState(initialCenter);
   const [zoom, setZoom] = useState(initialZoom);
+
+  useEffect(() => {
+    setIsClient(true);
+    // Recalculate and set map state when positions change
+    const { center: newCenter, zoom: newZoom } = calculateCenterAndZoom();
+    setCenter(newCenter);
+    setZoom(newZoom);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainPosition.lat, mainPosition.lng, secondaryPosition?.lat, secondaryPosition?.lng]);
+  
 
   if (!isClient) {
     return <div className={cn("h-full w-full bg-muted rounded-lg flex items-center justify-center", className)}><p>جارٍ تحميل الخريطة...</p></div>
@@ -36,34 +57,8 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
           setCenter(center);
           setZoom(zoom);
         }}
+        onClick={(e) => console.log(e)}
       >
-        {secondaryPosition && (
-            <Overlay
-                anchor={[0,0]} // The anchor is irrelevant as we use absolute positioning for the SVG
-                children={(
-                    { mapState, latLngToPixel } : 
-                    { mapState: any, latLngToPixel: (latLng: [number, number]) => [number, number] }
-                ) => {
-                    if (!mapState.width || !mapState.height) return null;
-                    const mainPixel = latLngToPixel([mainPosition.lat, mainPosition.lng]);
-                    const secondaryPixel = latLngToPixel([secondaryPosition.lat, secondaryPosition.lng]);
-                    return (
-                    <svg
-                        width={mapState.width}
-                        height={mapState.height}
-                        style={{ position: 'absolute', top: -mapState.top, left: -mapState.left, pointerEvents: 'none' }}
-                    >
-                        <line
-                            x1={mainPixel[0]} y1={mainPixel[1]}
-                            x2={secondaryPixel[0]} y2={secondaryPixel[1]}
-                            stroke="#1FAF9A" strokeWidth="2" strokeDasharray="5, 5"
-                        />
-                    </svg>
-                    )
-                }}
-            />
-        )}
-        
         {/* Main Marker (Client/User) */}
         <Marker width={28} anchor={[mainPosition.lat, mainPosition.lng]}>
             <div className='bg-destructive rounded-full p-1.5 shadow-md'>
