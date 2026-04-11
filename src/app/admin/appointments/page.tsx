@@ -4,6 +4,7 @@ import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking
 import { collection, query, where, Timestamp, doc, serverTimestamp } from 'firebase/firestore';
 import { format, formatDistanceToNow, isToday, isFuture } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import dynamic from 'next/dynamic';
 
 import AppointmentsLoading from './loading';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarCheck, Clock, CheckCircle, XCircle, Search, Calendar, FileText, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { OrderStatusBadge } from '@/components/order-status-badge';
-import type { Order as OrderType } from '../orders/page'; // Re-using the processed type from orders page
+import { Separator } from '@/components/ui/separator';
+
+import { 
+    CalendarCheck, Clock, CheckCircle, XCircle, Search, Calendar, FileText, Check, X,
+    User, Phone, MapPin, Store, ShoppingBasket, BadgeDollarSign, Contact 
+} from 'lucide-react';
+import type { Order as OrderType } from '../orders/page';
+
+const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
 // We will consider orders with a 'scheduledDeliveryTime' in the future as appointments.
 type Appointment = OrderType & {
@@ -290,26 +298,96 @@ export default function AppointmentsPage() {
                 </Tabs>
             </div>
             
-            {/* Re-use order details dialog, maybe make a component later */}
-            <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="max-w-lg [&>button]:right-auto [&>button]:left-4" dir="rtl">
+             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+                <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                        <DialogTitle>تفاصيل الموعد</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold text-right">تفاصيل الموعد: #{selectedAppointment?.id.substring(0, 8)}</DialogTitle>
+                         <div className="flex justify-start items-center gap-4 text-sm pt-1">
+                            {selectedAppointment && <OrderStatusBadge status={selectedAppointment.status} />}
+                            {selectedAppointment && <span className="flex items-center gap-1.5 text-muted-foreground"><Calendar className="h-4 w-4"/>{format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a', { locale: ar })}</span>}
+                        </div>
                     </DialogHeader>
                     {selectedAppointment && (
-                        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                             <p><strong>العميل:</strong> {selectedAppointment.clientName}</p>
-                             <p><strong>المتجر:</strong> {selectedAppointment.storeName}</p>
-                             <p><strong>الإجمالي:</strong> {selectedAppointment.financials.total.toLocaleString('en-US')} ر.ي</p>
-                             <p><strong>وقت الطلب:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a', { locale: ar })}</p>
-                             <p><strong>وقت التسليم المجدول:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a', { locale: ar })}</p>
-                             <div className="flex items-center gap-2"><strong>الحالة:</strong> <OrderStatusBadge status={selectedAppointment.status}/></div>
-                             <h4 className="font-bold pt-2 border-t">المنتجات</h4>
-                             <ul>
-                                {selectedAppointment.items.map(item => <li key={item.productId}>{item.productName} (x{item.quantity})</li>)}
-                             </ul>
+                        <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
+                             <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
+                                <CardContent className="text-sm space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4 text-muted-foreground"/>
+                                        <span><strong>الاسم:</strong> {selectedAppointment.clientName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="h-4 w-4 text-muted-foreground"/>
+                                        <span><strong>الهاتف:</strong></span>
+                                        <span dir="ltr">{selectedAppointment.clientPhone}</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                                        <span><strong>العنوان:</strong> {selectedAppointment.address.description}</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {selectedAppointment.address.addressType === 'other' && selectedAppointment.address.receiverName && (
+                               <Card>
+                                   <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>بيانات المستلم</CardTitle></CardHeader>
+                                   <CardContent className="text-sm space-y-3">
+                                       <div className="flex items-center gap-2">
+                                           <User className="h-4 w-4 text-muted-foreground"/>
+                                           <span><strong>الاسم:</strong> {selectedAppointment.address.receiverName}</span>
+                                       </div>
+                                       {selectedAppointment.address.receiverPhone && 
+                                       <div className="flex items-center gap-2">
+                                            <Phone className="h-4 w-4 text-muted-foreground"/>
+                                            <span><strong>الهاتف:</strong></span>
+                                           <span dir="ltr">{selectedAppointment.address.receiverPhone}</span>
+                                        </div>}
+                                   </CardContent>
+                               </Card>
+                            )}
+                            
+                            <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>موقع التوصيل</CardTitle></CardHeader>
+                                <CardContent>
+                                    <LocationMapViewer mainPosition={{ lat: selectedAppointment.address.latitude, lng: selectedAppointment.address.longitude }} />
+                                </CardContent>
+                            </Card>
+
+                             <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Store className="h-5 w-5 text-primary"/>تفاصيل الطلب</CardTitle></CardHeader>
+                                <CardContent>
+                                    <p className="mb-2"><strong>المتجر:</strong> {selectedAppointment.storeName}</p>
+                                    <Table>
+                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[80px] text-center">الكمية</TableHead></TableRow></TableHeader>
+                                        <TableBody>{selectedAppointment.items.map(item => (
+                                            <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity.toLocaleString('en-US')}</TableCell></TableRow>
+                                        ))}</TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign className="h-5 w-5 text-primary"/>الملخص المالي</CardTitle></CardHeader>
+                                <CardContent className="space-y-2 text-sm">
+                                    <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedAppointment.financials.subtotal.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedAppointment.financials.deliveryFee.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                                    {selectedAppointment.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedAppointment.financials.discount.toLocaleString('en-US')}&nbsp;ر.ي</span></div>}
+                                    <Separator/>
+                                    <div className="flex justify-between font-bold text-base"><span>الإجمالي النهائي</span><span dir="ltr">{selectedAppointment.financials.total.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle className="text-base">بيانات الموعد</CardTitle></CardHeader>
+                                <CardContent className="space-y-2 text-sm">
+                                     <div><strong>وقت الإنشاء:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a', { locale: ar })}</div>
+                                     <div><strong>وقت التسليم المجدول:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a', { locale: ar })}</div>
+                                </CardContent>
+                             </Card>
                         </div>
                     )}
+                     <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="secondary">إغلاق</Button></DialogClose>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
