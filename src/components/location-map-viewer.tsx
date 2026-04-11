@@ -69,7 +69,7 @@ export const LocationMapViewer: React.FC<LocationMapViewerProps> = ({ mainPositi
         {/* Render prop for SVG overlay */}
         {({ width, height, latLngToPixel }) => (
           secondaryPosition && (
-            <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+            <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1 }}>
               <line
                 x1={latLngToPixel([mainPosition.lat, mainPosition.lng])[0]}
                 y1={latLngToPixel([mainPosition.lat, mainPosition.lng])[1]}
