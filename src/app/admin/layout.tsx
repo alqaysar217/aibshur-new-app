@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { mockNotifications } from '@/lib/notifications';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
@@ -45,6 +46,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [isCollapsed, setIsCollapsed] = useState(false);
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
+    
+    const unreadCount = mockNotifications.filter(n => !n.isRead).length;
 
     const handleLogout = async () => {
         try {
@@ -144,9 +147,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </Button>
                     
                     <div className="flex items-center gap-2 mr-auto">
-                        <Button variant="ghost" size="icon" className="rounded-full relative">
-                            <Bell className="h-5 w-5 text-gray-500" />
-                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                        <Button variant="ghost" size="icon" className="rounded-full relative" asChild>
+                            <Link href="/admin/notifications">
+                                <Bell className="h-5 w-5 text-gray-500" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </Link>
                         </Button>
                         
                         <DropdownMenu>
