@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
@@ -11,11 +11,11 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,18 +23,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import SupportLoading from './loading';
 import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc, Timestamp } from 'firebase/firestore';
+import { collection, doc, Timestamp, arrayUnion } from 'firebase/firestore';
 
 
 type TicketStatus = 'open' | 'in_progress' | 'closed';
 type TicketPriority = 'low' | 'medium' | 'high';
 type Reply = { authorName: string; message: string; createdAt: Timestamp; };
 export type SupportTicket = { id: string; subject: string; userName: string; userEmail: string; priority: TicketPriority; status: TicketStatus; createdAt: Timestamp; updatedAt: Timestamp; description: string; replies: Reply[], attachments?: string[] };
-type Faq = { id: string; category: string; question: string; answer: string; };
+type Faq = { id: string; category: string; question: string; answer: string; isActive: boolean; };
 
 const statusMap: Record<TicketStatus, { label: string; color: string; icon: React.ElementType }> = {
     open: { label: 'مفتوحة', color: 'bg-red-500', icon: Inbox },
@@ -52,18 +52,22 @@ const faqFormSchema = z.object({
     question: z.string().min(10, "السؤال يجب أن يكون 10 أحرف على الأقل"),
     answer: z.string().min(20, "الإجابة يجب أن تكون 20 حرفًا على الأقل"),
     category: z.string().min(2, "الفئة مطلوبة"),
+    isActive: z.boolean().default(true),
 });
+
+const replyFormSchema = z.object({
+    message: z.string().min(1, "الرد لا يمكن أن يكون فارغًا"),
+});
+
 
 export default function SupportPage() {
     const firestore = useFirestore();
     const [activeTab, setActiveTab] = useState<'tickets' | 'faq'>('tickets');
     
-    // Tickets State
     const {data: tickets, isLoading: isLoadingTickets} = useCollection<SupportTicket>(useMemoFirebase(() => firestore && collection(firestore, 'supportTickets'), [firestore]));
     const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [filters, setFilters] = useState({ status: 'all', priority: 'all', search: '' });
 
-    // FAQ State
     const {data: faqs, isLoading: isLoadingFaqs} = useCollection<Faq>(useMemoFirebase(() => firestore && collection(firestore, 'faqs'), [firestore]));
     const [faqDialog, setFaqDialog] = useState<{ open: boolean, isEditing: boolean, data: Faq | null }>({ open: false, isEditing: false, data: null });
     const [deleteFaqAlert, setDeleteFaqAlert] = useState<Faq | null>(null);
@@ -73,8 +77,14 @@ export default function SupportPage() {
 
     const faqForm = useForm<z.infer<typeof faqFormSchema>>({
         resolver: zodResolver(faqFormSchema),
-        defaultValues: { question: '', answer: '', category: '' },
+        defaultValues: { question: '', answer: '', category: '', isActive: true },
     });
+    
+    const replyForm = useForm<z.infer<typeof replyFormSchema>>({
+        resolver: zodResolver(replyFormSchema),
+        defaultValues: { message: '' },
+    });
+
 
     const filteredTickets = useMemo(() => {
         return (tickets || []).filter(t => 
@@ -112,6 +122,25 @@ export default function SupportPage() {
             setDeleteFaqAlert(null);
         }
     };
+    
+    const onReplySubmit = (values: z.infer<typeof replyFormSchema>) => {
+        if (!selectedTicket || !firestore) return;
+        const newReply: Reply = {
+            authorName: 'فريق الدعم', // In a real app, this would be the current admin's name
+            message: values.message,
+            createdAt: Timestamp.now(),
+        };
+        const updatedReplies = [...selectedTicket.replies, newReply];
+        updateDocumentNonBlocking(doc(firestore, 'supportTickets', selectedTicket.id), {
+            replies: updatedReplies,
+            updatedAt: serverTimestamp(),
+            status: 'in_progress', // Or keep as is, depends on logic
+        });
+        replyForm.reset();
+        // Optimistically update the UI
+        setSelectedTicket(prev => prev ? { ...prev, replies: updatedReplies, status: 'in_progress' } : null);
+        toast({ title: "تم إرسال الرد" });
+    }
 
     if (isLoading) {
         return <SupportLoading />;
@@ -166,7 +195,7 @@ export default function SupportPage() {
                                             const PriorityIcon = priorityMap[t.priority].icon;
                                             return (
                                                 <TableRow key={t.id} onClick={() => setSelectedTicket(t)} className="cursor-pointer">
-                                                    <TableCell className="text-center font-mono">{t.id}</TableCell>
+                                                    <TableCell className="text-center font-mono">{t.id.substring(0, 8)}</TableCell>
                                                     <TableCell className="text-center font-medium">{t.subject}</TableCell>
                                                     <TableCell className="text-center">{t.userName}</TableCell>
                                                     <TableCell className="text-center">
@@ -224,7 +253,7 @@ export default function SupportPage() {
             <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
                 <DialogContent className="max-w-2xl [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                        <DialogTitle className="text-right">تفاصيل التذكرة: {selectedTicket?.id}</DialogTitle>
+                        <DialogTitle className="text-right">تفاصيل التذكرة: {selectedTicket?.id.substring(0,8)}</DialogTitle>
                         <DialogDescription className="text-right">{selectedTicket?.subject}</DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[70vh] overflow-y-auto p-1 pr-4 space-y-4">
@@ -253,13 +282,20 @@ export default function SupportPage() {
                             ))}
                             <div className="flex gap-3">
                                  <Avatar><AvatarFallback>أ</AvatarFallback></Avatar>
-                                <div className="flex-1 space-y-2">
-                                    <Textarea placeholder="اكتب ردك هنا..." />
-                                    <div className="flex justify-between">
-                                        <Button size="sm" variant="outline"><Paperclip/> إرفاق ملف</Button>
-                                        <Button size="sm"><Send/> إرسال الرد</Button>
-                                    </div>
-                                </div>
+                                 <Form {...replyForm}>
+                                    <form onSubmit={replyForm.handleSubmit(onReplySubmit)} className="flex-1 space-y-2">
+                                        <FormField control={replyForm.control} name="message" render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl><Textarea placeholder="اكتب ردك هنا..." {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <div className="flex justify-between">
+                                            <Button size="sm" variant="outline"><Paperclip/> إرفاق ملف</Button>
+                                            <Button size="sm" type="submit"><Send/> إرسال الرد</Button>
+                                        </div>
+                                    </form>
+                                 </Form>
                             </div>
                         </div>
                     </div>
@@ -277,6 +313,7 @@ export default function SupportPage() {
                              <FormField control={faqForm.control} name="category" render={({ field }) => ( <FormItem><FormLabel>الفئة</FormLabel><FormControl><Input {...field} placeholder="مثال: الدفع، الطلبات..." /></FormControl><FormMessage /></FormItem> )} />
                              <FormField control={faqForm.control} name="question" render={({ field }) => ( <FormItem><FormLabel>السؤال</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                              <FormField control={faqForm.control} name="answer" render={({ field }) => ( <FormItem><FormLabel>الإجابة</FormLabel><FormControl><Textarea {...field} className="min-h-32" /></FormControl><FormMessage /></FormItem> )} />
+                             <FormField control={faqForm.control} name="isActive" render={({ field }) => ( <FormItem className="flex items-center gap-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel>فعال</FormLabel></FormItem> )} />
                              <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ</Button></DialogFooter>
                         </form>
                     </Form>

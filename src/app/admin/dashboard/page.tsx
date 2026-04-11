@@ -316,13 +316,13 @@ function DashboardContent() {
 // This is the new main component for the page.
 export default function DashboardPage() {
     const firestore = useFirestore();
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
 
     // Check if the system settings doc exists. This is our proxy for "is the DB seeded?"
     const settingsDocRef = useMemoFirebase(() => firestore && user ? doc(firestore, 'systemSettings', 'main') : null, [firestore, user]);
     const { data: settings, isLoading: isLoadingSettings } = useDoc(settingsDocRef);
     
-    if (isLoadingSettings) {
+    if (isLoadingSettings || isUserLoading) {
         return <DashboardLoading />;
     }
 

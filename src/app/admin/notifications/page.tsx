@@ -1,12 +1,11 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import Link from 'next/link';
-
 import {
     Bell, Send, Users, Globe, MapPin, Link as LinkIcon, Settings, History, Trash, FileEdit, Package, Bike,
     Radio, Percent, CheckCircle, XCircle, Inbox
@@ -24,21 +23,11 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationsLoading from './loading';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { mockNotifications, notificationTypeInfo } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
-
-
-// MOCK DATA for display
-const mockProvinces = [
-    { id: 'prov1', name: 'صنعاء' },
-    { id: 'prov2', name: 'حضرموت' },
-    { id: 'prov3', name: 'عدن' },
-];
-
-const mockTemplates = [
-    { id: 'accepted', title: 'عند قبول الطلب', icon: Package, template: 'تم قبول طلبك #{orderId} من متجر {storeName} وهو قيد التجهيز.', isActive: true },
-    { id: 'dispatched', title: 'عند إرسال الطلب مع المندوب', icon: Bike, template: 'مندوبنا {delegateName} في الطريق إليك لتسليم طلبك!', isActive: true },
-];
+import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { Notification, notificationTypeInfo, NotificationType } from '@/lib/notifications';
+import type { AppProvince } from '../governorates/page';
 
 // Zod Schemas
 const broadcastSchema = z.object({
@@ -58,120 +47,80 @@ const broadcastSchema = z.object({
     }
 });
 
+const templateSchema = z.object({
+    template: z.string().min(10, "القالب لا يمكن أن يكون فارغًا"),
+    isActive: z.boolean(),
+});
+
 type BroadcastFormValues = z.infer<typeof broadcastSchema>;
-
-type LogEntry = {
-  id: string;
-  readRate: string;
-  date: Date;
-  broadcastData: BroadcastFormValues;
-};
-
-const initialLogs: LogEntry[] = [
-    { 
-        id: 'log1', 
-        readRate: '65%', 
-        date: new Date(Date.now() - 2 * 60 * 60 * 1000), 
-        broadcastData: {
-            type: 'promotion',
-            title: 'خصم 20% على مطاعم محددة',
-            body: 'استمتع بخصم كبير على وجباتك المفضلة!',
-            targetType: 'province',
-            targetValue: 'prov1',
-            link: '/stores/1'
-        } 
-    },
-    { 
-        id: 'log2', 
-        readRate: '80%', 
-        date: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        broadcastData: {
-            type: 'system',
-            title: 'تحديث جديد متوفر!',
-            body: 'لقد قمنا بتحسينات وإضافة مزايا جديدة. قم بالتحديث الآن.',
-            targetType: 'all',
-        }
-    },
-];
+type BroadcastLog = BroadcastFormValues & { id: string; createdAt: Timestamp; readRate: string; };
+type Template = { id: string, title: string, icon: string, template: string, isActive: boolean };
 
 // Component
 export default function NotificationsPage() {
     const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(true);
-    const [templates, setTemplates] = useState(mockTemplates);
-    const [logs, setLogs] = useState(initialLogs);
-    const [deleteAlert, setDeleteAlert] = useState<LogEntry | null>(null);
+    const firestore = useFirestore();
+    const [deleteAlert, setDeleteAlert] = useState<BroadcastLog | null>(null);
     const [activeTab, setActiveTab] = useState("sender");
 
-    // Forms
+    const { data: provinces, isLoading: isLoadingProvinces } = useCollection<AppProvince>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
+    const { data: templates, isLoading: isLoadingTemplates } = useCollection<Template>(useMemoFirebase(() => firestore ? collection(firestore, 'notificationTemplates') : null, [firestore]));
+    const { data: logs, isLoading: isLoadingLogs } = useCollection<BroadcastLog>(useMemoFirebase(() => firestore ? collection(firestore, 'broadcasts') : null, [firestore]));
+    const { data: incomingNotifications, isLoading: isLoadingIncoming } = useCollection<Notification>(useMemoFirebase(() => firestore ? collection(firestore, 'notifications') : null, [firestore]));
+
+    const isLoading = isLoadingProvinces || isLoadingTemplates || isLoadingLogs || isLoadingIncoming;
+
     const broadcastForm = useForm<BroadcastFormValues>({
         resolver: zodResolver(broadcastSchema),
-        defaultValues: {
-            type: 'promotion',
-            title: '',
-            body: '',
-            targetType: 'all',
-            targetValue: '',
-            link: '',
-        }
+        defaultValues: { type: 'promotion', title: '', body: '', targetType: 'all', targetValue: '', link: '' }
     });
-
-    useEffect(() => {
-        setTimeout(() => setIsLoading(false), 1000);
-    }, []);
 
     const targetType = broadcastForm.watch('targetType');
 
+    function onBroadcastSubmit(values: BroadcastFormValues) {
+        if (!firestore) return;
+        const dataToSave = {
+            ...values,
+            createdAt: serverTimestamp(),
+            readRate: '0%', // Initial value
+        };
+        addDocumentNonBlocking(collection(firestore, 'broadcasts'), dataToSave);
+        toast({ title: 'تم إرسال الإشعار بنجاح', description: `تم إرسال "${values.title}" إلى الجمهور المستهدف.` });
+        broadcastForm.reset();
+    }
+    
+    function onTemplateSave(templateId: string, newTemplate: string, newIsActive: boolean) {
+        if (!firestore) return;
+        updateDocumentNonBlocking(doc(firestore, 'notificationTemplates', templateId), { template: newTemplate, isActive: newIsActive });
+        toast({ title: 'تم حفظ القالب بنجاح' });
+    }
+
+    const handleEditLog = (log: BroadcastLog) => {
+        broadcastForm.reset(log);
+        setActiveTab('sender');
+    };
+    
+    const handleDeleteLog = (log: BroadcastLog) => {
+        setDeleteAlert(log);
+    };
+
+    const confirmDeleteLog = () => {
+        if (!deleteAlert || !firestore) return;
+        deleteDocumentNonBlocking(doc(firestore, 'broadcasts', deleteAlert.id));
+        setDeleteAlert(null);
+        toast({ title: "تم حذف سجل الإشعار" });
+    };
+    
     const getTargetText = (targetType: 'all' | 'user' | 'province', targetValue?: string) => {
         switch(targetType) {
             case 'all': return 'الكل';
             case 'user': return `مستخدم: ${targetValue}`;
             case 'province':
-                const province = mockProvinces.find(p => p.id === targetValue);
-                return province ? province.name : 'محافظة محددة';
+                const province = provinces?.find(p => p.id === targetValue);
+                return province ? province.province_name : 'محافظة محددة';
             default: return 'غير محدد';
         }
     }
-
-    function onBroadcastSubmit(values: BroadcastFormValues) {
-        console.log("Sending notification:", values);
-
-        const newLog: LogEntry = {
-            id: `log${Date.now()}`,
-            readRate: '0%',
-            date: new Date(),
-            broadcastData: values,
-        };
-
-        setLogs(prevLogs => [newLog, ...prevLogs]);
-        
-        toast({
-            title: 'تم إرسال الإشعار بنجاح',
-            description: `تم إرسال "${values.title}" إلى الجمهور المستهدف.`,
-        });
-        broadcastForm.reset();
-    }
-    
-    function onTemplateSave(templateId: string, newTemplate: string) {
-        setTemplates(current => current.map(t => t.id === templateId ? {...t, template: newTemplate } : t));
-         toast({ title: 'تم حفظ القالب بنجاح' });
-    }
-
-    const handleEditLog = (log: LogEntry) => {
-        broadcastForm.reset(log.broadcastData);
-        setActiveTab('sender');
-    };
-    
-    const handleDeleteLog = (log: LogEntry) => {
-        setDeleteAlert(log);
-    };
-
-    const confirmDeleteLog = () => {
-        if (!deleteAlert) return;
-        setLogs(prevLogs => prevLogs.filter(log => log.id !== deleteAlert.id));
-        setDeleteAlert(null);
-        toast({ title: "تم حذف سجل الإشعار" });
-    };
 
     if (isLoading) {
         return <NotificationsLoading />;
@@ -220,7 +169,7 @@ export default function NotificationsPage() {
                                     )}/>
 
                                     {targetType === 'user' && <FormField control={broadcastForm.control} name="targetValue" render={({ field }) => (<FormItem><FormLabel>معرف المستخدم (UID)</FormLabel><FormControl><Input {...field} placeholder="أدخل معرف المستخدم..."/></FormControl><FormMessage/></FormItem>)} />}
-                                    {targetType === 'province' && <FormField control={broadcastForm.control} name="targetValue" render={({ field }) => (<FormItem><FormLabel>اختر المحافظة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..."/></SelectTrigger></FormControl><SelectContent>{mockProvinces.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)} />}
+                                    {targetType === 'province' && <FormField control={broadcastForm.control} name="targetValue" render={({ field }) => (<FormItem><FormLabel>اختر المحافظة</FormLabel><Select onValueChange={field.onChange} value={field.value} dir="rtl"><FormControl><SelectTrigger><SelectValue placeholder="اختر..."/></SelectTrigger></FormControl><SelectContent>{provinces?.map(p => <SelectItem key={p.id} value={p.id}>{p.province_name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>)} />}
 
                                     <FormField control={broadcastForm.control} name="link" render={({ field }) => (<FormItem><FormLabel>رابط التوجيه (اختياري)</FormLabel><div className="relative"><LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/><FormControl><Input {...field} placeholder="/store/STORE_ID or /orders" className="pr-10" dir="ltr"/></FormControl></div></FormItem>)}/>
                                 </CardContent>
@@ -236,8 +185,8 @@ export default function NotificationsPage() {
                             <CardDescription>تعديل النصوص التي يتم إرسالها تلقائياً عند تحديث حالة الطلبات.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {templates.map((template, index) => {
-                                const Icon = template.icon;
+                            {templates?.map((template) => {
+                                const Icon = template.icon === 'Package' ? Package : Bike;
                                 return (
                                     <Card key={template.id}>
                                         <CardHeader className="flex flex-row items-center justify-between">
@@ -245,19 +194,17 @@ export default function NotificationsPage() {
                                                 <Icon className="h-6 w-6 text-primary"/>
                                                 <CardTitle className="text-base">{template.title}</CardTitle>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" variant={template.isActive ? 'default' : 'outline'} onClick={() => setTemplates(current => current.map(t => t.id === template.id ? {...t, isActive: true} : t))}>
-                                                    <CheckCircle/>
-                                                    فعّال
+                                             <div className="flex gap-2">
+                                                <Button size="sm" variant={template.isActive ? 'default' : 'outline'} onClick={() => onTemplateSave(template.id, template.template, true)}>
+                                                    <CheckCircle/> فعّال
                                                 </Button>
-                                                <Button size="sm" variant={!template.isActive ? 'destructive' : 'outline'} onClick={() => setTemplates(current => current.map(t => t.id === template.id ? {...t, isActive: false} : t))}>
-                                                    <XCircle/>
-                                                    معطّل
+                                                <Button size="sm" variant={!template.isActive ? 'destructive' : 'outline'} onClick={() => onTemplateSave(template.id, template.template, false)}>
+                                                    <XCircle/> معطّل
                                                 </Button>
                                             </div>
                                         </CardHeader>
                                         <CardContent>
-                                            <Textarea defaultValue={template.template} onBlur={(e) => onTemplateSave(template.id, e.target.value)} />
+                                            <Textarea defaultValue={template.template} onBlur={(e) => onTemplateSave(template.id, e.target.value, template.isActive)} />
                                             <p className="text-xs text-muted-foreground pt-2">
                                                 المتغيرات المتاحة: `'{'{orderId}'}'`, `'{'{storeName}'}'`, `'{'{delegateName}'}'`
                                             </p>
@@ -291,8 +238,8 @@ export default function NotificationsPage() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {mockNotifications.map(notification => {
-                                                    const InfoIcon = notificationTypeInfo[notification.type].icon;
+                                                {incomingNotifications?.map(notification => {
+                                                    const InfoIcon = notificationTypeInfo[notification.type]?.icon || Bell;
                                                     return (
                                                         <TableRow key={notification.id} className={cn(!notification.isRead && "bg-primary/5")}>
                                                             <TableCell>
@@ -308,7 +255,7 @@ export default function NotificationsPage() {
                                                             <TableCell className="text-center">
                                                                 <Badge variant="outline" className="gap-1.5">
                                                                     <InfoIcon className="h-3.5 w-3.5" />
-                                                                    {notificationTypeInfo[notification.type].text}
+                                                                    {notificationTypeInfo[notification.type]?.text}
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell className="text-center text-xs">{formatDistanceToNow(notification.timestamp, { addSuffix: true, locale: ar })}</TableCell>
@@ -331,15 +278,15 @@ export default function NotificationsPage() {
                                                 <TableHead className="text-center">إجراءات</TableHead>
                                             </TableRow></TableHeader>
                                             <TableBody>
-                                                {logs.map(log => {
-                                                    const { title, type, targetType, targetValue } = log.broadcastData;
+                                                {logs?.map(log => {
+                                                    const { title, type, targetType, targetValue } = log;
                                                     return (
                                                         <TableRow key={log.id}>
                                                             <TableCell className="text-center font-medium">{title}</TableCell>
                                                             <TableCell className="text-center"><Badge variant="secondary">{type}</Badge></TableCell>
                                                             <TableCell className="text-center">{getTargetText(targetType, targetValue)}</TableCell>
                                                             <TableCell className="text-center font-mono">{log.readRate}</TableCell>
-                                                            <TableCell className="text-center">{formatDistanceToNow(log.date, { addSuffix: true, locale: ar })}</TableCell>
+                                                            <TableCell className="text-center">{formatDistanceToNow(log.createdAt.toDate(), { addSuffix: true, locale: ar })}</TableCell>
                                                             <TableCell className="text-center">
                                                                 <div className="flex items-center justify-center gap-2">
                                                                     <Button variant="outline" size="icon" onClick={() => handleEditLog(log)}><FileEdit className="h-4 w-4" /></Button>

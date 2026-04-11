@@ -49,8 +49,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const auth = useAuth();
     const firestore = useFirestore();
     
-    // Check for seeded state before fetching collections that might not exist.
-    const settingsDocRef = useMemoFirebase(() => firestore && user ? doc(firestore, 'systemSettings', 'main') : null, [firestore, user]);
+    // Check if the DB is seeded before fetching collections that might not exist.
+    const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
     const { data: settings } = useDoc(settingsDocRef);
     const isSeeded = !!settings;
 
