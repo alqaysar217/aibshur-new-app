@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { seedDatabase } from '@/lib/seed';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const settingsSchema = z.object({
     appName: z.string().min(2, "اسم التطبيق مطلوب"),
