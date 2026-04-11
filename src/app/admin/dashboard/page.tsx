@@ -17,6 +17,7 @@ import type { Product } from '../products/page';
 import DashboardLoading from './loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { type Notification } from '@/lib/notifications';
 
 
 const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
@@ -44,7 +45,7 @@ function DashboardContent() {
     const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
     const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
-    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<any>(useMemoFirebase(() => firestore && user?.uid ? collection(firestore, 'notifications') : null, [firestore, user?.uid]));
+    const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<Notification>(useMemoFirebase(() => firestore && user?.uid ? collection(firestore, 'notifications') : null, [firestore, user?.uid]));
     
     const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
 
@@ -55,7 +56,7 @@ function DashboardContent() {
         today.setHours(0, 0, 0, 0);
 
         const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
-        const liveSales = orders.filter(o => o.timestamps.createdAt >= today).reduce((sum, o) => sum + o.financials.total, 0);
+        const liveSales = orders.filter(o => o.timestamps.createdAt.toDate() >= today).reduce((sum, o) => sum + o.financials.total, 0);
         const onlineDrivers = drivers.filter(d => d.is_active); // Simplified logic
         const pendingQueue = orders.filter(o => o.status === 'incoming');
 
@@ -78,7 +79,7 @@ function DashboardContent() {
         const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
         orders.forEach(order => {
-            const date = new Date(order.timestamps.createdAt);
+            const date = order.timestamps.createdAt.toDate();
             const dayName = weekDays[date.getDay()];
             if (!dataByDay[dayName]) {
                 dataByDay[dayName] = { sales: 0, profit: 0 };
@@ -319,7 +320,7 @@ export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
 
     // Check if the system settings doc exists. This is our proxy for "is the DB seeded?"
-    const settingsDocRef = useMemoFirebase(() => firestore && user ? doc(firestore, 'systemSettings', 'main') : null, [firestore, user]);
+    const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
     const { data: settings, isLoading: isLoadingSettings } = useDoc(settingsDocRef);
     
     if (isLoadingSettings || isUserLoading) {
