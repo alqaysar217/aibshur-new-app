@@ -1,3 +1,8 @@
+'use client';
+
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 import { HomeHeader } from '@/components/home-header';
 import { BottomNav } from '@/components/bottom-nav';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,23 +11,18 @@ import {
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';
-import { Badge } from '@/components/ui/badge';
 import { StoreCard } from '@/components/store-card';
 import { List, MapPin, Heart, Star } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 
-const categories = [
-  { name: 'مطاعم', imageId: 'category-restaurants' },
-  { name: 'صيدليات', imageId: 'category-pharmacies' },
-  { name: 'ماركت', imageId: 'category-supermarkets' },
-  { name: 'خضروات', imageId: 'category-vegetables' },
-  { name: 'كافيه', imageId: 'category-cafes' },
-  { name: 'تجميل', imageId: 'category-beauty' },
-  { name: 'حلويات', imageId: 'category-sweets' },
-  { name: 'مخابز', imageId: 'category-bakeries' },
-];
+type AppCategory = {
+  id: string;
+  name: string;
+  image: string;
+  is_active: boolean;
+};
 
 const filters = [
     { name: 'الكل', icon: List },
@@ -39,6 +39,14 @@ const storesData = [
 ];
 
 export default function HomePage() {
+  const firestore = useFirestore();
+
+  const categoriesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'app_categories'), where('is_active', '==', true));
+  }, [firestore]);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<AppCategory>(categoriesQuery);
+
   const adBanners = PlaceHolderImages.filter(p => p.id.startsWith('ad-banner'));
   const stores = storesData.map(store => {
     const imageData = PlaceHolderImages.find(p => p.id === store.imageId);
@@ -49,16 +57,6 @@ export default function HomePage() {
     }
   });
 
-  const categoryImages = categories.map(cat => {
-      const imageData = PlaceHolderImages.find(p => p.id === cat.imageId);
-      return {
-          ...cat,
-          imageUrl: imageData?.imageUrl || '',
-          imageHint: imageData?.imageHint || '',
-          description: imageData?.description || ''
-      }
-  });
-
   return (
     <div className="bg-background min-h-screen pb-20">
       <HomeHeader />
@@ -67,21 +65,29 @@ export default function HomePage() {
         {/* Store Categories */}
         <div className="overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
           <div className="flex gap-4">
-            {categoryImages.map((cat) => (
-              <div key={cat.name} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center shadow-sm border overflow-hidden">
-                  <Image
-                    src={cat.imageUrl}
-                    alt={cat.description}
-                    width={64}
-                    height={64}
-                    className="object-cover w-full h-full"
-                    data-ai-hint={cat.imageHint}
-                  />
+            {isLoadingCategories ? (
+              [...Array(6)].map((_, i) => (
+                <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
+                  <Skeleton className="w-16 h-16 rounded-xl" />
+                  <Skeleton className="w-12 h-4 rounded-md" />
                 </div>
-                <p className="text-xs font-medium text-center text-muted-foreground">{cat.name}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              categories?.map((cat) => (
+                <div key={cat.id} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
+                  <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center shadow-sm border overflow-hidden">
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <p className="text-xs font-medium text-center text-muted-foreground">{cat.name}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
