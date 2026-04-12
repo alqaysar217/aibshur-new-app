@@ -156,6 +156,7 @@ export default function HomePage() {
                 name={store.name}
                 imageUrl={store.imageUrl}
                 deliveryTime={store.deliveryTime}
+                distance="0 كم"
                 category={categoriesMap[store.categoryId] || 'فئة غير معروفة'}
                 rating={store.rating}
                 isActive={store.is_active}

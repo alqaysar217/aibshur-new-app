@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Clock, Star } from 'lucide-react';
+import { Heart, Clock, Star, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,12 +14,13 @@ export type StoreCardProps = {
   imageUrl: string;
   imageHint?: string;
   deliveryTime: string;
+  distance: string;
   category: string;
   rating: number;
   isActive: boolean;
 };
 
-export function StoreCard({ id, name, imageUrl, imageHint, deliveryTime, category, rating, isActive }: StoreCardProps) {
+export function StoreCard({ id, name, imageUrl, imageHint, deliveryTime, distance, category, rating, isActive }: StoreCardProps) {
   const isOpen = isActive;
 
   return (
@@ -53,11 +54,15 @@ export function StoreCard({ id, name, imageUrl, imageHint, deliveryTime, categor
               </Button>
             </div>
 
-            {/* Row 2: Delivery Time */}
-            <div className="flex justify-between items-center text-xs text-muted-foreground">
+            {/* Row 2: Delivery Time & Distance */}
+            <div className="flex justify-between items-center text-xs">
                 <div className="flex items-center gap-1 truncate">
-                    <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span>{deliveryTime} دقيقة</span>
+                    <Clock className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="font-semibold text-foreground">{deliveryTime} دقيقة</span>
+                </div>
+                 <div className="flex items-center gap-1 truncate">
+                    <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="font-semibold text-foreground">{distance}</span>
                 </div>
             </div>
 
