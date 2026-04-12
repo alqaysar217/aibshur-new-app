@@ -275,9 +275,9 @@ export default function VipPage() {
     }
 
     const typeInfo = {
-        bronze: { label: 'برونزية', color: 'bg-orange-600' },
-        silver: { label: 'فضية', color: 'bg-slate-500' },
-        gold: { label: 'ذهبية', color: 'bg-amber-500' },
+        bronze: { label: 'برونزية', color: 'bg-orange-600', icon: Shield },
+        silver: { label: 'فضية', color: 'bg-slate-500', icon: Rocket },
+        gold: { label: 'ذهبية', color: 'bg-amber-500', icon: Crown },
     };
     const durationInfo = { monthly: 'شهرياً', quarterly: 'كل 3 أشهر', yearly: 'سنوياً' };
 
@@ -287,8 +287,11 @@ export default function VipPage() {
         <>
         <Tabs defaultValue="manage" dir="rtl">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-foreground">إدارة باقات VIP</h1>
+                 <div>
+                    <h1 className="text-3xl font-black text-foreground flex items-center gap-2">
+                        <Gem className="h-8 w-8 text-primary"/>
+                        إدارة باقات VIP
+                    </h1>
                     <p className="text-muted-foreground mt-1">إدارة الباقات وتفعيل الاشتراكات للعملاء.</p>
                 </div>
                 <TabsList className="w-full sm:w-auto">
@@ -307,17 +310,19 @@ export default function VipPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {(packages || []).map(pkg => (
-                                <Card key={pkg.id} className={cn("flex flex-col", !pkg.isActive && "bg-muted/50")}>
+                            {(packages || []).map(pkg => {
+                                const PkgIcon = typeInfo[pkg.type].icon;
+                                return (
+                                <Card key={pkg.id} className={cn("flex flex-col shadow-sm", !pkg.isActive && "bg-muted/50")}>
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
-                                            <Badge className={cn("text-white", typeInfo[pkg.type].color)}>{typeInfo[pkg.type].label}</Badge>
+                                            <Badge className={cn("text-white gap-1.5", typeInfo[pkg.type].color)}><PkgIcon className="h-3.5 w-3.5"/>{typeInfo[pkg.type].label}</Badge>
                                             <Badge variant={pkg.isActive ? 'default' : 'secondary'}>{pkg.isActive ? 'فعالة' : 'معطلة'}</Badge>
                                         </div>
                                         <CardTitle className="pt-2">{pkg.name}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex-grow space-y-4">
-                                        <div className="text-3xl font-bold">{pkg.price.toLocaleString()} <span className="text-sm text-muted-foreground">ر.ي / {durationInfo[pkg.duration].replace('كل ','')}</span></div>
+                                        <div className="text-3xl font-bold">{pkg.price.toLocaleString('en-US')} <span className="text-sm text-muted-foreground">ر.ي / {durationInfo[pkg.duration].replace('كل ','')}</span></div>
                                         <ul className="space-y-2 text-sm">
                                             {pkg.features.map((feat, i) => (
                                                 <li key={i} className="flex items-center gap-2">
@@ -332,7 +337,7 @@ export default function VipPage() {
                                         <Button variant="destructive" size="sm" onClick={() => handleModalOpen('deletePackage', pkg)}><Trash/>حذف</Button>
                                     </CardFooter>
                                 </Card>
-                            ))}
+                            )})}
                         </div>
                     </CardContent>
                 </Card>
@@ -341,11 +346,11 @@ export default function VipPage() {
             <TabsContent value="activate" className="space-y-6">
                 <Form {...subscriptionForm}>
                     <form onSubmit={subscriptionForm.handleSubmit(onSubscriptionSubmit)}>
-                        <Card>
+                        <Card className="shadow-sm">
                             <CardHeader><CardTitle>تفعيل اشتراك جديد</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <FormItem>
-                                    <FormLabel>ابحث عن العميل برقم الهاتف</FormLabel>
+                                    <FormLabel className="flex items-center gap-2"><Search/>ابحث عن العميل برقم الهاتف</FormLabel>
                                     <div className="flex gap-2">
                                         <Input value={clientSearch} onChange={e => setClientSearch(e.target.value)} placeholder="7XXXXXXXX" />
                                         <Button type="button" onClick={handleClientSearch}><Search/></Button>
@@ -353,7 +358,7 @@ export default function VipPage() {
                                 </FormItem>
                                 {foundClient && (
                                     <div className="p-3 bg-primary/10 rounded-lg text-sm space-y-2">
-                                        <div><strong>اسم العميل:</strong> {foundClient.name}</div>
+                                        <div className="font-bold">العميل: {foundClient.name}</div>
                                         <div className="flex items-center gap-2">
                                             <strong>الحالة:</strong> 
                                             <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
@@ -364,7 +369,7 @@ export default function VipPage() {
                                     <FormItem><FormLabel>اختر الباقة</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value} dir="rtl" disabled={!foundClient}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="اختر باقة..." /></SelectTrigger></FormControl>
-                                            <SelectContent>{activePackages.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.price.toLocaleString()} ر.ي</SelectItem>)}</SelectContent>
+                                            <SelectContent>{activePackages.map(p => <SelectItem key={p.id} value={p.id}>{p.name} - {p.price.toLocaleString('en-US')} ر.ي</SelectItem>)}</SelectContent>
                                         </Select><FormMessage/>
                                     </FormItem>
                                 )}/>
@@ -409,7 +414,7 @@ export default function VipPage() {
                     </form>
                 </Form>
                 
-                <Card>
+                <Card className="shadow-sm">
                     <CardHeader>
                         <CardTitle>سجل الاشتراكات</CardTitle>
                         <CardDescription>عرض وتصفية وإدارة جميع اشتراكات العملاء.</CardDescription>
@@ -426,6 +431,7 @@ export default function VipPage() {
                          </div>
                     </CardHeader>
                     <CardContent>
+                        <div className="border rounded-lg">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -449,10 +455,10 @@ export default function VipPage() {
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></Button></DropdownMenuTrigger>
                                                 <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => handleModalOpen('detailsSub', sub)}><FileText className="ml-2"/> عرض التفاصيل</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleModalOpen('editSub', sub)}><FileEdit className="ml-2"/> تعديل</DropdownMenuItem>
-                                                    {sub.isActive && <DropdownMenuItem onClick={() => handleDeactivateSubscription(sub.id)} className="text-yellow-600 focus:text-yellow-600"><XCircle className="ml-2"/> إلغاء التفعيل</DropdownMenuItem>}
-                                                    <DropdownMenuItem onClick={() => handleModalOpen('deleteSub', sub)} className="text-destructive focus:text-destructive"><Trash className="ml-2"/> حذف</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleModalOpen('detailsSub', sub)}><FileText/> عرض التفاصيل</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleModalOpen('editSub', sub)}><FileEdit/> تعديل</DropdownMenuItem>
+                                                    {sub.isActive && <DropdownMenuItem onClick={() => handleDeactivateSubscription(sub.id)} className="text-yellow-600 focus:text-yellow-600"><XCircle/> إلغاء التفعيل</DropdownMenuItem>}
+                                                    <DropdownMenuItem onClick={() => handleModalOpen('deleteSub', sub)} className="text-destructive focus:text-destructive"><Trash/> حذف</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -460,6 +466,7 @@ export default function VipPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -673,7 +680,7 @@ export default function VipPage() {
                                 <CardHeader className="pb-2"><CardTitle className="text-base">بيانات الباقة</CardTitle></CardHeader>
                                 <CardContent className="space-y-2">
                                     <div><strong>الباقة:</strong> {pkg?.name || 'باقة محذوفة'}</div>
-                                    <div><strong>السعر:</strong> {pkg ? `${pkg.price.toLocaleString()} ر.ي` : 'N/A'}</div>
+                                    <div><strong>السعر:</strong> {pkg ? `${pkg.price.toLocaleString('en-US')} ر.ي` : 'N/A'}</div>
                                 </CardContent>
                             </Card>
                             <Card>
