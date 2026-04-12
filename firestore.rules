@@ -26,7 +26,6 @@ service cloud.firestore {
     match /storeOwners/{docId} { allow read, write: if isAdmin(); }
     match /admins/{docId} { allow read, write: if isAdmin(); }
     match /bankAccounts/{docId} { allow read, write: if isAdmin(); }
-    match /app_provinces/{docId} { allow read, write: if isAdmin(); }
     match /app_categories/{docId} { allow read, write: if isAdmin(); }
     match /store_filters/{docId} { allow read, write: if isAdmin(); }
     match /products/{docId} { allow read, write: if isAdmin(); }
@@ -49,6 +48,10 @@ service cloud.firestore {
     }
     
     // --- Public Read / Admin Write Collections ---
+    match /app_provinces/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /adBanners/{docId} { 
       allow read: if true;
       allow write: if isAdmin();
