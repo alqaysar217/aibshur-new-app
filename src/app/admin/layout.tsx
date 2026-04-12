@@ -96,12 +96,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href={href} title={isCollapsed ? text : ''}>
             <span
               className={cn(
-                'flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 rounded-md',
-                isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                'flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-bold transition-colors duration-200',
+                isActive
+                  ? 'bg-sidebar-active-gradient text-sidebar-primary-foreground shadow-inner'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 isCollapsed ? 'justify-center' : 'justify-start'
               )}
             >
-              <div className={cn("p-1.5 rounded-md", isActive ? 'bg-sidebar-primary-foreground/10' : 'bg-sidebar-accent/50')}>
+              <div className={cn("p-1.5 rounded-md", isActive ? 'bg-black/10' : 'bg-sidebar-accent/80')}>
                 <Icon className={cn('w-5 h-5 shrink-0', isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-primary' )} />
               </div>
               <span className={cn('transition-opacity duration-200 whitespace-nowrap', isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100')}>
@@ -122,9 +124,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Image 
                     src="/logo.png" 
                     alt="أبشر Logo" 
-                    width={35} // قمت بتكبير الحجم قليلاً ليكون أكثر وضوحاً مع الحواف
+                    width={35} 
                     height={35} 
-                    className="rounded-[10px] object-cover aspect-square border border-secondary" 
+                    className="rounded-lg object-cover aspect-square" 
                 />
                 <span className={cn(
                     "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-primary",

@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        'sidebar-active-gradient': 'linear-gradient(to bottom right, hsl(var(--primary)), hsl(173 60% 30%))',
+      },
       fontFamily: {
         body: ['Cairo', 'sans-serif'],
         headline: ['Cairo', 'sans-serif'],
