@@ -26,8 +26,11 @@ export default function OrdersLoading() {
                 <TabsContent value="incoming" className="mt-4">
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                                <Skeleton className="h-10 w-full sm:w-auto sm:flex-grow" />
+                                <Skeleton className="h-10 w-full sm:w-48" />
                                 <Skeleton className="h-10 w-full sm:w-64" />
+                                <Skeleton className="h-10 w-full sm:w-28" />
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -40,17 +43,19 @@ export default function OrdersLoading() {
                                             <TableHead><Skeleton className="h-5 w-32" /></TableHead>
                                             <TableHead><Skeleton className="h-5 w-24" /></TableHead>
                                             <TableHead><Skeleton className="h-5 w-24" /></TableHead>
+                                            <TableHead><Skeleton className="h-5 w-28" /></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {[...Array(3)].map((_, i) => (
+                                        {[...Array(5)].map((_, i) => (
                                             <TableRow key={i}>
                                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                                 <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                                 <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                                <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                                 <TableCell className="flex justify-center items-center">
-                                                    <Skeleton className="h-9 w-24 rounded-md" />
+                                                    <Skeleton className="h-9 w-24 rounded-lg" />
                                                 </TableCell>
                                             </TableRow>
                                         ))}

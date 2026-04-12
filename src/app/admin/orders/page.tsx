@@ -490,7 +490,7 @@ export default function OrdersPage() {
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-3">
-                                    <Image src={selectedOrder.storeImage || '/logo-app.png'} alt={selectedOrder.storeName} width={40} height={40} className="rounded-md object-cover border" />
+                                    <Image src={selectedOrder.storeImage || '/logo-app.png'} alt={selectedOrder.storeName} width={40} height={40} className="rounded-lg object-cover border" />
                                     <CardTitle className="text-base">{selectedOrder.storeName}</CardTitle>
                                 </div>
                             </CardHeader>
@@ -520,7 +520,7 @@ export default function OrdersPage() {
                            <CardContent className="text-sm space-y-2">
                                <p><strong>الطريقة:</strong> {translatePaymentMethod(selectedOrder.payment.method)}</p>
                                <p><strong>الحالة:</strong> {translatePaymentStatus(selectedOrder.payment.status)}</p>
-                               {selectedOrder.payment.receiptImageUrl && <Image src={selectedOrder.payment.receiptImageUrl} alt="إيصال" width={100} height={100} className="rounded-md border mt-2"/>}
+                               {selectedOrder.payment.receiptImageUrl && <Image src={selectedOrder.payment.receiptImageUrl} alt="إيصال" width={100} height={100} className="rounded-lg border mt-2"/>}
                            </CardContent>
                         </Card>
                         
