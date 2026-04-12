@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Search } from 'lucide-react';
+import { Search, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,42 +52,42 @@ export default function GovernorateSelectionPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-card">
-      <div className="flex-shrink-0 p-6 pt-12 flex flex-col items-center text-center">
+    <div className="flex flex-col h-screen bg-background items-center justify-center p-6">
+      <div className="w-full max-w-sm text-center">
         {selectionImage && (
           <Image
             src={selectionImage.imageUrl}
             alt={selectionImage.description}
-            width={300}
-            height={200}
-            className="mb-6 rounded-lg"
+            width={240}
+            height={160}
+            className="mb-6 rounded-lg mx-auto"
             data-ai-hint={selectionImage.imageHint}
           />
         )}
-        <h1 className="text-3xl font-bold mb-2">اختر موقعك</h1>
+        <h1 className="text-3xl font-bold mb-2 text-primary">اختر موقعك</h1>
         <p className="text-muted-foreground max-w-sm px-4">
             لنتمكن من عرض المتاجر والخدمات المتوفرة في منطقتك.
         </p>
       </div>
 
-      <div className="flex flex-col flex-grow p-6 pt-2 min-h-0">
+      <div className="w-full max-w-sm flex flex-col flex-grow pt-6 min-h-0">
         <div className="relative mb-4">
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             <Input
                 type="text"
                 placeholder="ابحث عن محافظتك..."
-                className="w-full pr-12 pl-4 h-12 text-base bg-muted text-right"
+                className="w-full pr-12 pl-4 h-12 text-base bg-card text-right border-border focus-visible:ring-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
-        <ScrollArea className="flex-grow">
+        <ScrollArea className="flex-grow -mx-2 px-2">
             <ul className="space-y-2">
             {isLoading ? (
               // Show skeleton loaders while data is being fetched
               [...Array(5)].map((_, i) => (
                 <li key={i}>
-                  <Skeleton className="w-full h-[50px] rounded-md" />
+                  <Skeleton className="w-full h-[58px] rounded-lg" />
                 </li>
               ))
             ) : filteredGovernorates.length > 0 ? (
@@ -96,16 +96,17 @@ export default function GovernorateSelectionPage() {
                     <li key={gov.id}>
                     <Button
                         variant="outline"
-                        className="w-full p-4 text-base h-auto"
+                        className="w-full p-4 text-base h-auto justify-start bg-card hover:bg-muted hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary"
                         onClick={() => handleSelect(gov)}
                     >
+                        <MapPin className="ml-3 h-5 w-5 text-primary" />
                         <span className="flex-1 text-right">{gov.province_name}</span>
                     </Button>
                     </li>
                 ))
             ) : (
                 // Show a message if no active governorates are found
-                <p className="text-center text-muted-foreground pt-8">لا توجد محافظات متاحة حالياً.</p>
+                <p className="text-center text-muted-foreground pt-8">لا توجد محافظات تطابق بحثك.</p>
             )}
             </ul>
         </ScrollArea>
