@@ -1,65 +1,100 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, Drumstick, UtensilsCrossed, Sandwich, CupSoda, Leaf, X } from 'lucide-react';
+import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ProductCard, type Product } from '@/components/product-card';
+import { ProductCard, type Product as ProductCardType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// MOCK DATA
-const storeDetails = {
-  id: '1',
-  name: 'مطعم البيت الصنعاني',
-  imageUrl: PlaceHolderImages.find(p => p.id === 'store-banner-yemeni')?.imageUrl || '',
-  imageHint: PlaceHolderImages.find(p => p.id === 'store-banner-yemeni')?.imageHint || '',
-  rating: 4.5,
-  category: 'مطعم',
-  status: 'مفتوح',
-  address: 'شارع حدة، صنعاء',
-  distance: '1.2 كم',
-  deliveryTime: '25-35',
-  workingHours: '8ص - 11م',
+// Type for the store data from firestore
+type Store = {
+    id: string;
+    name: string;
+    imageUrl: string;
+    rating: number;
+    deliveryTime: string;
+    is_active: boolean;
+    categoryId: string;
+    workingHours: any[]; // simplified for now
 };
 
-const productFilters = [
-    { name: 'الكل', icon: List },
-    { name: 'الأكثر طلباً', icon: TrendingUp },
-    { name: 'مفضلاتي', icon: Heart },
-    { name: 'لحوم', icon: Drumstick },
-    { name: 'أرز', icon: UtensilsCrossed },
-    { name: 'وجبات سريعة', icon: Sandwich },
-    { name: 'مشروبات', icon: CupSoda },
-    { name: 'سلطات', icon: Leaf },
-];
-
-// Add imageId to map to placeholder images
-const productsData: Omit<Product, 'imageUrl' | 'imageHint'>[] = [
-  { id: 'p1', name: 'مندي دجاج', description: 'قطعة دجاج طرية مع أرز مندي مبهر ومزين بالزبيب والصنوبر.', price: 2500, rating: 4.8, hasVariants: false, imageId: 'product-mandi-chicken' },
-  { id: 'p2', name: 'عقدة لحم', description: 'قطع لحم طازجة مطبوخة مع الخضروات والبهارات اليمنية الأصيلة.', price: 3000, rating: 4.9, hasVariants: true, imageId: 'product-ogda-meat' },
-  { id: 'p3', name: 'فحسة', description: 'طبق يمني تقليدي من اللحم المفروم والمرق، يقدم في وعاء حجري ساخن.', price: 2800, rating: 4.7, hasVariants: false, imageId: 'product-fahsa' },
-  { id: 'p4', name: 'بيبسي', description: 'مشروب غازي منعش.', price: 300, rating: 4.5, hasVariants: false, imageId: 'product-pepsi' },
-];
-
-const products: Product[] = productsData.map(p => {
-    const imageData = PlaceHolderImages.find(img => img.id === (p as any).imageId);
-    return { ...p, imageUrl: imageData?.imageUrl || '', imageHint: imageData?.imageHint || '' };
-});
-
+// Type for products from firestore
+type FirestoreProduct = {
+    id: string;
+    name: string;
+    description: string;
+    mainImageUrl: string;
+    rating: number;
+    hasVariants: boolean;
+    basePrice?: number;
+};
 
 export default function StoreDetailsPage({ params }: { params: { id: string } }) {
   const [activeFilter, setActiveFilter] = useState('الكل');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductCardType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  
+  const firestore = useFirestore();
 
-  const handleShowDetails = (product: Product) => {
+  // Fetch store details
+  const storeDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'stores', params.id) : null, [firestore, params.id]);
+  const { data: store, isLoading: isLoadingStore } = useDoc<Store>(storeDocRef);
+
+  // Fetch products for this store
+  const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+        collection(firestore, 'products'),
+        where('storeId', '==', params.id),
+        where('is_active', '==', true)
+    );
+  }, [firestore, params.id]);
+  const { data: products, isLoading: isLoadingProducts } = useCollection<FirestoreProduct>(productsQuery);
+
+  // Fetch categories to get category name
+  const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'app_categories') : null, [firestore]);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection(categoriesQuery);
+  const categoriesMap = useMemo(() => {
+    if (!categories) return {};
+    return categories.reduce((acc, cat: any) => {
+        acc[cat.id] = cat.name;
+        return acc;
+    }, {} as Record<string, string>);
+  }, [categories]);
+
+  const handleShowDetails = (product: ProductCardType) => {
     setSelectedProduct(product);
     setIsSheetOpen(true);
   };
+  
+  const isLoading = isLoadingStore || isLoadingProducts || isLoadingCategories;
+
+  if (isLoading || !store) {
+      // Return a skeleton loading UI
+      return (
+        <div className="bg-background min-h-screen">
+          <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-sm border-b"><div className="flex items-center justify-between h-16 px-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-6 w-32" /><Skeleton className="h-9 w-9 rounded-full" /></div></header>
+          <main className="pb-4">
+            <Skeleton className="h-40 w-full" />
+            <div className="p-3 bg-card border-b"><div className="flex justify-around"><Skeleton className="h-10 w-16" /><Skeleton className="h-10 w-16" /><Skeleton className="h-10 w-16" /><Skeleton className="h-10 w-16" /></div></div>
+            <div className="sticky top-16 z-10 bg-background/95 py-3 border-b"><div className="flex gap-2 px-4"><Skeleton className="h-9 w-20 rounded-full" /><Skeleton className="h-9 w-28 rounded-full" /></div></div>
+            <div className="p-4 grid grid-cols-1 gap-3"><Skeleton className="h-24 w-full rounded-lg" /><Skeleton className="h-24 w-full rounded-lg" /><Skeleton className="h-24 w-full rounded-lg" /></div>
+          </main>
+        </div>
+      );
+  }
+
+  const productFilters = [
+    { name: 'الكل', icon: List },
+    { name: 'الأكثر طلباً', icon: TrendingUp },
+  ];
 
   return (
     <div className="bg-background min-h-screen">
@@ -69,7 +104,7 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
           <Button variant="ghost" size="icon" asChild>
             <Link href="/home"><ArrowRight className="h-5 w-5" /></Link>
           </Button>
-          <h2 className="font-bold text-lg truncate">{storeDetails.name}</h2>
+          <h2 className="font-bold text-lg truncate">{store.name}</h2>
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart"><ShoppingCart className="h-5 w-5" /></Link>
           </Button>
@@ -80,34 +115,33 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
         {/* Store Info */}
         <div className="relative h-40 w-full">
             <Image 
-                src={storeDetails.imageUrl} 
-                alt={storeDetails.name} 
+                src={store.imageUrl} 
+                alt={store.name} 
                 fill 
                 className="object-cover" 
-                data-ai-hint={storeDetails.imageHint}
                 priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
             <div className="absolute bottom-0 right-0 p-4 text-white">
-                <h1 className="text-2xl font-bold">{storeDetails.name}</h1>
+                <h1 className="text-2xl font-bold">{store.name}</h1>
                 <div className="flex items-center gap-3 text-sm mt-1">
                     <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-amber-400" strokeWidth={1.5} />
-                        <span className="text-white">{storeDetails.rating}</span>
+                        <span className="text-white">{store.rating}</span>
                     </div>
                     <span>•</span>
-                    <span>{storeDetails.category}</span>
+                    <span>{categoriesMap[store.categoryId] || ''}</span>
                      <span>•</span>
                     <Badge
                       variant="outline"
                       className={cn(
                         "font-semibold",
-                        storeDetails.status === 'مفتوح'
+                        store.is_active
                           ? "border-primary/30 bg-primary/10 text-primary"
                           : "border-destructive/30 bg-destructive/10 text-destructive"
                       )}
                     >
-                      {storeDetails.status}
+                      {store.is_active ? 'مفتوح' : 'مغلق'}
                     </Badge>
                 </div>
             </div>
@@ -118,15 +152,15 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
              <div className="flex justify-around text-xs text-center text-muted-foreground">
                 <div className="flex flex-col items-center gap-1">
                     <MapPin className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">{storeDetails.distance}</span>
+                    <span className="font-semibold">N/A</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                     <Clock className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">{storeDetails.deliveryTime} دق</span>
+                    <span className="font-semibold">{store.deliveryTime} دق</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                     <Clock className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">{storeDetails.workingHours}</span>
+                    <span className="font-semibold">N/A</span>
                 </div>
                  <div className="flex flex-col items-center gap-1">
                     <Heart className="h-5 w-5 text-primary" />
@@ -156,12 +190,32 @@ export default function StoreDetailsPage({ params }: { params: { id: string } })
         
         {/* Product List */}
         <div className="p-4 grid grid-cols-1 gap-3">
-          {products.map(product => (
-            <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />
-          ))}
-           {products.map(product => (
-            <ProductCard key={`${product.id}-2`} product={{...product, id: `${product.id}-2`}} onShowDetails={handleShowDetails} />
-          ))}
+          {isLoadingProducts ? (
+            <>
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </>
+          ) : products && products.length > 0 ? (
+            products.map(product => {
+                const productForCard: ProductCardType = {
+                    ...product,
+                    price: product.basePrice || 0,
+                    imageUrl: product.mainImageUrl,
+                    imageHint: '',
+                };
+                return (
+                    <ProductCard 
+                        key={product.id} 
+                        product={productForCard} 
+                        onShowDetails={handleShowDetails} 
+                    />
+                );
+            })
+          ) : (
+             <div className="text-center py-10 text-muted-foreground">
+              <p>لا توجد منتجات متاحة في هذا المتجر حالياً.</p>
+            </div>
+          )}
         </div>
       </main>
 

@@ -16,11 +16,24 @@ import { List, MapPin, Heart, Star } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState, useMemo } from 'react';
 
+// Define types from Firestore
 type AppCategory = {
   id: string;
   name: string;
   image: string;
+  is_active: boolean;
+};
+
+type Store = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  rating: number;
+  deliveryTime: string;
+  provinceId: string;
+  categoryId: string;
   is_active: boolean;
 };
 
@@ -31,31 +44,46 @@ const filters = [
     { name: 'الأعلى تقييم', icon: Star },
 ];
 
-const storesData = [
-  { id: '1', name: 'مطعم البيت الصنعاني', imageId: 'store-yemeni-food', address: 'شارع حدة، صنعاء', distance: '1.2 كم', category: 'مطعم', rating: 4.5, status: 'مفتوح' },
-  { id: '2', name: 'سوبر ماركت العالمية', imageId: 'store-supermarket', address: 'شارع الزبيري، صنعاء', distance: '0.8 كم', category: 'ماركت', rating: 4.8, status: 'مفتوح' },
-  { id: '3', name: 'صيدلية الشفاء', imageId: 'store-pharmacy', address: 'الدائري، صنعاء', distance: '2.5 كم', category: 'صيدلية', rating: 4.2, status: 'مغلق' },
-  { id: '4', name: 'كافيتيريا مزاج', imageId: 'store-cafe', address: 'شارع الجزائر، صنعاء', distance: '1.5 كم', category: 'كافيه', rating: 4.9, status: 'مفتوح' },
-];
-
 export default function HomePage() {
   const firestore = useFirestore();
+  const [selectedGovernorateId, setSelectedGovernorateId] = useState<string | null>(null);
 
+  // Get selected governorate from localStorage on client-side
+  useEffect(() => {
+    const storedId = localStorage.getItem('selectedGovernorateId');
+    setSelectedGovernorateId(storedId);
+  }, []);
+
+  // Fetch active categories
   const categoriesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'app_categories'), where('is_active', '==', true));
   }, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<AppCategory>(categoriesQuery);
 
+  // Fetch active stores for the selected governorate
+  const storesQuery = useMemoFirebase(() => {
+    if (!firestore || !selectedGovernorateId) return null;
+    return query(
+      collection(firestore, 'stores'),
+      where('is_active', '==', true),
+      where('provinceId', '==', selectedGovernorateId)
+    );
+  }, [firestore, selectedGovernorateId]);
+  const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(storesQuery);
+
+  // Create a map for category names for quick lookup
+  const categoriesMap = useMemo(() => {
+    if (!categories) return {};
+    return categories.reduce((acc, cat) => {
+      acc[cat.id] = cat.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [categories]);
+
   const adBanners = PlaceHolderImages.filter(p => p.id.startsWith('ad-banner'));
-  const stores = storesData.map(store => {
-    const imageData = PlaceHolderImages.find(p => p.id === store.imageId);
-    return {
-        ...store,
-        imageUrl: imageData?.imageUrl || '',
-        imageHint: imageData?.imageHint || '',
-    }
-  });
+  
+  const showStoreLoading = isLoadingStores || !selectedGovernorateId;
 
   return (
     <div className="bg-background min-h-screen pb-20">
@@ -118,8 +146,26 @@ export default function HomePage() {
 
         {/* Store Cards */}
         <div className="grid grid-cols-1 gap-4">
-            {stores.map(store => <StoreCard key={store.id} {...store} />)}
-            {stores.map(store => <StoreCard key={`${store.id}-2`} {...store} id={`${store.id}-2`} />)}
+          {showStoreLoading ? (
+            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-[104px] w-full rounded-lg" />)
+          ) : stores && stores.length > 0 ? (
+            stores.map(store => (
+              <StoreCard 
+                key={store.id} 
+                id={store.id}
+                name={store.name}
+                imageUrl={store.imageUrl}
+                deliveryTime={store.deliveryTime}
+                category={categoriesMap[store.categoryId] || 'فئة غير معروفة'}
+                rating={store.rating}
+                isActive={store.is_active}
+              />
+            ))
+          ) : (
+            <div className="text-center py-10 text-muted-foreground">
+              <p>لا توجد متاجر متاحة في محافظتك حالياً.</p>
+            </div>
+          )}
         </div>
       </main>
 
