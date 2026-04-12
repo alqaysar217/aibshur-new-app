@@ -12,6 +12,7 @@ import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 
 // Type for the store data from firestore
 type Store = {
@@ -36,7 +37,8 @@ type FirestoreProduct = {
     basePrice?: number;
 };
 
-export default function StoreDetailsPage({ params }: { params: { id: string } }) {
+export default function StoreDetailsPage() {
+  const params = useParams<{ id: string }>();
   const [activeFilter, setActiveFilter] = useState('الكل');
   const [selectedProduct, setSelectedProduct] = useState<ProductCardType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
