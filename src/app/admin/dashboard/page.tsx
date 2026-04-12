@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
 import {
-    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database, Users, ShoppingCart, TrendingUp, Bike, PackageCheck, PackageX, HandCoins, LineChart as LineChartIcon, BarChart3 as BarChartIcon, PieChart as PieChartIcon
+    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,17 +18,17 @@ import DashboardLoading from './loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Notification } from '@/lib/notifications';
-import type { Client } from '../users/page';
 
 // This is the shape of the data after we process it for the UI
 export interface Order extends Omit<OrderFS, 'timestamps'> {
     timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; scheduledDeliveryTime?: Date; };
 }
 
+
 const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
     <div className="h-10 w-full">
         <ResponsiveContainer>
-            <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+            <AreaChart data={data}>
                 <defs>
                     <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
@@ -40,7 +40,6 @@ const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string
         </ResponsiveContainer>
     </div>
 );
-
 
 // This component holds the main dashboard content.
 function DashboardContent() {
@@ -54,17 +53,18 @@ function DashboardContent() {
     const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<Notification>(useMemoFirebase(() => firestore && user?.uid ? collection(firestore, 'notifications') : null, [firestore, user?.uid]));
     
     const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
-    
+
     const orders: Order[] = useMemo(() => {
         if (!ordersFS) return [];
         return ordersFS.map(orderFS => {
             const timestamps: any = {};
-            if(orderFS.timestamps) {
-                for (const key in orderFS.timestamps) {
-                    if (orderFS.timestamps[key] instanceof Timestamp) {
-                        timestamps[key] = orderFS.timestamps[key].toDate();
+            if (orderFS.timestamps) {
+                Object.keys(orderFS.timestamps).forEach(key => {
+                    const ts = orderFS.timestamps[key as keyof typeof orderFS.timestamps];
+                    if (ts instanceof Timestamp) {
+                        timestamps[key] = ts.toDate();
                     }
-                }
+                });
             }
             return { ...orderFS, timestamps };
         });
@@ -72,24 +72,26 @@ function DashboardContent() {
 
 
     const pulseData = useMemo(() => {
-        if (!orders || !drivers) return { activeOrders: { value: 0, trend: [] }, todaySales: { value: 0, trend: [] }, onlineDrivers: { value: 0, trend: [] }, pendingOrders: { value: 0, trend: [] }};
-        const now = new Date();
-        const todayStart = new Date(now.setHours(0, 0, 0, 0));
+        if (!orders || !drivers) return { activeOrders: { value: 0, trend: [] }, liveSales: { value: 0, trend: [] }, onlineDrivers: { value: 0, trend: [] }, pendingQueue: { value: 0, trend: [] }};
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
-        const todaySales = orders.filter(o => o.timestamps.createdAt >= todayStart).reduce((sum, o) => sum + o.financials.total, 0);
-        const onlineDrivers = drivers.filter(d => d.is_active);
-        const pendingOrders = orders.filter(o => o.status === 'incoming');
+        const liveSales = orders.filter(o => (o.timestamps.createdAt as any) >= today).reduce((sum, o) => sum + o.financials.total, 0);
+        const onlineDrivers = drivers.filter(d => d.is_active); // Simplified logic
+        const pendingQueue = orders.filter(o => o.status === 'incoming');
 
+        // Simplified trend data
         const generateTrend = (currentValue: number) => [
             { value: currentValue * 0.8 }, { value: currentValue * 1.1 }, { value: currentValue * 0.9 }, { value: currentValue * 1.2 }, { value: currentValue }
-        ].map(p => ({ value: Math.max(0, p.value) })); // Ensure non-negative
+        ];
 
         return {
             activeOrders: { value: activeOrders.length, trend: generateTrend(activeOrders.length) },
-            todaySales: { value: todaySales, trend: generateTrend(todaySales / 1000) }, // Trend in thousands
+            liveSales: { value: liveSales, trend: generateTrend(liveSales / 1000) },
             onlineDrivers: { value: onlineDrivers.length, trend: generateTrend(onlineDrivers.length) },
-            pendingOrders: { value: pendingOrders.length, trend: generateTrend(pendingOrders.length) },
+            pendingQueue: { value: pendingQueue.length, trend: generateTrend(pendingQueue.length) },
         };
     }, [orders, drivers]);
 
@@ -99,22 +101,17 @@ function DashboardContent() {
         const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
         orders.forEach(order => {
-            const date = order.timestamps.createdAt;
+            const date = (order.timestamps.createdAt as any) instanceof Date ? order.timestamps.createdAt : (order.timestamps.createdAt as any);
             const dayName = weekDays[date.getDay()];
             if (!dataByDay[dayName]) {
                 dataByDay[dayName] = { sales: 0, profit: 0 };
             }
             dataByDay[dayName].sales += order.financials.total;
-            dataByDay[dayName].profit += (order.financials.subtotal * 0.1) - order.financials.discount; // Assuming 10% profit margin
+            dataByDay[dayName].profit += (order.financials.subtotal * 0.4) - order.financials.discount;
         });
 
         return weekDays.map(day => ({ name: day, ...dataByDay[day] || {sales: 0, profit: 0} }));
     }, [orders]);
-    
-     const salesProfitConfig = {
-        sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
-        profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
-    };
 
     const ordersByStoreData = useMemo(() => {
         if (!orders) return [];
@@ -133,11 +130,6 @@ function DashboardContent() {
             .sort((a, b) => (b.completed + b.cancelled) - (a.completed + a.cancelled))
             .slice(0, 5);
     }, [orders]);
-
-    const ordersByStoreConfig = {
-        completed: { label: 'مكتملة', color: 'hsl(var(--primary))' },
-        cancelled: { label: 'ملغاة', color: 'hsl(var(--destructive))' },
-    };
 
     const topProducts = useMemo(() => {
         if (!orders || !products) return [];
@@ -161,7 +153,34 @@ function DashboardContent() {
             });
     }, [orders, products]);
     
-   
+    const performanceIndexData = useMemo(() => {
+        if (!orders) return [{ name: 'المناديب', value: 0 }, { name: 'المتاجر', value: 0 }];
+        
+        const delegateRatings = orders.map(o => o.rating?.delegate).filter((r): r is number => r !== undefined && r > 0);
+        const storeRatings = orders.map(o => o.rating?.store).filter((r): r is number => r !== undefined && r > 0);
+
+        const avgDelegateRating = delegateRatings.length > 0 ? delegateRatings.reduce((a, b) => a + b, 0) / delegateRatings.length : 0;
+        const avgStoreRating = storeRatings.length > 0 ? storeRatings.reduce((a, b) => a + b, 0) / storeRatings.length : 0;
+
+        return [
+            { name: 'المناديب', value: parseFloat(avgDelegateRating.toFixed(2)) },
+            { name: 'المتاجر', value: parseFloat(avgStoreRating.toFixed(2)) },
+        ];
+    }, [orders]);
+
+    
+    const salesProfitConfig = {
+        sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
+        profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
+    };
+    const orderStatusConfig = {
+        completed: { label: "مكتمل", color: "hsl(var(--primary))" },
+        cancelled: { label: "ملغي", color: "hsl(var(--destructive))" },
+    };
+     const performanceIndexConfig = {
+        delegates: { label: "المناديب", color: "hsl(var(--chart-1))" },
+        stores: { label: "المتاجر", color: "hsl(var(--chart-2))" },
+    };
 
     if (isLoading) return <DashboardLoading />;
 
@@ -171,38 +190,31 @@ function DashboardContent() {
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">لوحة التحكم الرئيسية</h1>
                 <p className="text-muted-foreground">نظرة شاملة ولحظية على أداء تطبيقك.</p>
             </div>
-            
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <Bike className="h-5 w-5" />
-                        </div>
+                        <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pulseData.activeOrders.value}</div>
                         <SparklineChart data={pulseData.activeOrders.trend} dataKey="value" color="hsl(var(--primary))"/>
                     </CardContent>
                 </Card>
-                 <Card>
+                <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">مبيعات اليوم</CardTitle>
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-500/10 text-green-500">
-                          <TrendingUp className="h-5 w-5" />
-                        </div>
+                        <CardTitle className="text-sm font-medium">المبيعات اللحظية (اليوم)</CardTitle>
+                        <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.todaySales.value.toLocaleString()}&nbsp;ر.ي</div>
-                        <SparklineChart data={pulseData.todaySales.trend} dataKey="value" color="hsl(var(--chart-2))"/>
+                        <div className="text-2xl font-bold">{pulseData.liveSales.value.toLocaleString()}&nbsp;ر.ي</div>
+                        <SparklineChart data={pulseData.liveSales.trend} dataKey="value" color="hsl(var(--chart-2))"/>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">المناديب المتصلين</CardTitle>
-                         <div className="h-10 w-10 flex items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
-                           <MapPin className="h-5 w-5" />
-                        </div>
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pulseData.onlineDrivers.value}</div>
@@ -212,17 +224,14 @@ function DashboardContent() {
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-destructive">طلبات في الانتظار</CardTitle>
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                          <Hourglass className="h-5 w-5" />
-                        </div>
+                        <Hourglass className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingOrders.value}</div>
-                        <SparklineChart data={pulseData.pendingOrders.trend} dataKey="value" color="hsl(var(--destructive))"/>
+                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value}</div>
+                        <SparklineChart data={pulseData.pendingQueue.trend} dataKey="value" color="hsl(var(--destructive))"/>
                     </CardContent>
                 </Card>
             </div>
-
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader>
@@ -231,49 +240,85 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <ChartContainer config={salesProfitConfig} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={salesProfitData} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
+                            <LineChart accessibilityLayer data={salesProfitData} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
                                 <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value / 1000} ألف`} />
                                 <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
-                                <Bar dataKey="profit" fill="var(--color-profit)" radius={4} />
-                            </BarChart>
+                                <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={2} />
+                                <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} />
+                            </LineChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
                 <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle>الطلبات المكتملة مقابل الملغاة</CardTitle>
-                         <CardDescription>مقارنة بين الطلبات الناجحة والملغاة لكل متجر.</CardDescription>
                     </CardHeader>
-                     <CardContent className="flex-1 pb-0">
-                         <ChartContainer config={ordersByStoreConfig} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={ordersByStoreData} layout="vertical" margin={{ left: 0, right: 20 }}>
-                                <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={10} width={80} tickFormatter={(value) => value.slice(0,10)} />
-                                <XAxis type="number" hide />
+                    <CardContent>
+                         <ChartContainer config={orderStatusConfig} className="h-[250px] w-full">
+                            <BarChart accessibilityLayer data={ordersByStoreData}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 10)} />
+                                <YAxis />
                                 <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Bar dataKey="completed" stackId="a" fill="var(--color-completed)" radius={[0, 4, 4, 0]} />
-                                <Bar dataKey="cancelled" stackId="a" fill="var(--color-cancelled)" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                                <Bar dataKey="cancelled" fill="var(--color-cancelled)" radius={4} />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
             </div>
-            
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="lg:col-span-4">
+                    <CardHeader>
+                        <CardTitle>توزيع الطلبات على المتاجر</CardTitle>
+                        <CardDescription>إجمالي الطلبات (المكتملة والملغاة) في المتاجر الرئيسية.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <ChartContainer config={{ total: { label: "إجمالي الطلبات", color: "hsl(var(--chart-3))" } }} className="h-[250px] w-full">
+                            <BarChart accessibilityLayer data={ordersByStoreData.map(d => ({ ...d, total: d.completed + d.cancelled }))} margin={{ left: 12, right: 12, top: 5, bottom: 5}}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0,10)} />
+                                <YAxis />
+                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+                            </BarChart>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+                <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle>مؤشر كفاءة الأداء</CardTitle>
+                        <CardDescription>متوسط تقييم المناديب والمتاجر.</CardDescription>
+                    </CardHeader>
+                     <CardContent className="flex-1 pb-0 flex justify-center items-center">
+                        <ChartContainer config={performanceIndexConfig} className="mx-auto aspect-square h-[250px]">
+                            <PieChart>
+                                <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
+                                <Pie data={performanceIndexData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={80} >
+                                    {performanceIndexData.map((entry) => (
+                                        <Cell key={entry.name} fill={entry.name === 'المناديب' ? 'var(--color-delegates)' : 'var(--color-stores)'} />
+                                    ))}
+                                </Pie>
+                                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                            </PieChart>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+             </div>
             <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
-                            <TableHeader><TableRow className='bg-muted/50'><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {topProducts.map((product) => (
                                     <TableRow key={product.name}>
-                                        <TableCell className="font-medium flex items-center gap-3">
+                                        <TableCell className="font-medium flex items-center gap-2">
                                             <Avatar className="h-8 w-8 rounded-md"><AvatarImage src={product.image} /><AvatarFallback>{product.name.charAt(0)}</AvatarFallback></Avatar>
                                             {product.name}
                                         </TableCell>
