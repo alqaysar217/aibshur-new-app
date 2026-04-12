@@ -24,7 +24,7 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 // Utils
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
-// NO ARABIC LOCALE to enforce English numerals
+import { ar } from 'date-fns/locale';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import type { DateRange } from "react-day-picker";
@@ -39,7 +39,7 @@ import {
 import type { Order as OrderType } from '../orders/page';
 import type { Store as StoreType } from '../stores/page';
 
-const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>Loading Map...</p></div> });
+const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
 
 // We will consider orders with a 'scheduledDeliveryTime' in the future as appointments.
 type Appointment = OrderType & {
@@ -154,7 +154,7 @@ export default function AppointmentsPage() {
             status: 'confirmed',
             'timestamps.confirmedAt': serverTimestamp()
         });
-        toast({ title: "Appointment Confirmed", description: `Appointment #${appointment.id.substring(0, 6)} has been converted to an active order.` });
+        toast({ title: "تم تأكيد الموعد", description: `تم تحويل الموعد #${appointment.id.substring(0, 6)} إلى طلب نشط.` });
     };
 
     const handleCancel = (appointment: Appointment) => {
@@ -167,18 +167,18 @@ export default function AppointmentsPage() {
         updateDocumentNonBlocking(doc(firestore, 'orders', selectedAppointment.id), {
             status: 'cancelled',
             'timestamps.cancelledAt': serverTimestamp(),
-            cancellationReason: 'Cancelled from appointments dashboard'
+            cancellationReason: 'تم الإلغاء من لوحة تحكم المواعيد'
         });
-        toast({ variant: 'destructive', title: "Appointment Cancelled" });
+        toast({ variant: 'destructive', title: "تم إلغاء الموعد" });
         setIsCancelOpen(false);
     };
     
     const handleExport = () => {
         if (!filteredData.length) {
-            toast({ title: "No data to export", description: "Current selection has no appointments." });
+            toast({ title: "لا توجد بيانات للتصدير", description: "الاختيار الحالي لا يحتوي على مواعيد." });
             return;
         }
-        const headers = ["ID", "Client Name", "Store Name", "Scheduled Time", "Total", "Status"];
+        const headers = ["ID", "اسم العميل", "اسم المتجر", "الوقت المجدول", "الإجمالي", "الحالة"];
         const csvRows = [headers.join(",")];
         for (const app of filteredData) {
             const row = [
@@ -196,15 +196,15 @@ export default function AppointmentsPage() {
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", `appointments_export_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute("download", `export_المواعيد_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast({ title: "Export Started", description: `Downloading ${filteredData.length} appointments.` });
+        toast({ title: "بدء التصدير", description: `جاري تنزيل ${filteredData.length} موعد.` });
     };
 
     const formatScheduledTime = (date: Date) => {
-        const day = isToday(date) ? 'Today' : format(date, 'd MMMM');
+        const day = isToday(date) ? 'اليوم' : format(date, 'd MMMM');
         const time = format(date, 'h:mm a');
         return `${day}, ${time}`;
     };
@@ -218,12 +218,12 @@ export default function AppointmentsPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="text-center">Scheduled Time</TableHead>
-                        <TableHead className="text-center">Client</TableHead>
-                        <TableHead className="text-center">Store</TableHead>
-                        <TableHead className="text-center">Total</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="text-center">Actions</TableHead>
+                        <TableHead className="text-center">الوقت المجدول</TableHead>
+                        <TableHead className="text-center">العميل</TableHead>
+                        <TableHead className="text-center">المتجر</TableHead>
+                        <TableHead className="text-center">الإجمالي</TableHead>
+                        <TableHead className="text-center">الحالة</TableHead>
+                        <TableHead className="text-center">الإجراءات</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -232,28 +232,28 @@ export default function AppointmentsPage() {
                             <TableCell className="text-center font-medium">
                                 <div className="flex flex-col items-center">
                                     <span>{formatScheduledTime(app.timestamps.scheduledDeliveryTime)}</span>
-                                    <span className="text-xs text-muted-foreground">({formatDistanceToNow(app.timestamps.scheduledDeliveryTime, { addSuffix: true })})</span>
+                                    <span className="text-xs text-muted-foreground">({formatDistanceToNow(app.timestamps.scheduledDeliveryTime, { addSuffix: true, locale: ar })})</span>
                                 </div>
                             </TableCell>
                             <TableCell className="text-center">{app.clientName}</TableCell>
                             <TableCell className="text-center">{app.storeName}</TableCell>
-                            <TableCell className="text-center font-semibold">{app.financials.total.toLocaleString('en-US')}&nbsp;YER</TableCell>
+                            <TableCell className="text-center font-semibold">{app.financials.total.toLocaleString('en-US')}&nbsp;ر.ي</TableCell>
                             <TableCell className="text-center"><OrderStatusBadge status={app.status}/></TableCell>
                             <TableCell className="text-center">
                                 {activeTab === 'upcoming' ? (
                                     <div className="flex justify-center gap-2">
-                                        <Button variant="default" size="sm" onClick={() => handleConfirm(app)}><Check/> Confirm</Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> Details</Button>
-                                        <Button variant="destructive" size="sm" onClick={() => handleCancel(app)}><X/> Cancel</Button>
+                                        <Button variant="default" size="sm" onClick={() => handleConfirm(app)}><Check/> تأكيد</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> تفاصيل</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleCancel(app)}><X/> إلغاء</Button>
                                     </div>
                                 ) : (
-                                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> Details</Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> تفاصيل</Button>
                                 )}
                             </TableCell>
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">No appointments in this category.</TableCell>
+                            <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">لا توجد مواعيد في هذه الفئة.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -268,17 +268,17 @@ export default function AppointmentsPage() {
                     <div>
                         <h1 className="text-3xl font-black text-foreground flex items-center gap-2">
                             <CalendarCheck className="h-8 w-8 text-primary"/>
-                            Manage Appointments
+                            إدارة المواعيد
                         </h1>
-                        <p className="text-muted-foreground mt-1">Review, confirm, and manage scheduled orders.</p>
+                        <p className="text-muted-foreground mt-1">مراجعة وتأكيد وإدارة الطلبات المجدولة.</p>
                     </div>
                 </div>
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} dir="rtl">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="upcoming" className="gap-2"><Clock/>Upcoming</TabsTrigger>
-                        <TabsTrigger value="completed" className="gap-2"><CheckCircle/>Completed</TabsTrigger>
-                        <TabsTrigger value="cancelled" className="gap-2"><XCircle/>Cancelled</TabsTrigger>
+                        <TabsTrigger value="upcoming" className="gap-2"><Clock/>مواعيد قادمة</TabsTrigger>
+                        <TabsTrigger value="completed" className="gap-2"><CheckCircle/>مواعيد مكتملة</TabsTrigger>
+                        <TabsTrigger value="cancelled" className="gap-2"><XCircle/>مواعيد ملغاة</TabsTrigger>
                     </TabsList>
                     
                     <div className="mt-4">
@@ -288,7 +288,7 @@ export default function AppointmentsPage() {
                                     <div className="relative flex-grow">
                                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input 
-                                            placeholder="Search by name or order ID..." 
+                                            placeholder="ابحث بالاسم أو رقم الطلب..." 
                                             value={filters.searchTerm} 
                                             onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))} 
                                             className="w-full pr-10" 
@@ -297,7 +297,7 @@ export default function AppointmentsPage() {
                                     <Select value={filters.storeId} onValueChange={v => setFilters(f => ({ ...f, storeId: v }))}>
                                         <SelectTrigger className="w-full sm:w-48"><div className="flex items-center gap-2"><StoreIcon className="text-muted-foreground" /> <SelectValue /></div></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Stores</SelectItem>
+                                            <SelectItem value="all">كل المتاجر</SelectItem>
                                             {uniqueStores.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
@@ -319,7 +319,7 @@ export default function AppointmentsPage() {
                                                 format(filters.date.from, "LLL dd, y")
                                             )
                                             ) : (
-                                            <span>Pick a date</span>
+                                            <span>اختر تاريخ</span>
                                             )}
                                         </Button>
                                         </PopoverTrigger>
@@ -334,7 +334,7 @@ export default function AppointmentsPage() {
                                         />
                                         </PopoverContent>
                                     </Popover>
-                                    <Button onClick={handleExport} variant="outline" className="gap-2"><FileDown/> Export</Button>
+                                    <Button onClick={handleExport} variant="outline" className="gap-2"><FileDown/> تصدير</Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -348,7 +348,7 @@ export default function AppointmentsPage() {
              <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                        <DialogTitle className="text-2xl font-bold text-right">Appointment Details: #{selectedAppointment?.id.substring(0, 8)}</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold text-right">تفاصيل الموعد: #{selectedAppointment?.id.substring(0, 8)}</DialogTitle>
                          <div className="flex justify-start items-center gap-4 text-sm pt-1">
                             {selectedAppointment && <OrderStatusBadge status={selectedAppointment.status} />}
                             {selectedAppointment && <span className="flex items-center gap-1.5 text-muted-foreground"><CalendarIcon className="h-4 w-4"/>{format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a')}</span>}
@@ -357,35 +357,35 @@ export default function AppointmentsPage() {
                     {selectedAppointment && (
                         <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
                              <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>Client Details</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
                                 <CardContent className="text-sm space-y-3">
-                                    <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/><strong>Name:</strong> {selectedAppointment.clientName}</div>
-                                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground"/><strong>Phone:</strong> <span dir="ltr">{selectedAppointment.clientPhone}</span></div>
-                                    <div className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" /><strong>Address:</strong> {selectedAppointment.address.description}</div>
+                                    <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/><strong>الاسم:</strong> {selectedAppointment.clientName}</div>
+                                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground"/><strong>الهاتف:</strong> <span dir="ltr">{selectedAppointment.clientPhone}</span></div>
+                                    <div className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" /><strong>العنوان:</strong> {selectedAppointment.address.description}</div>
                                 </CardContent>
                             </Card>
 
                             {selectedAppointment.address.addressType === 'other' && selectedAppointment.address.receiverName && (
                                <Card>
-                                   <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>Recipient Details</CardTitle></CardHeader>
+                                   <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>بيانات المستلم</CardTitle></CardHeader>
                                    <CardContent className="text-sm space-y-3">
-                                       <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/><strong>Name:</strong> {selectedAppointment.address.receiverName}</div>
-                                       {selectedAppointment.address.receiverPhone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground"/><strong>Phone:</strong> <span dir="ltr">{selectedAppointment.address.receiverPhone}</span></div>}
+                                       <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/><strong>الاسم:</strong> {selectedAppointment.address.receiverName}</div>
+                                       {selectedAppointment.address.receiverPhone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground"/><strong>الهاتف:</strong> <span dir="ltr">{selectedAppointment.address.receiverPhone}</span></div>}
                                    </CardContent>
                                </Card>
                             )}
                             
                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>Delivery Location</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>موقع التوصيل</CardTitle></CardHeader>
                                 <CardContent className="h-64"><LocationMapViewer mainPosition={{ lat: selectedAppointment.address.latitude, lng: selectedAppointment.address.longitude }} /></CardContent>
                             </Card>
 
                              <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><StoreIcon className="h-5 w-5 text-primary"/>Order Details</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><StoreIcon className="h-5 w-5 text-primary"/>تفاصيل الطلب</CardTitle></CardHeader>
                                 <CardContent>
-                                    <p className="mb-2"><strong>Store:</strong> {selectedAppointment.storeName}</p>
+                                    <p className="mb-2"><strong>المتجر:</strong> {selectedAppointment.storeName}</p>
                                     <Table>
-                                        <TableHeader><TableRow><TableHead className="text-right">Product</TableHead><TableHead className="w-[80px] text-center">Qty</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[80px] text-center">الكمية</TableHead></TableRow></TableHeader>
                                         <TableBody>{selectedAppointment.items.map(item => (
                                             <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity.toLocaleString('en-US')}</TableCell></TableRow>
                                         ))}</TableBody>
@@ -394,26 +394,26 @@ export default function AppointmentsPage() {
                             </Card>
 
                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign className="h-5 w-5 text-primary"/>Financial Summary</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign className="h-5 w-5 text-primary"/>الملخص المالي</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span>Subtotal</span><span dir="ltr">{selectedAppointment.financials.subtotal.toLocaleString('en-US')}&nbsp;YER</span></div>
-                                    <div className="flex justify-between"><span>Delivery Fee</span><span dir="ltr">{selectedAppointment.financials.deliveryFee.toLocaleString('en-US')}&nbsp;YER</span></div>
-                                    {selectedAppointment.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>Discount</span><span dir="ltr">-{selectedAppointment.financials.discount.toLocaleString('en-US')}&nbsp;YER</span></div>}
+                                    <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedAppointment.financials.subtotal.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedAppointment.financials.deliveryFee.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                                    {selectedAppointment.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedAppointment.financials.discount.toLocaleString('en-US')}&nbsp;ر.ي</span></div>}
                                     <Separator/>
-                                    <div className="flex justify-between font-bold text-base"><span>Total</span><span dir="ltr">{selectedAppointment.financials.total.toLocaleString('en-US')}&nbsp;YER</span></div>
+                                    <div className="flex justify-between font-bold text-base"><span>الإجمالي</span><span dir="ltr">{selectedAppointment.financials.total.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
                                 </CardContent>
                             </Card>
                              <Card>
-                                <CardHeader><CardTitle className="text-base">Appointment Data</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base">بيانات الموعد</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                     <div><strong>Created At:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a')}</div>
-                                     <div><strong>Scheduled For:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a')}</div>
+                                     <div><strong>تاريخ الإنشاء:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a')}</div>
+                                     <div><strong>الوقت المجدول:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a')}</div>
                                 </CardContent>
                              </Card>
                         </div>
                     )}
                      <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
+                        <DialogClose asChild><Button type="button" variant="secondary">إغلاق</Button></DialogClose>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -421,12 +421,12 @@ export default function AppointmentsPage() {
             <AlertDialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
                 <AlertDialogContent dir="rtl">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Cancellation</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to cancel this appointment? This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
+                        <AlertDialogDescription>هل أنت متأكد من إلغاء هذا الموعد؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
                     </AlertDialogHeader>
                      <AlertDialogFooter className="flex-row-reverse sm:justify-start">
-                        <AlertDialogAction onClick={confirmCancel}>Yes, Cancel</AlertDialogAction>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmCancel}>نعم، إلغاء</AlertDialogAction>
+                        <AlertDialogCancel>تراجع</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
