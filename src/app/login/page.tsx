@@ -73,19 +73,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-card p-6 justify-center">
+    <div className="flex flex-col min-h-screen bg-card p-6 justify-start pt-20">
       <div className="flex flex-col items-center text-center">
         {loginImage && (
           <Image
             src={loginImage.imageUrl}
             alt={loginImage.description}
-            width={300}
-            height={200}
-            className="mb-8 rounded-lg"
+            width={240}
+            height={160}
+            className="mb-8 rounded-lg object-contain"
             data-ai-hint={loginImage.imageHint}
           />
         )}
-        <h1 className="text-3xl font-bold mb-2">تسجيل الدخول</h1>
+        <h1 className="text-3xl font-bold mb-2 text-primary">تسجيل الدخول</h1>
         <p className="text-muted-foreground mb-8">
           أدخل رقم هاتفك للمتابعة
         </p>
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 </DropdownMenu>
             </div>
             
-            <Button className="w-full h-12 text-lg font-semibold" onClick={handleContinue} disabled={isLoading}>
+            <Button className="w-full h-12 text-lg font-semibold bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={handleContinue} disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'متابعة'}
             </Button>
         </div>
