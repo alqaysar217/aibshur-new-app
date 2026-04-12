@@ -47,9 +47,9 @@ const delegateFormSchema = z.object({
     phone: z.string().regex(/^7[0-9]{8}$/, { message: 'الرجاء إدخال رقم هاتف يمني صحيح (يبدأ بـ 7)' }),
     email: z.string().email({ message: 'الرجاء إدخال بريد إلكتروني صحيح' }),
     idType: z.enum(['passport', 'card'], { required_error: 'الرجاء اختيار نوع الهوية' }),
-    personalPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح للصورة الشخصية" }),
-    idFrontPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح لصورة الهوية الأمامية" }),
-    idBackPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح" }).optional(),
+    personalPhotoUrl: z.string().min(1, { message: "الرجاء إدخال رابط أو مسار صحيح للصورة الشخصية" }),
+    idFrontPhotoUrl: z.string().min(1, { message: "الرجاء إدخال رابط أو مسار صحيح لصورة الهوية الأمامية" }),
+    idBackPhotoUrl: z.string().optional(),
     latitude: z.coerce.number().optional(),
     longitude: z.coerce.number().optional(),
     terms: z.boolean().refine((val) => val === true, {
