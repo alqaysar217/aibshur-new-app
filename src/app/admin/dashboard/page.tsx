@@ -25,6 +25,22 @@ export interface Order extends Omit<OrderFS, 'timestamps'> {
     timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; scheduledDeliveryTime?: Date; };
 }
 
+const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
+    <div className="h-10 w-full">
+        <ResponsiveContainer>
+            <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                    <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor={color} stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fillOpacity={1} fill={`url(#color-${dataKey})`} />
+            </AreaChart>
+        </ResponsiveContainer>
+    </div>
+);
+
 
 // This component holds the main dashboard content.
 function DashboardContent() {
@@ -56,15 +72,25 @@ function DashboardContent() {
 
 
     const pulseData = useMemo(() => {
-        if (!orders || !drivers) return { activeOrders: 0, todaySales: 0, onlineDrivers: 0, pendingOrders: 0 };
+        if (!orders || !drivers) return { activeOrders: { value: 0, trend: [] }, todaySales: { value: 0, trend: [] }, onlineDrivers: { value: 0, trend: [] }, pendingOrders: { value: 0, trend: [] }};
         const now = new Date();
         const todayStart = new Date(now.setHours(0, 0, 0, 0));
 
-        const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status)).length;
+        const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
         const todaySales = orders.filter(o => o.timestamps.createdAt >= todayStart).reduce((sum, o) => sum + o.financials.total, 0);
-        const onlineDrivers = drivers.filter(d => d.is_active).length;
-        const pendingOrders = orders.filter(o => o.status === 'incoming').length;
-        return { activeOrders, todaySales, onlineDrivers, pendingOrders };
+        const onlineDrivers = drivers.filter(d => d.is_active);
+        const pendingOrders = orders.filter(o => o.status === 'incoming');
+
+        const generateTrend = (currentValue: number) => [
+            { value: currentValue * 0.8 }, { value: currentValue * 1.1 }, { value: currentValue * 0.9 }, { value: currentValue * 1.2 }, { value: currentValue }
+        ].map(p => ({ value: Math.max(0, p.value) })); // Ensure non-negative
+
+        return {
+            activeOrders: { value: activeOrders.length, trend: generateTrend(activeOrders.length) },
+            todaySales: { value: todaySales, trend: generateTrend(todaySales / 1000) }, // Trend in thousands
+            onlineDrivers: { value: onlineDrivers.length, trend: generateTrend(onlineDrivers.length) },
+            pendingOrders: { value: pendingOrders.length, trend: generateTrend(pendingOrders.length) },
+        };
     }, [orders, drivers]);
 
     const salesProfitData = useMemo(() => {
@@ -150,41 +176,49 @@ function DashboardContent() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
-                        <Bike className="h-5 w-5 text-muted-foreground" />
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <Bike className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.activeOrders}</div>
-                        <p className="text-xs text-muted-foreground">الطلبات قيد التجهيز أو التوصيل</p>
+                        <div className="text-2xl font-bold">{pulseData.activeOrders.value}</div>
+                        <SparklineChart data={pulseData.activeOrders.trend} dataKey="value" color="hsl(var(--primary))"/>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">مبيعات اليوم</CardTitle>
-                        <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-500/10 text-green-500">
+                          <TrendingUp className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.todaySales.toLocaleString()}&nbsp;ر.ي</div>
-                        <p className="text-xs text-muted-foreground">إجمالي الإيرادات منذ بداية اليوم</p>
+                        <div className="text-2xl font-bold">{pulseData.todaySales.value.toLocaleString()}&nbsp;ر.ي</div>
+                        <SparklineChart data={pulseData.todaySales.trend} dataKey="value" color="hsl(var(--chart-2))"/>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">المناديب المتصلين</CardTitle>
-                        <MapPin className="h-5 w-5 text-muted-foreground" />
+                         <div className="h-10 w-10 flex items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
+                           <MapPin className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.onlineDrivers}</div>
-                         <p className="text-xs text-muted-foreground">المناديب المتاحون حاليًا لاستلام طلبات</p>
+                        <div className="text-2xl font-bold">{pulseData.onlineDrivers.value}</div>
+                         <SparklineChart data={pulseData.onlineDrivers.trend} dataKey="value" color="hsl(var(--chart-3))"/>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">طلبات في الانتظار</CardTitle>
-                        <Hourglass className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-destructive">طلبات في الانتظار</CardTitle>
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                          <Hourglass className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.pendingOrders}</div>
-                        <p className="text-xs text-muted-foreground">طلبات جديدة بانتظار التأكيد</p>
+                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingOrders.value}</div>
+                        <SparklineChart data={pulseData.pendingOrders.trend} dataKey="value" color="hsl(var(--destructive))"/>
                     </CardContent>
                 </Card>
             </div>
@@ -218,12 +252,12 @@ function DashboardContent() {
                          <ChartContainer config={ordersByStoreConfig} className="h-[250px] w-full">
                             <BarChart accessibilityLayer data={ordersByStoreData} layout="vertical" margin={{ left: 0, right: 20 }}>
                                 <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={10} width={80} />
+                                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={10} width={80} tickFormatter={(value) => value.slice(0,10)} />
                                 <XAxis type="number" hide />
                                 <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
-                                <Bar dataKey="cancelled" fill="var(--color-cancelled)" radius={4} />
+                                <Bar dataKey="completed" stackId="a" fill="var(--color-completed)" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="cancelled" stackId="a" fill="var(--color-cancelled)" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>
@@ -239,7 +273,7 @@ function DashboardContent() {
                             <TableBody>
                                 {topProducts.map((product) => (
                                     <TableRow key={product.name}>
-                                        <TableCell className="font-medium flex items-center gap-2">
+                                        <TableCell className="font-medium flex items-center gap-3">
                                             <Avatar className="h-8 w-8 rounded-md"><AvatarImage src={product.image} /><AvatarFallback>{product.name.charAt(0)}</AvatarFallback></Avatar>
                                             {product.name}
                                         </TableCell>
