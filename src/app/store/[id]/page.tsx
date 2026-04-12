@@ -84,8 +84,16 @@ export default function StoreDetailsPage() {
         <div className="bg-background min-h-screen">
           <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-sm border-b"><div className="flex items-center justify-between h-16 px-2"><Skeleton className="h-9 w-9 rounded-full" /><Skeleton className="h-6 w-32" /><Skeleton className="h-9 w-9 rounded-full" /></div></header>
           <main className="pb-4">
-            <Skeleton className="h-40 w-full" />
-            <div className="p-3 bg-card border-b"><div className="flex justify-around"><Skeleton className="h-10 w-16" /><Skeleton className="h-10 w-16" /><Skeleton className="h-10 w-16" /><Skeleton className="h-10 w-16" /></div></div>
+            <div className="p-4 bg-card border-b">
+              <div className="flex items-start gap-4">
+                <Skeleton className="w-20 h-20 rounded-full"/>
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-6 w-3/4"/>
+                  <Skeleton className="h-4 w-1/2"/>
+                  <Skeleton className="h-4 w-1/3"/>
+                </div>
+              </div>
+            </div>
             <div className="sticky top-16 z-10 bg-background/95 py-3 border-b"><div className="flex gap-2 px-4"><Skeleton className="h-9 w-20 rounded-full" /><Skeleton className="h-9 w-28 rounded-full" /></div></div>
             <div className="p-4 grid grid-cols-1 gap-3"><Skeleton className="h-24 w-full rounded-lg" /><Skeleton className="h-24 w-full rounded-lg" /><Skeleton className="h-24 w-full rounded-lg" /></div>
           </main>
@@ -115,58 +123,54 @@ export default function StoreDetailsPage() {
 
       <main className="pb-4">
         {/* Store Info */}
-        <div className="relative h-40 w-full">
-            <Image 
-                src={store.imageUrl} 
-                alt={store.name} 
-                fill 
-                className="object-cover" 
-                priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-            <div className="absolute bottom-0 right-0 p-4 text-white">
-                <h1 className="text-2xl font-bold">{store.name}</h1>
-                <div className="flex items-center gap-3 text-sm mt-1">
-                    <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-amber-400" strokeWidth={1.5} />
-                        <span className="text-white">{store.rating}</span>
+        <div className="p-4 bg-card border-b">
+            <div className="flex items-start gap-4">
+                <Image 
+                    src={store.imageUrl} 
+                    alt={store.name} 
+                    width={80} 
+                    height={80}
+                    className="w-20 h-20 object-cover rounded-full border-2 border-primary/10"
+                />
+                <div className="flex-1 flex flex-col gap-1.5">
+                    {/* Row 1 */}
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-xl font-bold">{store.name}</h1>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive active:text-destructive active:scale-95">
+                            <Heart className="h-5 w-5"/>
+                        </Button>
                     </div>
-                    <span>•</span>
-                    <span>{categoriesMap[store.categoryId] || ''}</span>
-                     <span>•</span>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "font-semibold",
-                        store.is_active
-                          ? "border-primary/30 bg-primary/10 text-primary"
-                          : "border-destructive/30 bg-destructive/10 text-destructive"
-                      )}
-                    >
-                      {store.is_active ? 'مفتوح' : 'مغلق'}
-                    </Badge>
-                </div>
-            </div>
-        </div>
-
-        {/* Store Details Bar */}
-        <div className="p-3 bg-card border-b">
-             <div className="flex justify-around text-xs text-center text-muted-foreground">
-                <div className="flex flex-col items-center gap-1">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">N/A</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                    <Clock className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">{store.deliveryTime} دق</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                    <Clock className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">N/A</span>
-                </div>
-                 <div className="flex flex-col items-center gap-1">
-                    <Heart className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">المفضلة</span>
+                    {/* Row 2 */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span>0 كم</span>
+                    </div>
+                    {/* Row 3 */}
+                    <div className="flex items-center gap-4 text-sm">
+                        <Badge variant="outline">{categoriesMap[store.categoryId] || ''}</Badge>
+                        <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-amber-400 fill-amber-400"/>
+                            <span className="font-semibold">{store.rating.toFixed(1)}</span>
+                        </div>
+                    </div>
+                    {/* Row 4 */}
+                    <div className="flex items-center gap-4 text-sm">
+                         <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span className="font-semibold text-foreground">{store.deliveryTime} دق</span>
+                        </div>
+                         <Badge
+                            variant="outline"
+                            className={cn(
+                                "px-2 py-0.5 text-xs font-semibold",
+                                store.is_active
+                                  ? "border-primary/30 bg-primary/10 text-primary"
+                                  : "border-destructive/30 bg-destructive/10 text-destructive"
+                            )}
+                        >
+                          {store.is_active ? 'مفتوح' : 'مغلق'}
+                        </Badge>
+                    </div>
                 </div>
             </div>
         </div>
