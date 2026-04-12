@@ -44,7 +44,8 @@ export default function GovernorateSelectionPage() {
   }, [activeGovernorates, searchTerm]);
 
   const handleSelect = (governorate: Governorate) => {
-    // Here you would typically store the user's choice, e.g., in localStorage
+    // Save the selected governorate ID to localStorage
+    localStorage.setItem('selectedGovernorateId', governorate.id);
     console.log(`Selected governorate: ${governorate.province_name} (ID: ${governorate.id})`);
     // Navigate to the next step
     router.push('/login');

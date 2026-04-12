@@ -23,40 +23,29 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { User, Bike, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser, MapPin, Building, Loader2 } from 'lucide-react';
+import { User, Bike, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { countries, type Country } from '@/lib/countries';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
-// Governorate Type
-type Governorate = {
-  id: string;
-  province_name: string;
-  is_active: boolean;
-};
-
-
-// User Schema
+// User Schema - Simplified
 const userFormSchema = z.object({
   name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل' }),
   phone: z.string().regex(/^7[0-9]{8}$/, { message: 'الرجاء إدخال رقم هاتف يمني صحيح (يبدأ بـ 7)' }),
-  governorateId: z.string({ required_error: "الرجاء اختيار محافظتك" }),
-  addressDescription: z.string().min(10, { message: "الرجاء إدخال وصف مختصر لعنوانك" }),
   terms: z.boolean().refine((val) => val === true, {
     message: 'يجب الموافقة على الشروط والسياسات',
   }),
 });
 
-// Delegate Schema
+// Delegate Schema - Simplified
 const delegateFormSchema = z.object({
     name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل' }),
     phone: z.string().regex(/^7[0-9]{8}$/, { message: 'الرجاء إدخال رقم هاتف يمني صحيح (يبدأ بـ 7)' }),
     email: z.string().email({ message: 'الرجاء إدخال بريد إلكتروني صحيح' }),
-    address: z.string().min(5, { message: 'العنوان مطلوب' }),
     idType: z.enum(['passport', 'card'], { required_error: 'الرجاء اختيار نوع الهوية' }),
     personalPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح للصورة الشخصية" }),
     idFrontPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح لصورة الهوية الأمامية" }),
@@ -88,13 +77,6 @@ export default function RegisterPage() {
 
   const firestore = useFirestore();
 
-  const { data: governorates } = useCollection<Governorate>(
-    useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'app_provinces'), where('is_active', '==', true));
-    }, [firestore])
-  );
-
   const userForm = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
     defaultValues: { name: '', phone: '', terms: false },
@@ -102,7 +84,7 @@ export default function RegisterPage() {
 
   const delegateForm = useForm<z.infer<typeof delegateFormSchema>>({
     resolver: zodResolver(delegateFormSchema),
-    defaultValues: { name: '', phone: '', email: '', address: '', idType: 'card', terms: false },
+    defaultValues: { name: '', phone: '', email: '', idType: 'card', terms: false },
   });
   
   const checkUserExists = async (phoneNumber: string): Promise<boolean> => {
@@ -124,6 +106,15 @@ export default function RegisterPage() {
 
   async function onUserSubmit(values: z.infer<typeof userFormSchema>) {
     setIsLoading(true);
+    
+    const governorateId = localStorage.getItem('selectedGovernorateId');
+    if (!governorateId) {
+        toast({ variant: "destructive", title: "لم يتم اختيار المحافظة", description: "الرجاء العودة للصفحة الرئيسية واختيار محافظتك أولاً." });
+        setIsLoading(false);
+        router.push('/select-governorate');
+        return;
+    }
+    
     const userExists = await checkUserExists(values.phone);
     if (userExists) {
       toast({ variant: "destructive", title: "حساب موجود بالفعل", description: "هذا الرقم لديه حساب من قبل. الرجاء تسجيل الدخول." });
@@ -135,6 +126,8 @@ export default function RegisterPage() {
       const { terms, ...dataToSave } = values;
       await addDoc(collection(firestore, 'clients'), {
         ...dataToSave,
+        governorateId,
+        addressDescription: '', // No longer collected from user
         is_active: true,
         addressType: 'home',
         latitude: 0, 
@@ -161,6 +154,7 @@ export default function RegisterPage() {
         const { terms, ...dataToSave } = values;
         await addDoc(collection(firestore, 'drivers_v2'), {
             ...dataToSave,
+            address: '', // No longer collected from user
             is_active: false,
             status: 'pending',
             createdAt: serverTimestamp(),
@@ -284,47 +278,7 @@ export default function RegisterPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                 <FormField
-                  control={userForm.control}
-                  name="governorateId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>المحافظة</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
-                          <FormControl>
-                            <SelectTrigger className="h-12 text-base">
-                              <div className='flex gap-2 items-center'>
-                                <Building className="h-5 w-5 text-muted-foreground" />
-                                <SelectValue placeholder="اختر محافظتك..." />
-                              </div>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {governorates?.map((gov) => (
-                              <SelectItem key={gov.id} value={gov.id}>{gov.province_name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={userForm.control}
-                  name="addressDescription"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>وصف العنوان</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                            <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="مثال: شارع تعز، خلف متجر العالمية" {...field} className="h-12 text-base pr-12"/>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                
                 <FormField
                   control={userForm.control}
                   name="terms"
@@ -415,17 +369,7 @@ export default function RegisterPage() {
                             )}
                         />
                     </div>
-                     <div className="relative">
-                        <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <FormField
-                            control={delegateForm.control}
-                            name="address"
-                            render={({ field }) => (
-                                <FormItem><FormControl><Input placeholder="عنوان السكن" {...field} className="h-12 text-base pr-12"/></FormControl><FormMessage /></FormItem>
-                            )}
-                        />
-                    </div>
-
+                     
                     <FormField
                         control={delegateForm.control}
                         name="idType"
