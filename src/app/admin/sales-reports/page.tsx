@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import SalesReportsLoading from './loading';
-import { OrderStatusBadge, type OrderStatus } from '@/components/order-status-badge';
+import { OrderStatusBadge } from '@/components/order-status-badge';
 
 import type { Order as OrderFS } from '../orders/page';
 import type { Store } from '../stores/page';
@@ -86,7 +86,6 @@ export default function SalesReportsPage() {
         const cancelledOrdersCount = filteredOrders.filter(o => o.status === 'cancelled').length;
         const averageOrderValue = completedOrders.length > 0 ? totalSales / completedOrders.length : 0;
         
-        // Let's define net revenue as Sales - Discounts. A real profit calculation would need more cost data.
         const netRevenue = totalSales - totalDiscounts;
 
         return { totalSales, totalDiscounts, completedOrdersCount: completedOrders.length, cancelledOrdersCount, averageOrderValue, netRevenue };
@@ -164,9 +163,9 @@ export default function SalesReportsPage() {
                 </div>
             </div>
 
-            <Card>
+            <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Filter/> فلترة متقدمة</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Filter className="text-primary"/> فلترة متقدمة</CardTitle>
                 </CardHeader>
                  <CardContent className="flex flex-col sm:flex-row flex-wrap gap-2">
                     <Popover>
@@ -201,35 +200,35 @@ export default function SalesReportsPage() {
             </Card>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle><CircleDollarSign className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{salesStats.totalSales.toLocaleString()}&nbsp;ر.ي</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">صافي الإيرادات (بعد الخصم)</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{salesStats.netRevenue.toLocaleString()}&nbsp;ر.ي</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">الطلبات المكتملة</CardTitle><PackageCheck className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">+{salesStats.completedOrdersCount}</div></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">متوسط قيمة الطلب (AOV)</CardTitle><HandCoins className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{salesStats.averageOrderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}&nbsp;ر.ي</div></CardContent></Card>
+                <Card className="shadow-sm"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle><CircleDollarSign className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{salesStats.totalSales.toLocaleString('en-US')}&nbsp;ر.ي</div></CardContent></Card>
+                <Card className="shadow-sm"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">صافي الإيرادات</CardTitle><TrendingUp className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{salesStats.netRevenue.toLocaleString('en-US')}&nbsp;ر.ي</div></CardContent></Card>
+                <Card className="shadow-sm"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">الطلبات المكتملة</CardTitle><PackageCheck className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">+{salesStats.completedOrdersCount.toLocaleString('en-US')}</div></CardContent></Card>
+                <Card className="shadow-sm"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">متوسط قيمة الطلب</CardTitle><HandCoins className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{salesStats.averageOrderValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}&nbsp;ر.ي</div></CardContent></Card>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
-                    <CardHeader><CardTitle>المبيعات خلال الفترة المحددة</CardTitle></CardHeader>
+                <Card className="lg:col-span-4 shadow-sm">
+                    <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="text-primary"/> المبيعات خلال الفترة</CardTitle></CardHeader>
                     <CardContent className="pl-2">
                         <ChartContainer config={salesOverTimeChartConfig} className="h-[250px] w-full">
                             <AreaChart accessibilityLayer data={salesOverTimeData} margin={{ left: 12, right: 12, top: 5, bottom: 5}}>
-                                <CartesianGrid vertical={false} />
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
                                 <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => new Date(value).toLocaleDateString("ar-SA", { month: "short", day: "numeric" })} />
-                                <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value / 1000}k`}/>
-                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Area dataKey="sales" type="natural" fill="var(--color-sales)" fillOpacity={0.4} stroke="var(--color-sales)" />
+                                <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${Number(value) / 1000}k`}/>
+                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" formatter={(value) => value.toLocaleString('en-US')} />} />
+                                <Area dataKey="sales" type="natural" fill="var(--color-sales)" fillOpacity={0.4} stroke="var(--color-sales)" strokeWidth={2} />
                             </AreaChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
-                 <Card className="lg:col-span-3">
-                    <CardHeader><CardTitle>توزيع طرق الدفع</CardTitle></CardHeader>
+                 <Card className="lg:col-span-3 shadow-sm">
+                    <CardHeader><CardTitle className="flex items-center gap-2"><PieChartIcon className="text-primary"/> توزيع طرق الدفع</CardTitle></CardHeader>
                     <CardContent className="flex-1 pb-0 flex justify-center items-center">
                         <ChartContainer config={paymentMethodChartConfig} className="mx-auto aspect-square h-[250px]">
                             <PieChart>
                                 <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
                                 <Pie data={paymentMethodData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
-                                    {paymentMethodData.map((entry, index) => (<Cell key={`cell-${index}`} fill={`var(--color-${entry.name})`} />))}
+                                    {paymentMethodData.map((entry) => (<Cell key={`cell-${entry.name}`} fill={cn(`var(--color-${entry.name})`)} />))}
                                 </Pie>
                                 <ChartLegend content={<ChartLegendContent nameKey="name" />} />
                             </PieChart>
@@ -238,7 +237,7 @@ export default function SalesReportsPage() {
                 </Card>
             </div>
 
-            <Card>
+            <Card className="shadow-sm">
                 <CardHeader>
                     <CardTitle>سجل المبيعات التفصيلي</CardTitle>
                     <CardDescription>عرض لجميع الطلبات ضمن الفلاتر المحددة.</CardDescription>
@@ -265,7 +264,7 @@ export default function SalesReportsPage() {
                                         <TableCell className="text-center">{order.storeName}</TableCell>
                                         <TableCell className="text-center">{order.clientName}</TableCell>
                                         <TableCell className="text-center">{order.payment.method}</TableCell>
-                                        <TableCell className="text-center font-semibold">{order.financials.total.toLocaleString()}&nbsp;ر.ي</TableCell>
+                                        <TableCell className="text-center font-semibold">{order.financials.total.toLocaleString('en-US')}&nbsp;ر.ي</TableCell>
                                         <TableCell className="text-center"><OrderStatusBadge status={order.status}/></TableCell>
                                     </TableRow>
                                 ))}

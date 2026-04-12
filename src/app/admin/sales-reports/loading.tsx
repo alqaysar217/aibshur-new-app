@@ -13,7 +13,7 @@ export default function SalesReportsLoading() {
                 </div>
             </div>
 
-            <Card>
+            <Card className="shadow-sm">
                 <CardHeader>
                     <Skeleton className="h-6 w-40" />
                 </CardHeader>
@@ -29,10 +29,10 @@ export default function SalesReportsLoading() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {[...Array(4)].map((_, i) => (
-                    <Card key={i}>
+                    <Card key={i} className="shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <Skeleton className="h-4 w-32" />
-                            <Skeleton className="h-4 w-4" />
+                            <Skeleton className="h-5 w-5 text-primary" />
                         </CardHeader>
                         <CardContent><Skeleton className="h-8 w-24" /></CardContent>
                     </Card>
@@ -40,17 +40,17 @@ export default function SalesReportsLoading() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
+                <Card className="lg:col-span-4 shadow-sm">
                     <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
                     <CardContent><Skeleton className="h-[250px] w-full" /></CardContent>
                 </Card>
-                <Card className="lg:col-span-3">
+                <Card className="lg:col-span-3 shadow-sm">
                     <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
                     <CardContent className="flex justify-center items-center"><Skeleton className="aspect-square h-[250px] w-[250px] rounded-full" /></CardContent>
                 </Card>
             </div>
 
-            <Card>
+            <Card className="shadow-sm">
                 <CardHeader>
                     <Skeleton className="h-6 w-56" />
                     <Skeleton className="h-4 w-72" />
