@@ -96,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href={href} title={isCollapsed ? text : ''}>
             <span
               className={cn(
-                'flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200',
+                'flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 rounded-md',
                 isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 isCollapsed ? 'justify-center' : 'justify-start'
               )}
@@ -145,7 +145,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         variant="ghost"
                         onClick={handleLogout}
                         className={cn(
-                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 text-red-500/80 hover:bg-destructive/10 hover:text-red-500',
+                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 text-red-500/80 hover:bg-destructive/10 hover:text-red-500 rounded-md',
                             isCollapsed ? 'justify-center' : 'justify-start'
                         )}
                     >
