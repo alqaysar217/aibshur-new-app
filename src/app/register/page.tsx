@@ -200,13 +200,17 @@ export default function RegisterPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4 pt-8 pb-16">
-      <h1 className="text-3xl font-bold mb-2 text-center">إنشاء حساب جديد</h1>
+      <h1 className="text-3xl font-bold mb-2 text-center text-primary">إنشاء حساب جديد</h1>
       <p className="text-muted-foreground mb-6 text-center">اختر نوع الحساب الذي ترغب في إنشائه.</p>
       
       <Tabs defaultValue="user" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="user" className="gap-2"><User />عميل</TabsTrigger>
-          <TabsTrigger value="delegate" className="gap-2"><Bike />مندوب</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl bg-muted p-1 h-auto">
+          <TabsTrigger value="user" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+            <User />عميل
+          </TabsTrigger>
+          <TabsTrigger value="delegate" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+            <Bike />مندوب
+          </TabsTrigger>
         </TabsList>
         
         {/* User Registration Tab */}
@@ -296,7 +300,7 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>
+                <Button type="submit" className="w-full h-12 text-lg font-semibold bg-sidebar-active-gradient text-sidebar-primary-foreground" disabled={isLoading}>
                   {isLoading ? <Loader2 className="animate-spin" /> : 'إنشاء حساب'}
                 </Button>
               </form>
@@ -413,7 +417,7 @@ export default function RegisterPage() {
                         )}
                     />
 
-                    <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>
+                    <Button type="submit" className="w-full h-12 text-lg font-semibold bg-sidebar-active-gradient text-sidebar-primary-foreground" disabled={isLoading}>
                        {isLoading ? <Loader2 className="animate-spin" /> : 'إرسال الطلب'}
                     </Button>
                 </form>
