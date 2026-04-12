@@ -52,7 +52,7 @@ export default function OrdersLoading() {
                                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                                 <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                                 <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                                                <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                                                <TableCell><Skeleton className="h-6 w-24 rounded-md" /></TableCell>
                                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                                 <TableCell className="flex justify-center items-center">
                                                     <Skeleton className="h-9 w-24 rounded-lg" />

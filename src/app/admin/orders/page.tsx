@@ -27,7 +27,7 @@ import type { DateRange } from "react-day-picker";
 import { 
     AlertTriangle, BadgeDollarSign, Bike, Building, Calendar as CalendarIcon, Check, CheckCircle, ChevronDown, Circle, Clock, Contact, CookingPot,
     CreditCard, FileDown, FileText, HandCoins, Hourglass, Link as LinkIcon, ListFilter, Mail, MapPin, MessageCircle, MoreVertical,
-    Package, Phone, Search, ShoppingCart, Star, Store, User, UserCheck, Wallet, X, XCircle
+    Package, Phone, Search, ShoppingCart, Star, Store, User, UserCheck, Wallet, X, XCircle, ClipboardList
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -163,7 +163,7 @@ export default function OrdersPage() {
             const matchesSearch = (o.id.toLowerCase().includes(filters.searchTerm.toLowerCase()) || o.clientPhone.includes(filters.searchTerm));
             const matchesStore = (filters.storeId === 'all' || o.storeId === filters.storeId);
             const orderDate = o.timestamps.createdAt;
-            const matchesDate = !filters.date || (filters.date.from && orderDate >= filters.date.from && (!filters.date.to || orderDate <= filters.date.to));
+            const matchesDate = !filters.date || (filters.date.from && orderDate >= filters.date.from && (!filters.date.to || orderDate <= new Date(new Date(filters.date.to).setHours(23, 59, 59, 999))));
             return matchesSearch && matchesStore && matchesDate;
         }).sort((a, b) => b.timestamps.createdAt.getTime() - a.timestamps.createdAt.getTime());
 
@@ -297,7 +297,10 @@ export default function OrdersPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-foreground">إدارة الطلبات</h1>
+                    <h1 className="text-3xl font-black text-foreground flex items-center gap-2">
+                        <ClipboardList className="h-8 w-8 text-primary"/>
+                        إدارة الطلبات
+                    </h1>
                     <p className="text-muted-foreground mt-1">متابعة جميع مراحل الطلبات من الاستلام حتى التسليم.</p>
                 </div>
             </div>
@@ -311,7 +314,7 @@ export default function OrdersPage() {
                 </TabsList>
 
                 <div className="mt-4">
-                    <Card>
+                     <Card className="shadow-sm">
                         <CardHeader>
                             <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                                 <Input placeholder="ابحث برقم الطلب أو هاتف العميل..." value={filters.searchTerm} onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))} className="w-full sm:w-auto sm:flex-grow" />
@@ -409,7 +412,7 @@ export default function OrdersPage() {
                     {selectedOrder && (
                     <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
                         
-                        <Card>
+                        <Card className="shadow-sm">
                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
                            <CardContent className="text-sm space-y-3">
                                <div className="flex items-center gap-2">
@@ -431,7 +434,7 @@ export default function OrdersPage() {
                         </Card>
 
                         {selectedOrder.address.addressType === 'other' && selectedOrder.address.receiverName && (
-                           <Card>
+                           <Card className="shadow-sm">
                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>بيانات المستلم</CardTitle></CardHeader>
                                <CardContent className="text-sm space-y-3">
                                    <div className="flex items-center gap-2">
@@ -451,7 +454,7 @@ export default function OrdersPage() {
                         )}
 
                         {selectedOrder.delegateId && (
-                           <Card>
+                           <Card className="shadow-sm">
                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bike className="h-5 w-5 text-primary"/>بيانات المندوب</CardTitle></CardHeader>
                                <CardContent className="text-sm">
                                    <div className="flex items-center gap-3">
@@ -477,7 +480,7 @@ export default function OrdersPage() {
                            </Card>
                         )}
                         
-                        <Card>
+                        <Card className="shadow-sm">
                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>موقع التوصيل</CardTitle></CardHeader>
                            <CardContent>
                                <LocationMapViewer
@@ -487,14 +490,18 @@ export default function OrdersPage() {
                            </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="shadow-sm">
                             <CardHeader>
-                                <div className="flex items-center gap-3">
-                                    <Image src={selectedOrder.storeImage || '/logo-app.png'} alt={selectedOrder.storeName} width={40} height={40} className="rounded-lg object-cover border" />
-                                    <CardTitle className="text-base">{selectedOrder.storeName}</CardTitle>
-                                </div>
+                                <CardTitle className="text-base flex items-center gap-2">
+                                <ShoppingCart className="h-5 w-5 text-primary"/>
+                                تفاصيل الطلب
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
+                                 <div className="flex items-center gap-3 mb-4">
+                                    <Image src={selectedOrder.storeImage || '/logo-app.png'} alt={selectedOrder.storeName} width={40} height={40} className="rounded-lg object-cover border" />
+                                    <p className="font-semibold">من متجر: {selectedOrder.storeName}</p>
+                                </div>
                                 <Table>
                                     <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[50px] text-center">الكمية</TableHead><TableHead className="w-[80px] text-center">السعر</TableHead><TableHead className="text-left w-[90px]">الإجمالي</TableHead></TableRow></TableHeader>
                                     <TableBody>{selectedOrder.items.map(item => (
@@ -504,7 +511,7 @@ export default function OrdersPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="shadow-sm">
                             <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign className="h-5 w-5 text-primary"/>الملخص المالي</CardTitle></CardHeader>
                             <CardContent className="space-y-2 text-sm">
                                 <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedOrder.financials.subtotal.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
@@ -515,7 +522,7 @@ export default function OrdersPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="shadow-sm">
                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary"/>الدفع</CardTitle></CardHeader>
                            <CardContent className="text-sm space-y-2">
                                <p><strong>الطريقة:</strong> {translatePaymentMethod(selectedOrder.payment.method)}</p>
@@ -525,7 +532,7 @@ export default function OrdersPage() {
                         </Card>
                         
                         {selectedOrder.status === 'delivered' && (
-                            <Card>
+                            <Card className="shadow-sm">
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Star className="h-5 w-5 text-primary"/>التقييم والإكرامية</CardTitle></CardHeader>
                                 <CardContent className="space-y-3 text-sm">
                                     {selectedOrder.rating ? (
@@ -547,14 +554,14 @@ export default function OrdersPage() {
                         )}
                         
                         {selectedOrder.notes && (
-                            <Card>
+                            <Card className="shadow-sm">
                                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="h-5 w-5 text-primary"/>ملاحظات الطلب</CardTitle></CardHeader>
                                 <CardContent className="text-sm"><p>{selectedOrder.notes}</p></CardContent>
                             </Card>
                         )}
 
                         {selectedOrder.cancellationReason && (
-                            <Card className="border-destructive/50 bg-destructive/10">
+                            <Card className="border-destructive/50 bg-destructive/10 shadow-sm">
                                <CardHeader><CardTitle className="text-base flex items-center gap-2 text-destructive"><AlertTriangle/>سبب الإلغاء</CardTitle></CardHeader>
                                <CardContent className="text-sm text-destructive font-semibold">{selectedOrder.cancellationReason}</CardContent>
                            </Card>
@@ -593,7 +600,7 @@ export default function OrdersPage() {
                     </DialogHeader>
                     <div className="space-y-2 max-h-80 overflow-y-auto">
                         {activeDelegates.map(delegate => (
-                            <Card key={delegate.id} className="p-3 flex justify-between items-center cursor-pointer hover:bg-muted" onClick={() => confirmAssignDelegate(delegate)}>
+                            <Card key={delegate.id} className="p-3 flex justify-between items-center cursor-pointer hover:bg-muted shadow-sm" onClick={() => confirmAssignDelegate(delegate)}>
                                 <div className="flex items-center gap-3">
                                     <Avatar>
                                         <AvatarImage src={delegate.personalPhotoUrl} alt={delegate.name}/>
