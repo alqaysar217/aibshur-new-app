@@ -203,10 +203,11 @@ export default function StoreDetailsPage() {
             </>
           ) : products && products.length > 0 ? (
             products.map(product => {
+                const isValidUrl = product.mainImageUrl && (product.mainImageUrl.startsWith('http') || product.mainImageUrl.startsWith('/'));
                 const productForCard: ProductCardType = {
                     ...product,
                     price: product.basePrice || 0,
-                    imageUrl: product.mainImageUrl || '/logo.png',
+                    imageUrl: isValidUrl ? product.mainImageUrl : '/logo.png',
                     imageHint: '',
                 };
                 return (
