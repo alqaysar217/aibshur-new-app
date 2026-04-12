@@ -1,8 +1,9 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { ArrowRight, Bell, Copy, CreditCard, ShoppingCart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -49,8 +50,8 @@ const bankLogos = orderDetails.bankAccounts.map(b => {
     return { ...b, logoUrl: logo?.imageUrl || '', logoHint: logo?.imageHint || '' };
 });
 
-export default function OrderDetailsPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
-    const params = use(paramsPromise);
+export default function OrderDetailsPage() {
+    const params = useParams<{ id: string }>();
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
 
