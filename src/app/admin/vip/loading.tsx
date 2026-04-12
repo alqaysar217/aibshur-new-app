@@ -8,18 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function VipLoading() {
     return (
          <div className="space-y-6">
-             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                <div>
-                    <Skeleton className="h-8 w-56 mb-2" />
-                    <Skeleton className="h-4 w-80" />
-                </div>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="manage"><Skeleton className="h-5 w-24" /></TabsTrigger>
-                    <TabsTrigger value="activate"><Skeleton className="h-5 w-28" /></TabsTrigger>
-                </TabsList>
-            </div>
-
             <Tabs defaultValue="manage">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+                    <div>
+                        <Skeleton className="h-8 w-56 mb-2" />
+                        <Skeleton className="h-4 w-80" />
+                    </div>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="manage"><Skeleton className="h-5 w-24" /></TabsTrigger>
+                        <TabsTrigger value="activate"><Skeleton className="h-5 w-28" /></TabsTrigger>
+                    </TabsList>
+                </div>
                 <TabsContent value="manage">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
