@@ -18,6 +18,7 @@ import DashboardLoading from './loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Notification } from '@/lib/notifications';
+import { Badge } from "@/components/ui/badge";
 
 
 // Re-define OrderFS locally as it's not exported from orders/page
@@ -197,20 +198,20 @@ function DashboardContent() {
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">لوحة التحكم الرئيسية</h1>
                 <p className="text-muted-foreground">نظرة شاملة ولحظية على أداء تطبيقك.</p>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
                         <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.activeOrders.value}</div>
+                        <div className="text-2xl font-bold">{pulseData.activeOrders.value.toLocaleString()}</div>
                         <SparklineChart data={pulseData.activeOrders.trend} dataKey="value" color="hsl(var(--primary))"/>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">مبيعات اليوم</CardTitle>
+                        <CardTitle className="text-sm font-medium">المبيعات اللحظية (اليوم)</CardTitle>
                         <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -224,7 +225,7 @@ function DashboardContent() {
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.onlineDrivers.value}</div>
+                        <div className="text-2xl font-bold">{pulseData.onlineDrivers.value.toLocaleString()}</div>
                          <SparklineChart data={pulseData.onlineDrivers.trend} dataKey="value" color="hsl(var(--chart-3))"/>
                     </CardContent>
                 </Card>
@@ -234,14 +235,14 @@ function DashboardContent() {
                         <Hourglass className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value}</div>
+                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value.toLocaleString()}</div>
                         <SparklineChart data={pulseData.pendingQueue.trend} dataKey="value" color="hsl(var(--destructive))"/>
                     </CardContent>
                 </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 rounded-xl border-border/50 shadow-sm overflow-hidden">
+                <Card className="lg:col-span-2 rounded-[10px] border-border/50 shadow-sm overflow-hidden">
                     <CardHeader className="p-6 border-b border-border/50 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-bold flex items-center gap-2">
                             <TrendingUp className="h-4 w-4 text-primary" /> نمو المبيعات الأسبوعي
@@ -259,14 +260,14 @@ function DashboardContent() {
                                     formatter={(value) => `${Number(value).toLocaleString('en-US')} ر.ي`}
                                     labelClassName="font-bold"
                                 />} 
-                                contentStyle={{ borderRadius: '0.75rem', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', direction: 'rtl', backgroundColor: 'hsl(var(--background))' }}
+                                contentStyle={{ borderRadius: '0.5rem', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', direction: 'rtl', backgroundColor: 'hsl(var(--background))' }}
                             />
-                            <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={3} dot={{ r: 5, fill: 'var(--color-sales)', strokeWidth: 2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 7 }} />
+                            <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={3} dot={{ r: 5, fill: 'var(--color-sales)', strokeWidth: 2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 8 }} />
                             </LineChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
-                <Card className="lg:col-span-1 rounded-xl border-border/50 shadow-sm">
+                <Card className="lg:col-span-1 rounded-[10px] border-border/50 shadow-sm">
                     <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
@@ -287,8 +288,8 @@ function DashboardContent() {
                 </Card>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4 rounded-xl border-border/50 shadow-sm">
+            <div className="grid gap-6 md:grid-cols-7">
+                <Card className="md:col-span-4 rounded-[10px] border-border/50 shadow-sm">
                     <CardHeader>
                         <CardTitle>الطلبات المكتملة مقابل الملغاة</CardTitle>
                     </CardHeader>
@@ -306,7 +307,7 @@ function DashboardContent() {
                         </ChartContainer>
                     </CardContent>
                 </Card>
-                 <Card className="lg:col-span-3 rounded-xl border-border/50 shadow-sm">
+                 <Card className="md:col-span-3 rounded-[10px] border-border/50 shadow-sm">
                     <CardHeader>
                         <CardTitle>مؤشر كفاءة الأداء</CardTitle>
                         <CardDescription>متوسط تقييم المناديب والمتاجر.</CardDescription>
@@ -327,7 +328,7 @@ function DashboardContent() {
                 </Card>
              </div>
             
-             <Card className="rounded-xl border-border/50 shadow-sm">
+             <Card className="rounded-[10px] border-border/50 shadow-sm">
                 <CardHeader><CardTitle className="flex items-center gap-2"><Activity/>آخر الأنشطة في النظام</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                    {(activityFeed && activityFeed.length > 0) ? activityFeed.slice(0, 4).map((item: any) => {
