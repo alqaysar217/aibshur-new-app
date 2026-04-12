@@ -199,6 +199,7 @@ function DashboardContent() {
             .map(([productId, sales]) => {
                 const product = products.find(p => p.id === productId);
                 return {
+                    id: productId,
                     name: product?.name || 'منتج محذوف',
                     sales: `${sales.toLocaleString('en-US')} طلب`,
                     image: product?.mainImageUrl || 'https://picsum.photos/seed/product/40/40'
@@ -314,7 +315,7 @@ function DashboardContent() {
                             <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {topProducts.map((product) => (
-                                    <TableRow key={product.name}>
+                                    <TableRow key={product.id}>
                                         <TableCell className="font-medium flex items-center gap-2">
                                             <Avatar className="h-8 w-8 rounded-md"><AvatarImage src={product.image} /><AvatarFallback>{product.name.charAt(0)}</AvatarFallback></Avatar>
                                             {product.name}
