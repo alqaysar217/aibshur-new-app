@@ -11,18 +11,35 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { Order as OrderFS } from '../orders/page';
+import type { Order as OrderWithDates } from '../orders/page';
 import type { Driver } from '../delegates/page';
 import type { Product } from '../products/page';
 import DashboardLoading from './loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import type { Notification } from '@/lib/notifications';
 
-// This is the shape of the data after we process it for the UI
-export interface Order extends Omit<OrderFS, 'timestamps'> {
-    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; scheduledDeliveryTime?: Date; };
+
+// Re-define OrderFS locally as it's not exported from orders/page
+type OrderFS = {
+    id: string;
+    clientId: string;
+    clientName: string;
+    clientPhone: string;
+    storeId: string;
+    storeName: string;
+    delegateId?: string;
+    delegateName?: string;
+    status: any; // OrderStatus
+    items: { productId: string; productName: string; quantity: number; price: number; }[];
+    financials: { subtotal: number; deliveryFee: number; discount: number; tip: number; total: number; };
+    payment: { method: any; status: any; receiptImageUrl?: string; };
+    address: { description: string; latitude: number; longitude: number; addressType?: 'home' | 'work' | 'other'; receiverName?: string; receiverPhone?: string; };
+    timestamps: { createdAt: Timestamp; confirmedAt?: Timestamp; dispatchedAt?: Timestamp; deliveredAt?: Timestamp; cancelledAt?: Timestamp; scheduledDeliveryTime?: Timestamp; };
+    cancellationReason?: string;
+    notes?: string;
+    rating?: { store: number; delegate: number; comment: string; };
+    tipPayment?: { method: any; bankAccountId?: string; receiptNumber?: string; receiptImageUrl?: string; };
 }
 
 
@@ -47,7 +64,7 @@ function DashboardContent() {
     const firestore = useFirestore();
     const { user } = useUser();
 
-    // These hooks are now safe to call because we've confirmed the DB is seeded.
+    // Fetch data with Firestore Timestamps
     const { data: ordersFS, isLoading: isLoadingOrders } = useCollection<OrderFS>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
     const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
@@ -55,21 +72,20 @@ function DashboardContent() {
     
     const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
 
-    const orders: Order[] = useMemo(() => {
+    // Transform Firestore Timestamps to JS Date objects
+    const orders: OrderWithDates[] = useMemo(() => {
         if (!ordersFS) return [];
         return ordersFS.map(orderFS => {
             const timestamps: any = {};
             if (orderFS.timestamps) {
-                Object.keys(orderFS.timestamps).forEach(key => {
-                    const ts = orderFS.timestamps[key as keyof typeof orderFS.timestamps];
+                for (const key in orderFS.timestamps) {
+                    const ts = (orderFS.timestamps as any)[key];
                     if (ts instanceof Timestamp) {
                         timestamps[key] = ts.toDate();
-                    } else {
-                         timestamps[key] = new Date(); // Fallback for invalid date
                     }
-                });
+                }
             }
-            return { ...orderFS, timestamps };
+            return { ...orderFS, timestamps: timestamps as OrderWithDates['timestamps'] };
         });
     }, [ordersFS]);
 
@@ -82,12 +98,12 @@ function DashboardContent() {
 
         const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
         const liveSales = orders.filter(o => o.timestamps.createdAt >= today).reduce((sum, o) => sum + o.financials.total, 0);
-        const onlineDrivers = drivers.filter(d => d.is_active); // Simplified logic
+        const onlineDrivers = drivers.filter(d => d.is_active); 
         const pendingQueue = orders.filter(o => o.status === 'incoming');
 
         // Simplified trend data
         const generateTrend = (currentValue: number) => [
-            { value: currentValue * Math.random() * 0.5 + currentValue * 0.5 }, { value: currentValue * Math.random() * 0.5 + currentValue * 0.6 }, { value: currentValue * Math.random() * 0.5 + currentValue * 0.7 }, { value: currentValue * Math.random() * 0.5 + currentValue * 0.8 }, { value: currentValue }
+            { value: currentValue * 0.8 }, { value: currentValue * 1.1 }, { value: currentValue * 0.9 }, { value: currentValue * 1.2 }, { value: currentValue }
         ];
 
         return {
@@ -162,30 +178,16 @@ function DashboardContent() {
             });
     }, [orders, products]);
     
-    const performanceIndexData = useMemo(() => {
-        if (!orders) return [{ name: 'المناديب', value: 0 }, { name: 'المتاجر', value: 0 }];
-        
-        const delegateRatings = orders.map(o => o.rating?.delegate).filter((r): r is number => r !== undefined && r > 0);
-        const storeRatings = orders.map(o => o.rating?.store).filter((r): r is number => r !== undefined && r > 0);
+    // Static dummy data as requested
+    const performanceIndexData = [
+        { name: 'المناديب', value: 4.8 },
+        { name: 'المتاجر', value: 4.5 },
+    ];
 
-        const avgDelegateRating = delegateRatings.length > 0 ? delegateRatings.reduce((a, b) => a + b, 0) / delegateRatings.length : 0;
-        const avgStoreRating = storeRatings.length > 0 ? storeRatings.reduce((a, b) => a + b, 0) / storeRatings.length : 0;
+    const salesGrowthConfig = { sales: { label: "المبيعات", color: "hsl(var(--chart-2))" } };
+    const orderStatusConfig = { completed: { label: "مكتمل", color: "hsl(var(--primary))" }, cancelled: { label: "ملغي", color: "hsl(var(--destructive))" } };
+    const performanceIndexConfig = { delegates: { label: "المناديب", color: "hsl(var(--chart-2))" }, stores: { label: "المتاجر", color: "hsl(var(--chart-3))" } };
 
-        return [
-            { name: 'المناديب', value: parseFloat(avgDelegateRating.toFixed(2)) },
-            { name: 'المتاجر', value: parseFloat(avgStoreRating.toFixed(2)) },
-        ];
-    }, [orders]);
-
-    
-    const orderStatusConfig = {
-        completed: { label: "مكتمل", color: "hsl(var(--primary))" },
-        cancelled: { label: "ملغي", color: "hsl(var(--destructive))" },
-    };
-     const performanceIndexConfig = {
-        delegates: { label: "المناديب", color: "hsl(var(--chart-1))" },
-        stores: { label: "المتاجر", color: "hsl(var(--chart-2))" },
-    };
 
     if (isLoading) return <DashboardLoading />;
 
@@ -196,79 +198,72 @@ function DashboardContent() {
                 <p className="text-muted-foreground">نظرة شاملة ولحظية على أداء تطبيقك.</p>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="rounded-xl shadow-sm">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                        <div className="space-y-1">
-                            <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
-                            <p className="text-2xl font-bold">{pulseData.activeOrders.value}</p>
-                        </div>
-                        <div className="p-2 bg-primary/10 rounded-full"><Package className="h-5 w-5 text-primary" /></div>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
+                        <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent className="py-2">
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pulseData.activeOrders.value}</div>
                         <SparklineChart data={pulseData.activeOrders.trend} dataKey="value" color="hsl(var(--primary))"/>
                     </CardContent>
                 </Card>
-                <Card className="rounded-xl shadow-sm">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                         <div className="space-y-1">
-                            <CardTitle className="text-sm font-medium">مبيعات اليوم</CardTitle>
-                            <p className="text-2xl font-bold">{pulseData.liveSales.value.toLocaleString()}&nbsp;ر.ي</p>
-                        </div>
-                        <div className="p-2 bg-green-500/10 rounded-full"><CircleDollarSign className="h-5 w-5 text-green-600" /></div>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">مبيعات اليوم</CardTitle>
+                        <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent className="py-2">
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pulseData.liveSales.value.toLocaleString('en-US')}&nbsp;ر.ي</div>
                         <SparklineChart data={pulseData.liveSales.trend} dataKey="value" color="hsl(var(--chart-2))"/>
                     </CardContent>
                 </Card>
-                <Card className="rounded-xl shadow-sm">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                        <div className="space-y-1">
-                            <CardTitle className="text-sm font-medium">المناديب المتصلين</CardTitle>
-                            <p className="text-2xl font-bold">{pulseData.onlineDrivers.value}</p>
-                        </div>
-                        <div className="p-2 bg-blue-500/10 rounded-full"><MapPin className="h-5 w-5 text-blue-600" /></div>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">المناديب المتصلين</CardTitle>
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent className="py-2">
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pulseData.onlineDrivers.value}</div>
                          <SparklineChart data={pulseData.onlineDrivers.trend} dataKey="value" color="hsl(var(--chart-3))"/>
                     </CardContent>
                 </Card>
-                 <Card className="rounded-xl shadow-sm border-destructive/50 bg-destructive/5">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                        <div className="space-y-1">
-                            <CardTitle className="text-sm font-medium text-destructive">طلبات في الانتظار</CardTitle>
-                            <p className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value}</p>
-                        </div>
-                        <div className="p-2 bg-destructive/10 rounded-full"><Hourglass className="h-5 w-5 text-destructive" /></div>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-destructive">طلبات في الانتظار</CardTitle>
+                        <Hourglass className="h-4 w-4 text-destructive" />
                     </CardHeader>
-                    <CardContent className="py-2">
+                    <CardContent>
+                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value}</div>
                         <SparklineChart data={pulseData.pendingQueue.trend} dataKey="value" color="hsl(var(--destructive))"/>
                     </CardContent>
                 </Card>
             </div>
 
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2 rounded-xl border-border/50 shadow-sm overflow-hidden">
                     <CardHeader className="p-6 border-b border-border/50 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-bold flex items-center gap-2">
                             <TrendingUp className="h-4 w-4 text-primary" /> نمو المبيعات الأسبوعي
                         </CardTitle>
-                        <Badge variant="outline" className="rounded-lg font-bold">آخر ٧ أيام</Badge>
+                        <Badge variant="outline" className="rounded-xl font-bold">آخر ٧ أيام</Badge>
                     </CardHeader>
                     <CardContent className="p-6">
-                        <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ChartContainer config={salesGrowthConfig} className="h-[300px] w-full">
                             <LineChart data={salesGrowthData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} dy={10} className="fill-muted-foreground" />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} className="fill-muted-foreground" tickFormatter={(value) => `${value / 1000}k`}/>
                             <Tooltip 
+                                content={<ChartTooltipContent 
+                                    formatter={(value) => `${Number(value).toLocaleString('en-US')} ر.ي`}
+                                    labelClassName="font-bold"
+                                />} 
                                 contentStyle={{ borderRadius: '0.75rem', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', direction: 'rtl', backgroundColor: 'hsl(var(--background))' }}
-                                labelStyle={{ fontWeight: 'bold', marginBottom: '5px' }}
                             />
-                            <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 5, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 7 }} />
+                            <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={3} dot={{ r: 5, fill: 'var(--color-sales)', strokeWidth: 2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 7 }} />
                             </LineChart>
-                        </ResponsiveContainer>
-                        </div>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
                 <Card className="lg:col-span-1 rounded-xl border-border/50 shadow-sm">
@@ -371,7 +366,7 @@ export default function DashboardPage() {
     // If settings are null and we're done loading, it means the DB is not seeded.
     if (!settings) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-card rounded-xl border shadow-sm">
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-card rounded-lg border shadow-sm">
                  <Database className="h-16 w-16 text-primary mb-4" />
                  <h1 className="text-2xl font-bold">مرحباً بك في لوحة التحكم!</h1>
                  <p className="mt-2 text-lg text-muted-foreground">
