@@ -1,11 +1,11 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useUser } from '@/firebase';
-import { collection, query, where, Timestamp, doc, serverTimestamp } from 'firebase/firestore';
-import { format, formatDistanceToNow, isToday, isFuture } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import dynamic from 'next/dynamic';
+import { useState, useMemo, useEffect } from 'react';
 
+// Firebase and Data
+import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, Timestamp, doc, serverTimestamp } from 'firebase/firestore';
+
+// Components
 import AppointmentsLoading from './loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,27 +13,33 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { OrderStatusBadge } from '@/components/order-status-badge';
 import { Separator } from '@/components/ui/separator';
+import { OrderStatusBadge } from '@/components/order-status-badge';
 
+// Utils
+import { useToast } from '@/hooks/use-toast';
+import { format, formatDistanceToNow, isToday } from 'date-fns';
+// NO ARABIC LOCALE to enforce English numerals
+import dynamic from 'next/dynamic';
+import { cn } from '@/lib/utils';
+import type { DateRange } from "react-day-picker";
+
+// Icons
 import { 
     CalendarCheck, Clock, CheckCircle, XCircle, Search, Calendar as CalendarIcon, FileText, Check, X,
     User, Phone, MapPin, Store as StoreIcon, ShoppingBasket, BadgeDollarSign, Contact, FileDown
 } from 'lucide-react';
+
+// Types
 import type { Order as OrderType } from '../orders/page';
 import type { Store as StoreType } from '../stores/page';
 
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import type { DateRange } from "react-day-picker";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-
-
-const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });
+const LocationMapViewer = dynamic(() => import('@/components/location-map-viewer').then(mod => mod.LocationMapViewer), { ssr: false, loading: () => <div className="h-full w-full bg-muted rounded-lg flex items-center justify-center"><p>Loading Map...</p></div> });
 
 // We will consider orders with a 'scheduledDeliveryTime' in the future as appointments.
 type Appointment = OrderType & {
@@ -57,34 +63,27 @@ export default function AppointmentsPage() {
     
     const { toast } = useToast();
     const firestore = useFirestore();
-    const { user } = useUser();
 
-    const appointmentsQuery = useMemoFirebase(() => firestore && user ? query(collection(firestore, 'orders'), where('timestamps.scheduledDeliveryTime', '!=', null)) : null, [firestore, user]);
+    const appointmentsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'orders'), where('timestamps.scheduledDeliveryTime', '!=', null)) : null, [firestore]);
     const { data: rawAppointments, isLoading: isLoadingAppointments } = useCollection<OrderType>(appointmentsQuery);
-    const { data: stores, isLoading: isLoadingStores } = useCollection<StoreType>(useMemoFirebase(() => firestore && user ? collection(firestore, 'stores') : null, [firestore, user]));
+    const { data: stores, isLoading: isLoadingStores } = useCollection<StoreType>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
     
     const isLoading = isLoadingAppointments || isLoadingStores;
 
     const appointments: Appointment[] = useMemo(() => {
-        const dataToProcess = rawAppointments;
-        if (!dataToProcess) return [];
-
-        return dataToProcess
+        if (!rawAppointments) return [];
+        return rawAppointments
             .filter(o => o.timestamps.scheduledDeliveryTime)
             .map(o => {
                 const newTimestamps: Appointment['timestamps'] = {
-                    createdAt: o.timestamps.createdAt instanceof Timestamp ? o.timestamps.createdAt.toDate() : o.timestamps.createdAt,
-                    scheduledDeliveryTime: o.timestamps.scheduledDeliveryTime instanceof Timestamp ? o.timestamps.scheduledDeliveryTime.toDate() : o.timestamps.scheduledDeliveryTime!,
+                    createdAt: o.timestamps.createdAt instanceof Timestamp ? o.timestamps.createdAt.toDate() : new Date(o.timestamps.createdAt),
+                    scheduledDeliveryTime: o.timestamps.scheduledDeliveryTime instanceof Timestamp ? o.timestamps.scheduledDeliveryTime.toDate() : new Date(o.timestamps.scheduledDeliveryTime!),
                 };
-                if(o.timestamps.confirmedAt) newTimestamps.confirmedAt = o.timestamps.confirmedAt instanceof Timestamp ? o.timestamps.confirmedAt.toDate() : o.timestamps.confirmedAt;
-                if(o.timestamps.dispatchedAt) newTimestamps.dispatchedAt = o.timestamps.dispatchedAt instanceof Timestamp ? o.timestamps.dispatchedAt.toDate() : o.timestamps.dispatchedAt;
-                if(o.timestamps.deliveredAt) newTimestamps.deliveredAt = o.timestamps.deliveredAt instanceof Timestamp ? o.timestamps.deliveredAt.toDate() : o.timestamps.deliveredAt;
-                if(o.timestamps.cancelledAt) newTimestamps.cancelledAt = o.timestamps.cancelledAt instanceof Timestamp ? o.timestamps.cancelledAt.toDate() : o.timestamps.cancelledAt;
-
-                return {
-                    ...o,
-                    timestamps: newTimestamps
-                } as Appointment;
+                if(o.timestamps.confirmedAt) newTimestamps.confirmedAt = o.timestamps.confirmedAt instanceof Timestamp ? o.timestamps.confirmedAt.toDate() : new Date(o.timestamps.confirmedAt);
+                if(o.timestamps.dispatchedAt) newTimestamps.dispatchedAt = o.timestamps.dispatchedAt instanceof Timestamp ? o.timestamps.dispatchedAt.toDate() : new Date(o.timestamps.dispatchedAt);
+                if(o.timestamps.deliveredAt) newTimestamps.deliveredAt = o.timestamps.deliveredAt instanceof Timestamp ? o.timestamps.deliveredAt.toDate() : new Date(o.timestamps.deliveredAt);
+                if(o.timestamps.cancelledAt) newTimestamps.cancelledAt = o.timestamps.cancelledAt instanceof Timestamp ? o.timestamps.cancelledAt.toDate() : new Date(o.timestamps.cancelledAt);
+                return { ...o, timestamps: newTimestamps } as Appointment;
             });
     }, [rawAppointments]);
 
@@ -150,14 +149,12 @@ export default function AppointmentsPage() {
     };
 
     const handleConfirm = (appointment: Appointment) => {
-        if (!firestore) {
-            return;
-        }
+        if (!firestore) return;
         updateDocumentNonBlocking(doc(firestore, 'orders', appointment.id), {
             status: 'confirmed',
             'timestamps.confirmedAt': serverTimestamp()
         });
-        toast({ title: "تم تأكيد الموعد", description: `تم تحويل الموعد #${appointment.id.substring(0, 6)} إلى طلب نشط.` });
+        toast({ title: "Appointment Confirmed", description: `Appointment #${appointment.id.substring(0, 6)} has been converted to an active order.` });
     };
 
     const handleCancel = (appointment: Appointment) => {
@@ -170,21 +167,19 @@ export default function AppointmentsPage() {
         updateDocumentNonBlocking(doc(firestore, 'orders', selectedAppointment.id), {
             status: 'cancelled',
             'timestamps.cancelledAt': serverTimestamp(),
-            cancellationReason: 'تم الإلغاء من لوحة تحكم المواعيد'
+            cancellationReason: 'Cancelled from appointments dashboard'
         });
-        toast({ variant: 'destructive', title: "تم إلغاء الموعد" });
+        toast({ variant: 'destructive', title: "Appointment Cancelled" });
         setIsCancelOpen(false);
     };
     
     const handleExport = () => {
         if (!filteredData.length) {
-            toast({ title: "لا توجد بيانات للتصدير", description: "البيانات الحالية لا تحتوي على مواعيد." });
+            toast({ title: "No data to export", description: "Current selection has no appointments." });
             return;
         }
-
         const headers = ["ID", "Client Name", "Store Name", "Scheduled Time", "Total", "Status"];
         const csvRows = [headers.join(",")];
-
         for (const app of filteredData) {
             const row = [
                 app.id,
@@ -196,7 +191,6 @@ export default function AppointmentsPage() {
             ];
             csvRows.push(row.join(","));
         }
-
         const csvString = csvRows.join("\n");
         const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -206,13 +200,12 @@ export default function AppointmentsPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        toast({ title: "تم بدء التصدير", description: `يتم تنزيل ${filteredData.length} موعد.` });
+        toast({ title: "Export Started", description: `Downloading ${filteredData.length} appointments.` });
     };
 
     const formatScheduledTime = (date: Date) => {
-        const day = isToday(date) ? 'اليوم' : format(date, 'd MMMM', { locale: ar });
-        const time = format(date, 'h:mm a', { locale: ar });
+        const day = isToday(date) ? 'Today' : format(date, 'd MMMM');
+        const time = format(date, 'h:mm a');
         return `${day}, ${time}`;
     };
 
@@ -221,46 +214,46 @@ export default function AppointmentsPage() {
     }
     
     const renderTable = (data: Appointment[]) => (
-        <div className="border rounded-lg">
+        <div className="border rounded-lg bg-card">
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="text-center">وقت التسليم المجدول</TableHead>
-                        <TableHead className="text-center">العميل</TableHead>
-                        <TableHead className="text-center">المتجر</TableHead>
-                        <TableHead className="text-center">الإجمالي</TableHead>
-                        <TableHead className="text-center">حالة الطلب</TableHead>
-                        <TableHead className="text-center">الإجراءات</TableHead>
+                        <TableHead className="text-center">Scheduled Time</TableHead>
+                        <TableHead className="text-center">Client</TableHead>
+                        <TableHead className="text-center">Store</TableHead>
+                        <TableHead className="text-center">Total</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {data.length > 0 ? data.map(app => (
-                        <TableRow key={app.id}>
+                        <TableRow key={app.id} className="hover:bg-muted/50">
                             <TableCell className="text-center font-medium">
                                 <div className="flex flex-col items-center">
                                     <span>{formatScheduledTime(app.timestamps.scheduledDeliveryTime)}</span>
-                                    <span className="text-xs text-muted-foreground">({formatDistanceToNow(app.timestamps.scheduledDeliveryTime, { locale: ar, addSuffix: true })})</span>
+                                    <span className="text-xs text-muted-foreground">({formatDistanceToNow(app.timestamps.scheduledDeliveryTime, { addSuffix: true })})</span>
                                 </div>
                             </TableCell>
                             <TableCell className="text-center">{app.clientName}</TableCell>
                             <TableCell className="text-center">{app.storeName}</TableCell>
-                            <TableCell className="text-center font-semibold" dir="ltr">{app.financials.total.toLocaleString('en-US')}&nbsp;ر.ي</TableCell>
+                            <TableCell className="text-center font-semibold">{app.financials.total.toLocaleString('en-US')}&nbsp;YER</TableCell>
                             <TableCell className="text-center"><OrderStatusBadge status={app.status}/></TableCell>
                             <TableCell className="text-center">
                                 {activeTab === 'upcoming' ? (
                                     <div className="flex justify-center gap-2">
-                                        <Button variant="default" size="sm" onClick={() => handleConfirm(app)}><Check/> تأكيد</Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> تفاصيل</Button>
-                                        <Button variant="destructive" size="sm" onClick={() => handleCancel(app)}><X/> إلغاء</Button>
+                                        <Button variant="default" size="sm" onClick={() => handleConfirm(app)}><Check/> Confirm</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> Details</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleCancel(app)}><X/> Cancel</Button>
                                     </div>
                                 ) : (
-                                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> تفاصيل</Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(app)}><FileText/> Details</Button>
                                 )}
                             </TableCell>
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">لا توجد مواعيد في هذه الفئة.</TableCell>
+                            <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">No appointments in this category.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -271,37 +264,40 @@ export default function AppointmentsPage() {
     return (
         <>
             <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-black text-foreground">إدارة المواعيد</h1>
-                        <p className="text-muted-foreground mt-1">متابعة وتأكيد الطلبات المجدولة مسبقًا.</p>
+                        <h1 className="text-3xl font-black text-foreground flex items-center gap-2">
+                            <CalendarCheck className="h-8 w-8 text-primary"/>
+                            Manage Appointments
+                        </h1>
+                        <p className="text-muted-foreground mt-1">Review, confirm, and manage scheduled orders.</p>
                     </div>
                 </div>
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} dir="rtl">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="upcoming" className="gap-2"><Clock/>المواعيد القادمة</TabsTrigger>
-                        <TabsTrigger value="completed" className="gap-2"><CheckCircle/>المواعيد المكتملة</TabsTrigger>
-                        <TabsTrigger value="cancelled" className="gap-2"><XCircle/>المواعيد الملغية</TabsTrigger>
+                        <TabsTrigger value="upcoming" className="gap-2"><Clock/>Upcoming</TabsTrigger>
+                        <TabsTrigger value="completed" className="gap-2"><CheckCircle/>Completed</TabsTrigger>
+                        <TabsTrigger value="cancelled" className="gap-2"><XCircle/>Cancelled</TabsTrigger>
                     </TabsList>
                     
                     <div className="mt-4">
-                        <Card>
+                        <Card className="shadow-sm">
                              <CardHeader>
                                 <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                                     <div className="relative flex-grow">
                                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input 
-                                            placeholder="ابحث بالاسم أو رقم الطلب..." 
+                                            placeholder="Search by name or order ID..." 
                                             value={filters.searchTerm} 
                                             onChange={e => setFilters(f => ({ ...f, searchTerm: e.target.value }))} 
                                             className="w-full pr-10" 
                                         />
                                     </div>
                                     <Select value={filters.storeId} onValueChange={v => setFilters(f => ({ ...f, storeId: v }))}>
-                                        <SelectTrigger className="w-full sm:w-48"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="w-full sm:w-48"><div className="flex items-center gap-2"><StoreIcon className="text-muted-foreground" /> <SelectValue /></div></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">كل المتاجر</SelectItem>
+                                            <SelectItem value="all">All Stores</SelectItem>
                                             {uniqueStores.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
@@ -310,12 +306,9 @@ export default function AppointmentsPage() {
                                         <Button
                                             id="date"
                                             variant={"outline"}
-                                            className={cn(
-                                            "w-full sm:w-64 justify-start text-left font-normal",
-                                            !filters.date && "text-muted-foreground"
-                                            )}
+                                            className={cn("w-full sm:w-64 justify-start text-left font-normal gap-2", !filters.date && "text-muted-foreground")}
                                         >
-                                            <CalendarIcon className="ml-2 h-4 w-4" />
+                                            <CalendarIcon className="h-4 w-4" />
                                             {filters.date?.from ? (
                                             filters.date.to ? (
                                                 <>
@@ -326,7 +319,7 @@ export default function AppointmentsPage() {
                                                 format(filters.date.from, "LLL dd, y")
                                             )
                                             ) : (
-                                            <span>اختر تاريخ</span>
+                                            <span>Pick a date</span>
                                             )}
                                         </Button>
                                         </PopoverTrigger>
@@ -341,7 +334,7 @@ export default function AppointmentsPage() {
                                         />
                                         </PopoverContent>
                                     </Popover>
-                                    <Button onClick={handleExport} variant="outline"><FileDown/> تصدير</Button>
+                                    <Button onClick={handleExport} variant="outline" className="gap-2"><FileDown/> Export</Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -355,64 +348,44 @@ export default function AppointmentsPage() {
              <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
                 <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col [&>button]:right-auto [&>button]:left-4" dir="rtl">
                     <DialogHeader className="text-right">
-                        <DialogTitle className="text-2xl font-bold text-right">تفاصيل الموعد: #{selectedAppointment?.id.substring(0, 8)}</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold text-right">Appointment Details: #{selectedAppointment?.id.substring(0, 8)}</DialogTitle>
                          <div className="flex justify-start items-center gap-4 text-sm pt-1">
                             {selectedAppointment && <OrderStatusBadge status={selectedAppointment.status} />}
-                            {selectedAppointment && <span className="flex items-center gap-1.5 text-muted-foreground"><CalendarIcon className="h-4 w-4"/>{format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a', { locale: ar })}</span>}
+                            {selectedAppointment && <span className="flex items-center gap-1.5 text-muted-foreground"><CalendarIcon className="h-4 w-4"/>{format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a')}</span>}
                         </div>
                     </DialogHeader>
                     {selectedAppointment && (
                         <div className="space-y-4 flex-1 overflow-y-auto p-1 pr-4">
                              <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>بيانات العميل</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><User className="h-5 w-5 text-primary"/>Client Details</CardTitle></CardHeader>
                                 <CardContent className="text-sm space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4 text-muted-foreground"/>
-                                        <span><strong>الاسم:</strong> {selectedAppointment.clientName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="h-4 w-4 text-muted-foreground"/>
-                                        <span><strong>الهاتف:</strong></span>
-                                        <span dir="ltr">{selectedAppointment.clientPhone}</span>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
-                                        <span><strong>العنوان:</strong> {selectedAppointment.address.description}</span>
-                                    </div>
+                                    <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/><strong>Name:</strong> {selectedAppointment.clientName}</div>
+                                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground"/><strong>Phone:</strong> <span dir="ltr">{selectedAppointment.clientPhone}</span></div>
+                                    <div className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" /><strong>Address:</strong> {selectedAppointment.address.description}</div>
                                 </CardContent>
                             </Card>
 
                             {selectedAppointment.address.addressType === 'other' && selectedAppointment.address.receiverName && (
                                <Card>
-                                   <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>بيانات المستلم</CardTitle></CardHeader>
+                                   <CardHeader><CardTitle className="text-base flex items-center gap-2"><Contact className="h-5 w-5 text-primary"/>Recipient Details</CardTitle></CardHeader>
                                    <CardContent className="text-sm space-y-3">
-                                       <div className="flex items-center gap-2">
-                                           <User className="h-4 w-4 text-muted-foreground"/>
-                                           <span><strong>الاسم:</strong> {selectedAppointment.address.receiverName}</span>
-                                       </div>
-                                       {selectedAppointment.address.receiverPhone && 
-                                       <div className="flex items-center gap-2">
-                                            <Phone className="h-4 w-4 text-muted-foreground"/>
-                                            <span><strong>الهاتف:</strong></span>
-                                           <span dir="ltr">{selectedAppointment.address.receiverPhone}</span>
-                                        </div>}
+                                       <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/><strong>Name:</strong> {selectedAppointment.address.receiverName}</div>
+                                       {selectedAppointment.address.receiverPhone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground"/><strong>Phone:</strong> <span dir="ltr">{selectedAppointment.address.receiverPhone}</span></div>}
                                    </CardContent>
                                </Card>
                             )}
                             
                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>موقع التوصيل</CardTitle></CardHeader>
-                                <CardContent>
-                                    <LocationMapViewer mainPosition={{ lat: selectedAppointment.address.latitude, lng: selectedAppointment.address.longitude }} />
-                                </CardContent>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>Delivery Location</CardTitle></CardHeader>
+                                <CardContent className="h-64"><LocationMapViewer mainPosition={{ lat: selectedAppointment.address.latitude, lng: selectedAppointment.address.longitude }} /></CardContent>
                             </Card>
 
                              <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><StoreIcon className="h-5 w-5 text-primary"/>تفاصيل الطلب</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><StoreIcon className="h-5 w-5 text-primary"/>Order Details</CardTitle></CardHeader>
                                 <CardContent>
-                                    <p className="mb-2"><strong>المتجر:</strong> {selectedAppointment.storeName}</p>
+                                    <p className="mb-2"><strong>Store:</strong> {selectedAppointment.storeName}</p>
                                     <Table>
-                                        <TableHeader><TableRow><TableHead className="text-right">المنتج</TableHead><TableHead className="w-[80px] text-center">الكمية</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead className="text-right">Product</TableHead><TableHead className="w-[80px] text-center">Qty</TableHead></TableRow></TableHeader>
                                         <TableBody>{selectedAppointment.items.map(item => (
                                             <TableRow key={item.productId}><TableCell className="font-medium">{item.productName}</TableCell><TableCell className="text-center">{item.quantity.toLocaleString('en-US')}</TableCell></TableRow>
                                         ))}</TableBody>
@@ -421,26 +394,26 @@ export default function AppointmentsPage() {
                             </Card>
 
                             <Card>
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign className="h-5 w-5 text-primary"/>الملخص المالي</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BadgeDollarSign className="h-5 w-5 text-primary"/>Financial Summary</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span>إجمالي المنتجات</span><span dir="ltr">{selectedAppointment.financials.subtotal.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
-                                    <div className="flex justify-between"><span>رسوم التوصيل</span><span dir="ltr">{selectedAppointment.financials.deliveryFee.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
-                                    {selectedAppointment.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>خصم</span><span dir="ltr">-{selectedAppointment.financials.discount.toLocaleString('en-US')}&nbsp;ر.ي</span></div>}
+                                    <div className="flex justify-between"><span>Subtotal</span><span dir="ltr">{selectedAppointment.financials.subtotal.toLocaleString('en-US')}&nbsp;YER</span></div>
+                                    <div className="flex justify-between"><span>Delivery Fee</span><span dir="ltr">{selectedAppointment.financials.deliveryFee.toLocaleString('en-US')}&nbsp;YER</span></div>
+                                    {selectedAppointment.financials.discount > 0 && <div className="flex justify-between text-destructive"><span>Discount</span><span dir="ltr">-{selectedAppointment.financials.discount.toLocaleString('en-US')}&nbsp;YER</span></div>}
                                     <Separator/>
-                                    <div className="flex justify-between font-bold text-base"><span>الإجمالي النهائي</span><span dir="ltr">{selectedAppointment.financials.total.toLocaleString('en-US')}&nbsp;ر.ي</span></div>
+                                    <div className="flex justify-between font-bold text-base"><span>Total</span><span dir="ltr">{selectedAppointment.financials.total.toLocaleString('en-US')}&nbsp;YER</span></div>
                                 </CardContent>
                             </Card>
                              <Card>
-                                <CardHeader><CardTitle className="text-base">بيانات الموعد</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base">Appointment Data</CardTitle></CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                     <div><strong>وقت الإنشاء:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a', { locale: ar })}</div>
-                                     <div><strong>وقت التسليم المجدول:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a', { locale: ar })}</div>
+                                     <div><strong>Created At:</strong> {format(selectedAppointment.timestamps.createdAt, 'd MMMM yyyy, h:mm a')}</div>
+                                     <div><strong>Scheduled For:</strong> {format(selectedAppointment.timestamps.scheduledDeliveryTime, 'd MMMM yyyy, h:mm a')}</div>
                                 </CardContent>
                              </Card>
                         </div>
                     )}
                      <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="secondary">إغلاق</Button></DialogClose>
+                        <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -448,12 +421,12 @@ export default function AppointmentsPage() {
             <AlertDialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
                 <AlertDialogContent dir="rtl">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>تأكيد الإلغاء</AlertDialogTitle>
-                        <AlertDialogDescription>هل أنت متأكد من إلغاء هذا الموعد؟ لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+                        <AlertDialogTitle>Confirm Cancellation</AlertDialogTitle>
+                        <AlertDialogDescription>Are you sure you want to cancel this appointment? This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                      <AlertDialogFooter className="flex-row-reverse sm:justify-start">
-                        <AlertDialogAction onClick={confirmCancel}>نعم، قم بالإلغاء</AlertDialogAction>
-                        <AlertDialogCancel>تراجع</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmCancel}>Yes, Cancel</AlertDialogAction>
+                        <AlertDialogCancel>Back</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

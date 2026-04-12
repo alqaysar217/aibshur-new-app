@@ -9,9 +9,12 @@ export default function AppointmentsLoading() {
     return (
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <Skeleton className="h-8 w-56 mb-2" />
-                    <Skeleton className="h-4 w-80" />
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-10" />
+                    <div>
+                        <Skeleton className="h-8 w-56 mb-2" />
+                        <Skeleton className="h-4 w-80" />
+                    </div>
                 </div>
             </div>
 
@@ -25,7 +28,12 @@ export default function AppointmentsLoading() {
                 <TabsContent value="upcoming" className="mt-4">
                     <Card>
                         <CardHeader>
-                            <Skeleton className="h-10 w-full sm:w-64" />
+                            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                                <Skeleton className="h-10 w-full sm:w-auto sm:flex-grow" />
+                                <Skeleton className="h-10 w-full sm:w-48" />
+                                <Skeleton className="h-10 w-full sm:w-64" />
+                                <Skeleton className="h-10 w-full sm:w-32" />
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="border rounded-lg">
