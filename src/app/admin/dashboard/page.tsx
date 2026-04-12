@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
 import {
-    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database
+    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database, TrendingUp
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,6 +17,7 @@ import type { Product } from '../products/page';
 import DashboardLoading from './loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import type { Notification } from '@/lib/notifications';
 
 // This is the shape of the data after we process it for the UI
@@ -94,6 +95,31 @@ function DashboardContent() {
             pendingQueue: { value: pendingQueue.length, trend: generateTrend(pendingQueue.length) },
         };
     }, [orders, drivers]);
+
+    const salesGrowthData = useMemo(() => {
+        if (!orders) return [];
+        const data = Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dayName = new Intl.DateTimeFormat('ar-SA', { weekday: 'short' }).format(d);
+            return { name: dayName, sales: 0 };
+        }).reverse();
+
+        orders.forEach(order => {
+            const orderDate = (order.timestamps.createdAt as any);
+            const diffDays = Math.floor((new Date().setHours(0,0,0,0) - orderDate.setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 7 && diffDays >= 0) {
+                const dayIndex = 6 - diffDays;
+                if(data[dayIndex]) {
+                   data[dayIndex].sales += order.financials.total;
+                }
+            }
+        });
+
+        return data;
+    }, [orders]);
+
 
     const salesProfitData = useMemo(() => {
         if (!orders) return [];
@@ -198,7 +224,7 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pulseData.activeOrders.value}</div>
-                        <SparklineChart data={pulseData.activeOrders.trend} dataKey="value" color="hsl(var(--primary))"/>
+                        <p className="text-xs text-muted-foreground">+2 عن الأمس</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -208,7 +234,7 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pulseData.liveSales.value.toLocaleString()}&nbsp;ر.ي</div>
-                        <SparklineChart data={pulseData.liveSales.trend} dataKey="value" color="hsl(var(--chart-2))"/>
+                        <p className="text-xs text-muted-foreground">+15% عن الأمس</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -218,7 +244,7 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pulseData.onlineDrivers.value}</div>
-                         <SparklineChart data={pulseData.onlineDrivers.trend} dataKey="value" color="hsl(var(--chart-3))"/>
+                         <p className="text-xs text-muted-foreground">متصل حالياً</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -228,10 +254,57 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value}</div>
-                        <SparklineChart data={pulseData.pendingQueue.trend} dataKey="value" color="hsl(var(--destructive))"/>
+                        <p className="text-xs text-muted-foreground">بحاجة لمراجعة</p>
                     </CardContent>
                 </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                    <CardHeader className="p-6 border-b flex flex-row items-center justify-between">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" /> نمو المبيعات الأسبوعي
+                        </CardTitle>
+                        <Badge variant="outline" className="rounded-md font-bold">آخر ٧ أيام</Badge>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={salesGrowthData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border/50" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} dy={10} className="fill-muted-foreground" />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold' }} className="fill-muted-foreground" tickFormatter={(value) => `${value / 1000}k`}/>
+                            <Tooltip 
+                                contentStyle={{ borderRadius: '0.5rem', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', direction: 'rtl', backgroundColor: 'hsl(var(--background))' }}
+                                labelStyle={{ fontWeight: 'bold', marginBottom: '5px' }}
+                            />
+                            <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 5, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 7 }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+                 <Card className="lg:col-span-1">
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {topProducts.map((product) => (
+                                    <TableRow key={product.name}>
+                                        <TableCell className="font-medium flex items-center gap-2">
+                                            <Avatar className="h-8 w-8 rounded-md"><AvatarImage src={product.image} /><AvatarFallback>{product.name.charAt(0)}</AvatarFallback></Avatar>
+                                            {product.name}
+                                        </TableCell>
+                                        <TableCell className="text-left">{product.sales}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader>
@@ -275,16 +348,16 @@ function DashboardContent() {
                 <Card className="lg:col-span-4">
                     <CardHeader>
                         <CardTitle>توزيع الطلبات على المتاجر</CardTitle>
-                        <CardDescription>إجمالي الطلبات (المكتملة والملغاة) في المتاجر الرئيسية.</CardDescription>
+                        <CardDescription>إجمالي الطلبات المكتملة في المتاجر الرئيسية.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <ChartContainer config={{ total: { label: "إجمالي الطلبات", color: "hsl(var(--chart-3))" } }} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={ordersByStoreData.map(d => ({ ...d, total: d.completed + d.cancelled }))} margin={{ left: 12, right: 12, top: 5, bottom: 5}}>
+                       <ChartContainer config={{ completed: { label: "مكتمل", color: "hsl(var(--chart-1))" } }} className="h-[250px] w-full">
+                            <BarChart accessibilityLayer data={ordersByStoreData} margin={{ left: 12, right: 12, top: 5, bottom: 5}}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0,10)} />
                                 <YAxis />
                                 <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>
@@ -309,46 +382,26 @@ function DashboardContent() {
                     </CardContent>
                 </Card>
              </div>
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {topProducts.map((product) => (
-                                    <TableRow key={product.name}>
-                                        <TableCell className="font-medium flex items-center gap-2">
-                                            <Avatar className="h-8 w-8 rounded-md"><AvatarImage src={product.image} /><AvatarFallback>{product.name.charAt(0)}</AvatarFallback></Avatar>
-                                            {product.name}
-                                        </TableCell>
-                                        <TableCell className="text-left">{product.sales}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Activity/>آخر الأنشطة في النظام</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                       {(activityFeed && activityFeed.length > 0) ? activityFeed.slice(0, 4).map((item: any) => {
-                           const Icon = CheckCircle; // Simplified
-                           return (
-                            <div key={item.id} className="flex items-center gap-3">
-                                <div className="p-2 bg-muted rounded-full"><Icon className="h-4 w-4 text-muted-foreground" /></div>
-                                <div className="flex-1">
-                                    <p className="text-sm">{item.title}</p>
-                                    <p className="text-xs text-muted-foreground">{item.body}</p>
-                                </div>
+            
+             <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Activity/>آخر الأنشطة في النظام</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                   {(activityFeed && activityFeed.length > 0) ? activityFeed.slice(0, 4).map((item: any) => {
+                       const Icon = CheckCircle; // Simplified
+                       return (
+                        <div key={item.id} className="flex items-center gap-3">
+                            <div className="p-2 bg-muted rounded-full"><Icon className="h-4 w-4 text-muted-foreground" /></div>
+                            <div className="flex-1">
+                                <p className="text-sm">{item.title}</p>
+                                <p className="text-xs text-muted-foreground">{item.body}</p>
                             </div>
-                           )
-                       }) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">لا توجد أنشطة لعرضها. قم بتهيئة قاعدة البيانات لعرض البيانات.</p>
-                       )}
-                    </CardContent>
-                </Card>
-            </div>
+                        </div>
+                       )
+                   }) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد أنشطة لعرضها. قم بتهيئة قاعدة البيانات لعرض البيانات.</p>
+                   )}
+                </CardContent>
+            </Card>
         </div>
     );
 }
