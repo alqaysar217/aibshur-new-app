@@ -31,7 +31,7 @@ type FirestoreProduct = {
     id: string;
     name: string;
     description: string;
-    mainImageUrl: string;
+    mainImageUrl?: string;
     rating: number;
     hasVariants: boolean;
     basePrice?: number;
@@ -206,7 +206,7 @@ export default function StoreDetailsPage() {
                 const productForCard: ProductCardType = {
                     ...product,
                     price: product.basePrice || 0,
-                    imageUrl: product.mainImageUrl,
+                    imageUrl: product.mainImageUrl || '/logo.png',
                     imageHint: '',
                 };
                 return (
