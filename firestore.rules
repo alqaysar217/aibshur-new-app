@@ -43,43 +43,43 @@ service cloud.firestore {
     
     // --- Public Read to unblock seeding flow, Admin Write ---
     match /systemSettings/{docId} { 
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
     
     // --- Public Read / Admin Write Collections ---
     match /app_provinces/{docId} {
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
     match /adBanners/{docId} { 
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
     match /stores/{docId} { 
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
     match /donationTypes/{docId} { 
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
     match /donationCampaigns/{docId} { 
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
     match /faqs/{faqId} {
-      allow read: if true;
+      allow get, list: if true;
       allow write: if isAdmin();
     }
 
     // --- Public Read-Only Collections ---
     match /governorates/{docId} {
-      allow read: if true;
+      allow get, list: if true;
       allow write: if false; // Explicitly disallow writes
     }
     match /storeCategories/{docId} {
-      allow read: if true;
+      allow get, list: if true;
       allow write: if false; // Explicitly disallow writes
     }
     
