@@ -2,16 +2,16 @@
 import { useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
 import {
-    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database, Users, ShoppingCart
+    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database, Users, ShoppingCart, TrendingUp, Bike, PackageCheck, PackageX, HandCoins, LineChart as LineChartIcon, BarChart3 as BarChartIcon, PieChart as PieChartIcon
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useDoc, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import type { Order } from '../orders/page';
+import type { Order as OrderFS } from '../orders/page';
 import type { Driver } from '../delegates/page';
 import type { Product } from '../products/page';
 import DashboardLoading from './loading';
@@ -20,28 +20,52 @@ import { Button } from '@/components/ui/button';
 import type { Notification } from '@/lib/notifications';
 import type { Client } from '../users/page';
 
+// This is the shape of the data after we process it for the UI
+export interface Order extends Omit<OrderFS, 'timestamps'> {
+    timestamps: { createdAt: Date; confirmedAt?: Date; dispatchedAt?: Date; deliveredAt?: Date; cancelledAt?: Date; scheduledDeliveryTime?: Date; };
+}
+
+
 // This component holds the main dashboard content.
 function DashboardContent() {
     const firestore = useFirestore();
     const { user } = useUser();
 
     // These hooks are now safe to call because we've confirmed the DB is seeded.
-    const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
+    const { data: ordersFS, isLoading: isLoadingOrders } = useCollection<OrderFS>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
     const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
-    const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(useMemoFirebase(() => firestore && user ? collection(firestore, 'clients') : null, [firestore, user]));
     const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<Notification>(useMemoFirebase(() => firestore && user?.uid ? collection(firestore, 'notifications') : null, [firestore, user?.uid]));
     
-    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications || isLoadingClients;
+    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
+    
+    const orders: Order[] = useMemo(() => {
+        if (!ordersFS) return [];
+        return ordersFS.map(orderFS => {
+            const timestamps: any = {};
+            if(orderFS.timestamps) {
+                for (const key in orderFS.timestamps) {
+                    if (orderFS.timestamps[key] instanceof Timestamp) {
+                        timestamps[key] = orderFS.timestamps[key].toDate();
+                    }
+                }
+            }
+            return { ...orderFS, timestamps };
+        });
+    }, [ordersFS]);
+
 
     const pulseData = useMemo(() => {
-        if (!orders || !drivers || !clients) return { totalSales: 0, totalOrders: 0, totalClients: 0, onlineDrivers: 0 };
-        const totalSales = orders.reduce((sum, o) => sum + o.financials.total, 0);
-        const totalOrders = orders.length;
-        const totalClients = clients.length;
+        if (!orders || !drivers) return { activeOrders: 0, todaySales: 0, onlineDrivers: 0, pendingOrders: 0 };
+        const now = new Date();
+        const todayStart = new Date(now.setHours(0, 0, 0, 0));
+
+        const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status)).length;
+        const todaySales = orders.filter(o => o.timestamps.createdAt >= todayStart).reduce((sum, o) => sum + o.financials.total, 0);
         const onlineDrivers = drivers.filter(d => d.is_active).length;
-        return { totalSales, totalOrders, totalClients, onlineDrivers };
-    }, [orders, drivers, clients]);
+        const pendingOrders = orders.filter(o => o.status === 'incoming').length;
+        return { activeOrders, todaySales, onlineDrivers, pendingOrders };
+    }, [orders, drivers]);
 
     const salesProfitData = useMemo(() => {
         if (!orders) return [];
@@ -49,29 +73,45 @@ function DashboardContent() {
         const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
         orders.forEach(order => {
-            const date = (order.timestamps.createdAt as any) instanceof Date ? order.timestamps.createdAt : (order.timestamps.createdAt as any).toDate();
+            const date = order.timestamps.createdAt;
             const dayName = weekDays[date.getDay()];
             if (!dataByDay[dayName]) {
                 dataByDay[dayName] = { sales: 0, profit: 0 };
             }
             dataByDay[dayName].sales += order.financials.total;
-            dataByDay[dayName].profit += (order.financials.subtotal * 0.4) - order.financials.discount;
+            dataByDay[dayName].profit += (order.financials.subtotal * 0.1) - order.financials.discount; // Assuming 10% profit margin
         });
 
         return weekDays.map(day => ({ name: day, ...dataByDay[day] || {sales: 0, profit: 0} }));
     }, [orders]);
+    
+     const salesProfitConfig = {
+        sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
+        profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
+    };
 
-    const salesByStoreData = useMemo(() => {
+    const ordersByStoreData = useMemo(() => {
         if (!orders) return [];
-        const salesMap = new Map<string, number>();
+        const salesMap = new Map<string, { completed: number; cancelled: number }>();
         orders.forEach(order => {
-            salesMap.set(order.storeName, (salesMap.get(order.storeName) || 0) + order.financials.total);
+            const current = salesMap.get(order.storeName) || { completed: 0, cancelled: 0 };
+            if (order.status === 'delivered') {
+                current.completed += 1;
+            } else if (order.status === 'cancelled') {
+                current.cancelled += 1;
+            }
+            salesMap.set(order.storeName, current);
         });
         return Array.from(salesMap.entries())
-            .map(([name, sales]) => ({ name, sales, fill: `hsl(var(--chart-${(Array.from(salesMap.keys()).indexOf(name) % 5) + 1}))`}))
-            .sort((a, b) => b.sales - a.sales)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => (b.completed + b.cancelled) - (a.completed + a.cancelled))
             .slice(0, 5);
     }, [orders]);
+
+    const ordersByStoreConfig = {
+        completed: { label: 'مكتملة', color: 'hsl(var(--primary))' },
+        cancelled: { label: 'ملغاة', color: 'hsl(var(--destructive))' },
+    };
 
     const topProducts = useMemo(() => {
         if (!orders || !products) return [];
@@ -95,10 +135,7 @@ function DashboardContent() {
             });
     }, [orders, products]);
     
-    const salesProfitConfig = {
-        sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
-        profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
-    };
+   
 
     if (isLoading) return <DashboardLoading />;
 
@@ -112,42 +149,42 @@ function DashboardContent() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle>
-                        <CircleDollarSign className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
+                        <Bike className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.totalSales.toLocaleString()}&nbsp;ر.ي</div>
-                        <p className="text-xs text-muted-foreground">إجمالي الإيرادات من جميع الطلبات</p>
+                        <div className="text-2xl font-bold">{pulseData.activeOrders}</div>
+                        <p className="text-xs text-muted-foreground">الطلبات قيد التجهيز أو التوصيل</p>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
-                        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">مبيعات اليوم</CardTitle>
+                        <TrendingUp className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.totalOrders}</div>
-                        <p className="text-xs text-muted-foreground">مجموع الطلبات في النظام</p>
+                        <div className="text-2xl font-bold">{pulseData.todaySales.toLocaleString()}&nbsp;ر.ي</div>
+                        <p className="text-xs text-muted-foreground">إجمالي الإيرادات منذ بداية اليوم</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">العملاء</CardTitle>
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.totalClients}</div>
-                         <p className="text-xs text-muted-foreground">إجمالي عدد العملاء المسجلين</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">المناديب النشطين</CardTitle>
+                        <CardTitle className="text-sm font-medium">المناديب المتصلين</CardTitle>
                         <MapPin className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{pulseData.onlineDrivers}</div>
-                        <p className="text-xs text-muted-foreground">المناديب المتاحون حاليًا</p>
+                         <p className="text-xs text-muted-foreground">المناديب المتاحون حاليًا لاستلام طلبات</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">طلبات في الانتظار</CardTitle>
+                        <Hourglass className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pulseData.pendingOrders}</div>
+                        <p className="text-xs text-muted-foreground">طلبات جديدة بانتظار التأكيد</p>
                     </CardContent>
                 </Card>
             </div>
@@ -174,19 +211,20 @@ function DashboardContent() {
                 </Card>
                 <Card className="lg:col-span-3">
                     <CardHeader>
-                        <CardTitle>توزيع المبيعات على المتاجر</CardTitle>
-                         <CardDescription>أعلى 5 متاجر تحقيقًا للمبيعات.</CardDescription>
+                        <CardTitle>الطلبات المكتملة مقابل الملغاة</CardTitle>
+                         <CardDescription>مقارنة بين الطلبات الناجحة والملغاة لكل متجر.</CardDescription>
                     </CardHeader>
-                     <CardContent className="flex-1 pb-0 flex justify-center items-center">
-                         <ChartContainer config={salesProfitConfig} className="mx-auto aspect-square h-[250px]">
-                              <PieChart>
-                                <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
-                                <Pie data={salesByStoreData} dataKey="sales" nameKey="name" innerRadius={60} outerRadius={90} strokeWidth={5}>
-                                    {salesByStoreData.map((entry) => (
-                                        <Cell key={entry.name} fill={entry.fill} />
-                                    ))}
-                                </Pie>
-                            </PieChart>
+                     <CardContent className="flex-1 pb-0">
+                         <ChartContainer config={ordersByStoreConfig} className="h-[250px] w-full">
+                            <BarChart accessibilityLayer data={ordersByStoreData} layout="vertical" margin={{ left: 0, right: 20 }}>
+                                <CartesianGrid horizontal={false} />
+                                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={10} width={80} />
+                                <XAxis type="number" hide />
+                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                                <Legend />
+                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                                <Bar dataKey="cancelled" fill="var(--color-cancelled)" radius={4} />
+                            </BarChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
