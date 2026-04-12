@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -23,15 +23,29 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { User, Bike, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser } from 'lucide-react';
+import { User, Bike, Phone, Mail, Paperclip, BadgeInfo, CreditCard, BookUser, MapPin, Building, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { countries, type Country } from '@/lib/countries';
+
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+
+
+// Governorate Type
+type Governorate = {
+  id: string;
+  province_name: string;
+  is_active: boolean;
+};
+
 
 // User Schema
 const userFormSchema = z.object({
   name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل' }),
   phone: z.string().regex(/^7[0-9]{8}$/, { message: 'الرجاء إدخال رقم هاتف يمني صحيح (يبدأ بـ 7)' }),
+  governorateId: z.string({ required_error: "الرجاء اختيار محافظتك" }),
+  addressDescription: z.string().min(10, { message: "الرجاء إدخال وصف مختصر لعنوانك" }),
   terms: z.boolean().refine((val) => val === true, {
     message: 'يجب الموافقة على الشروط والسياسات',
   }),
@@ -42,21 +56,24 @@ const delegateFormSchema = z.object({
     name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل' }),
     phone: z.string().regex(/^7[0-9]{8}$/, { message: 'الرجاء إدخال رقم هاتف يمني صحيح (يبدأ بـ 7)' }),
     email: z.string().email({ message: 'الرجاء إدخال بريد إلكتروني صحيح' }),
+    address: z.string().min(5, { message: 'العنوان مطلوب' }),
     idType: z.enum(['passport', 'card'], { required_error: 'الرجاء اختيار نوع الهوية' }),
-    personalPhoto: z.any().refine(file => file?.length == 1, 'الصورة الشخصية مطلوبة.'),
-    idPhotoFront: z.any().refine(file => file?.length == 1, 'صورة الهوية الأمامية مطلوبة.'),
-    idPhotoBack: z.any().optional(),
+    personalPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح للصورة الشخصية" }),
+    idFrontPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح لصورة الهوية الأمامية" }),
+    idBackPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صالح" }).optional(),
+    latitude: z.coerce.number().optional(),
+    longitude: z.coerce.number().optional(),
     terms: z.boolean().refine((val) => val === true, {
         message: 'يجب الموافقة على الشروط والسياسات',
     }),
 }).refine(data => {
     if (data.idType === 'card') {
-        return data.idPhotoBack?.length == 1;
+        return data.idBackPhotoUrl && data.idBackPhotoUrl.length > 0;
     }
     return true;
 }, {
     message: "صورة الهوية الخلفية مطلوبة للبطاقة الشخصية",
-    path: ["idPhotoBack"],
+    path: ["idBackPhotoUrl"],
 });
 
 
@@ -67,74 +84,124 @@ export default function RegisterPage() {
   const delegateImage = PlaceHolderImages.find(p => p.id === 'register-delegate-illustration');
   const [idType, setIdType] = useState('card');
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const firestore = useFirestore();
+
+  const { data: governorates } = useCollection<Governorate>(
+    useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'app_provinces'), where('is_active', '==', true));
+    }, [firestore])
+  );
 
   const userForm = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      name: '',
-      phone: '',
-      terms: false,
-    },
+    defaultValues: { name: '', phone: '', terms: false },
   });
 
   const delegateForm = useForm<z.infer<typeof delegateFormSchema>>({
     resolver: zodResolver(delegateFormSchema),
-    defaultValues: {
-      name: '',
-      phone: '',
-      email: '',
-      idType: 'card',
-      terms: false,
-    },
+    defaultValues: { name: '', phone: '', email: '', address: '', idType: 'card', terms: false },
   });
+  
+  const checkUserExists = async (phoneNumber: string): Promise<boolean> => {
+    if (!firestore) return false;
+    const userCollections: ('clients' | 'drivers_v2' | 'storeOwners' | 'admins')[] = ['clients', 'drivers_v2', 'storeOwners', 'admins'];
+    try {
+      for (const col of userCollections) {
+        const q = query(collection(firestore, col), where("phone", "==", phoneNumber));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking user existence:", error);
+      toast({ variant: "destructive", title: "حدث خطأ", description: "لا يمكن التحقق من رقم الهاتف حالياً. الرجاء المحاولة لاحقاً." });
+      return false; 
+    }
+  };
 
-  function onUserSubmit(values: z.infer<typeof userFormSchema>) {
-    console.log('User registration:', values);
-    router.push('/otp');
+  async function onUserSubmit(values: z.infer<typeof userFormSchema>) {
+    setIsLoading(true);
+    const userExists = await checkUserExists(values.phone);
+    if (userExists) {
+      toast({ variant: "destructive", title: "حساب موجود بالفعل", description: "هذا الرقم لديه حساب من قبل. الرجاء تسجيل الدخول." });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { terms, ...dataToSave } = values;
+      await addDoc(collection(firestore, 'clients'), {
+        ...dataToSave,
+        is_active: true,
+        addressType: 'home',
+        latitude: 0, 
+        longitude: 0,
+      });
+      router.push(`/otp?phone=${values.phone}`);
+    } catch (error) {
+      console.error("Error creating client account:", error);
+      toast({ variant: "destructive", title: "خطأ في إنشاء الحساب", description: "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى." });
+      setIsLoading(false);
+    }
   }
   
-  function onDelegateSubmit(values: z.infer<typeof delegateFormSchema>) {
-    console.log('Delegate application:', values);
-    toast({
-      title: 'تم إرسال طلبك بنجاح',
-      description: 'سيتم مراجعة طلبك والتواصل معك قريباً. يمكنك الآن تصفح التطبيق كمستخدم عادي.',
-      duration: 5000,
-    });
-    router.push('/home');
+  async function onDelegateSubmit(values: z.infer<typeof delegateFormSchema>) {
+    setIsLoading(true);
+    const userExists = await checkUserExists(values.phone);
+    if (userExists) {
+      toast({ variant: "destructive", title: "حساب موجود بالفعل", description: "هذا الرقم لديه حساب من قبل. الرجاء تسجيل الدخول." });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+        const { terms, ...dataToSave } = values;
+        await addDoc(collection(firestore, 'drivers_v2'), {
+            ...dataToSave,
+            is_active: false,
+            status: 'pending',
+            createdAt: serverTimestamp(),
+            latitude: values.latitude || 0,
+            longitude: values.longitude || 0,
+        });
+
+        toast({
+            title: 'تم إرسال طلبك بنجاح',
+            description: 'سيتم مراجعة طلبك والتواصل معك قريباً. سيتم توجيهك لصفحة التحقق للمتابعة.',
+            duration: 5000,
+        });
+
+        router.push(`/otp?phone=${values.phone}`);
+
+    } catch (error) {
+      console.error("Error submitting delegate application:", error);
+      toast({ variant: "destructive", title: "خطأ في إرسال الطلب", description: "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى." });
+      setIsLoading(false);
+    }
   }
 
-  const FileUploadField = ({ name, label, icon: Icon }: { name: "personalPhoto" | "idPhotoFront" | "idPhotoBack", label: string, icon: React.ComponentType<{className?: string}> }) => {
-    const { control, register, watch } = delegateForm;
-    const fileName = watch(name)?.[0]?.name;
 
-    return (
-        <FormField
-            control={control}
-            name={name}
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>{label}</FormLabel>
-                    <FormControl>
-                        <div className="relative">
-                            <Button type="button" variant="outline" className="w-full justify-start text-muted-foreground gap-2" onClick={() => document.getElementById(name)?.click()}>
-                                <Icon className="h-5 w-5 text-muted-foreground" />
-                                <span className='truncate'>{fileName || 'اختر ملف'}</span>
-                            </Button>
-                            <Input
-                                id={name}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                {...register(name)}
-                            />
-                        </div>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
-    );
-};
+  const ImageURLField = ({ name, label, icon: Icon }: { name: "personalPhotoUrl" | "idFrontPhotoUrl" | "idBackPhotoUrl", label: string, icon: React.ComponentType<{className?: string}> }) => (
+    <FormField
+        control={delegateForm.control}
+        name={name}
+        render={({ field }) => (
+            <FormItem>
+                <FormLabel>{label}</FormLabel>
+                <FormControl>
+                    <div className="relative">
+                       <Icon className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                       <Input placeholder="https://example.com/image.png" {...field} className="h-12 text-base pr-12 text-left" dir="ltr"/>
+                    </div>
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )}
+    />
+  );
 
 
   return (
@@ -162,7 +229,7 @@ export default function RegisterPage() {
               />
             )}
             <Form {...userForm}>
-              <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="w-full space-y-4">
+              <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="w-full space-y-4 text-right">
                 <div className="relative">
                     <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <FormField
@@ -217,6 +284,47 @@ export default function RegisterPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
+                 <FormField
+                  control={userForm.control}
+                  name="governorateId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>المحافظة</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                          <FormControl>
+                            <SelectTrigger className="h-12 text-base">
+                              <div className='flex gap-2 items-center'>
+                                <Building className="h-5 w-5 text-muted-foreground" />
+                                <SelectValue placeholder="اختر محافظتك..." />
+                              </div>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {governorates?.map((gov) => (
+                              <SelectItem key={gov.id} value={gov.id}>{gov.province_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={userForm.control}
+                  name="addressDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>وصف العنوان</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                            <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input placeholder="مثال: شارع تعز، خلف متجر العالمية" {...field} className="h-12 text-base pr-12"/>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={userForm.control}
                   name="terms"
@@ -230,11 +338,12 @@ export default function RegisterPage() {
                           أوافق على <Link href="/terms" className="text-primary hover:underline">الشروط والسياسات</Link>
                         </FormLabel>
                       </div>
+                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full h-12 text-lg font-semibold">
-                  إنشاء حساب
+                <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : 'إنشاء حساب'}
                 </Button>
               </form>
             </Form>
@@ -262,12 +371,7 @@ export default function RegisterPage() {
                             control={delegateForm.control}
                             name="name"
                             render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input placeholder="الاسم حسب الهوية" {...field} className="h-12 text-base pr-12"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
+                                <FormItem><FormControl><Input placeholder="الاسم حسب الهوية" {...field} className="h-12 text-base pr-12"/></FormControl><FormMessage /></FormItem>
                             )}
                         />
                     </div>
@@ -279,12 +383,7 @@ export default function RegisterPage() {
                         render={({ field }) => (
                             <FormItem>
                             <FormControl>
-                                <Input
-                                    type="tel"
-                                    placeholder="7X XXX XXXX"
-                                    className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground"
-                                    {...field}
-                                />
+                                <Input type="tel" placeholder="7X XXX XXXX" className="w-full text-right tracking-[0.2em] text-lg h-14 pr-12 pl-20 text-foreground" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -298,11 +397,7 @@ export default function RegisterPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="max-h-60 overflow-y-auto">
                             {countries.map((country) => (
-                              <DropdownMenuItem
-                                key={country.code}
-                                onSelect={() => setSelectedCountry(country)}
-                                className="flex items-center gap-2 cursor-pointer"
-                              >
+                              <DropdownMenuItem key={country.code} onSelect={() => setSelectedCountry(country)} className="flex items-center gap-2 cursor-pointer">
                                 <span className="text-xl">{country.flag}</span>
                                 <span>{country.name} ({country.dialCode})</span>
                               </DropdownMenuItem>
@@ -316,12 +411,17 @@ export default function RegisterPage() {
                             control={delegateForm.control}
                             name="email"
                             render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input placeholder="البريد الإلكتروني" type="email" {...field} className="h-12 text-base pr-12"/>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
+                                <FormItem><FormControl><Input placeholder="البريد الإلكتروني" type="email" {...field} className="h-12 text-base pr-12"/></FormControl><FormMessage /></FormItem>
+                            )}
+                        />
+                    </div>
+                     <div className="relative">
+                        <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <FormField
+                            control={delegateForm.control}
+                            name="address"
+                            render={({ field }) => (
+                                <FormItem><FormControl><Input placeholder="عنوان السكن" {...field} className="h-12 text-base pr-12"/></FormControl><FormMessage /></FormItem>
                             )}
                         />
                     </div>
@@ -332,35 +432,15 @@ export default function RegisterPage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>نوع الهوية</FormLabel>
-                                <Select
-                                    onValueChange={(value) => {
-                                        field.onChange(value);
-                                        setIdType(value);
-                                    }}
-                                    defaultValue={field.value}
-                                    dir="rtl"
-                                >
+                                <Select onValueChange={(value) => { field.onChange(value); setIdType(value); }} defaultValue={field.value} dir="rtl">
                                     <FormControl>
                                         <SelectTrigger className="h-12 text-base">
-                                          <div className='flex gap-2 items-center'>
-                                            <BadgeInfo className="h-5 w-5 text-muted-foreground" />
-                                            <SelectValue placeholder="اختر نوع الهوية" />
-                                          </div>
+                                          <div className='flex gap-2 items-center'><BadgeInfo className="h-5 w-5 text-muted-foreground" /><SelectValue placeholder="اختر نوع الهوية" /></div>
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="card">
-                                          <div className='flex gap-2 items-center'>
-                                            <CreditCard className='h-5 w-5' />
-                                            <span>بطاقة شخصية</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="passport">
-                                          <div className='flex gap-2 items-center'>
-                                            <BookUser className='h-5 w-5' />
-                                            <span>جواز سفر</span>
-                                          </div>
-                                        </SelectItem>
+                                        <SelectItem value="card"><div className='flex gap-2 items-center'><CreditCard className='h-5 w-5' /><span>بطاقة شخصية</span></div></SelectItem>
+                                        <SelectItem value="passport"><div className='flex gap-2 items-center'><BookUser className='h-5 w-5' /><span>جواز سفر</span></div></SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -369,37 +449,28 @@ export default function RegisterPage() {
                     />
                     
                     <div className="space-y-4 rounded-lg border p-4 text-right">
-                        <h4 className="text-sm font-medium flex items-center gap-2">
-                          <Paperclip className="h-4 w-4" />
-                          المرفقات المطلوبة
-                        </h4>
-                        <FileUploadField name="personalPhoto" label="الصورة الشخصية" icon={User} />
-                        <FileUploadField name="idPhotoFront" label={idType === 'card' ? "صورة البطاقة (الأمام)" : "صورة الجواز"} icon={idType === 'card' ? CreditCard : BookUser} />
+                        <h4 className="text-sm font-medium flex items-center gap-2"><Paperclip className="h-4 w-4" />المرفقات المطلوبة (روابط صور)</h4>
+                        <ImageURLField name="personalPhotoUrl" label="رابط الصورة الشخصية" icon={User} />
+                        <ImageURLField name="idFrontPhotoUrl" label={idType === 'card' ? "رابط صورة البطاقة (الأمام)" : "رابط صورة الجواز"} icon={idType === 'card' ? CreditCard : BookUser} />
                         {idType === 'card' && (
-                           <FileUploadField name="idPhotoBack" label="صورة البطاقة (الخلف)" icon={CreditCard} />
+                           <ImageURLField name="idBackPhotoUrl" label="رابط صورة البطاقة (الخلف)" icon={CreditCard} />
                         )}
                     </div>
                     
-
                     <FormField
                         control={delegateForm.control}
                         name="terms"
                         render={({ field }) => (
                             <FormItem className="flex flex-row items-center space-x-3 space-y-0 space-x-reverse pt-2">
-                            <FormControl>
-                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                                <FormLabel>
-                                أوافق على <Link href="/terms" className="text-primary hover:underline">الشروط والسياسات الخاصة بالمندوب</Link>
-                                </FormLabel>
-                            </div>
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <div className="space-y-1 leading-none"><FormLabel>أوافق على <Link href="/terms" className="text-primary hover:underline">الشروط والسياسات الخاصة بالمندوب</Link></FormLabel></div>
+                            <FormMessage />
                             </FormItem>
                         )}
                     />
 
-                    <Button type="submit" className="w-full h-12 text-lg font-semibold">
-                        إرسال الطلب
+                    <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>
+                       {isLoading ? <Loader2 className="animate-spin" /> : 'إرسال الطلب'}
                     </Button>
                 </form>
                 </Form>
@@ -415,3 +486,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+    
