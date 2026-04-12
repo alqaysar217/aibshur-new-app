@@ -65,6 +65,15 @@ const delegateFormSchema = z.object({
     path: ["idBackPhotoUrl"],
 });
 
+const ImagePreview = ({ url }: { url?: string }) => {
+    if (!url) return null;
+    return (
+        <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1">
+            <Image src={url} alt="معاينة" width={80} height={80} className="rounded-md object-contain" unoptimized />
+        </div>
+    )
+};
+
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -84,7 +93,16 @@ export default function RegisterPage() {
 
   const delegateForm = useForm<z.infer<typeof delegateFormSchema>>({
     resolver: zodResolver(delegateFormSchema),
-    defaultValues: { name: '', phone: '', email: '', idType: 'card', terms: false },
+    defaultValues: {
+        name: '',
+        phone: '',
+        email: '',
+        idType: 'card',
+        terms: false,
+        personalPhotoUrl: '',
+        idFrontPhotoUrl: '',
+        idBackPhotoUrl: '',
+    },
   });
   
   const checkUserExists = async (phoneNumber: string): Promise<boolean> => {
@@ -191,6 +209,7 @@ export default function RegisterPage() {
                        <Input placeholder="https://example.com/image.png" {...field} className="h-12 text-base pr-12 text-left" dir="ltr"/>
                     </div>
                 </FormControl>
+                <ImagePreview url={field.value} />
                 <FormMessage />
             </FormItem>
         )}
