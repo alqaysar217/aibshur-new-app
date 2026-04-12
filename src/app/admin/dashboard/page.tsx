@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
 import {
-    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database
+    Activity, Award, CheckCircle, CircleDollarSign, Hourglass, MapPin, Package, Star, UserCheck, Database, Users, ShoppingCart
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,24 +17,8 @@ import type { Product } from '../products/page';
 import DashboardLoading from './loading';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { type Notification } from '@/lib/notifications';
-
-
-const SparklineChart = ({ data, dataKey, color }: { data: any[], dataKey: string, color: string }) => (
-    <div className="h-10 w-full">
-        <ResponsiveContainer>
-            <AreaChart data={data}>
-                <defs>
-                    <linearGradient id={`color-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={color} stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor={color} stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fillOpacity={1} fill={`url(#color-${dataKey})`} />
-            </AreaChart>
-        </ResponsiveContainer>
-    </div>
-);
+import type { Notification } from '@/lib/notifications';
+import type { Client } from '../users/page';
 
 // This component holds the main dashboard content.
 function DashboardContent() {
@@ -45,33 +29,19 @@ function DashboardContent() {
     const { data: orders, isLoading: isLoadingOrders } = useCollection<Order>(useMemoFirebase(() => firestore && user ? collection(firestore, 'orders') : null, [firestore, user]));
     const { data: drivers, isLoading: isLoadingDrivers } = useCollection<Driver>(useMemoFirebase(() => firestore && user ? collection(firestore, 'drivers_v2') : null, [firestore, user]));
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(useMemoFirebase(() => firestore && user ? collection(firestore, 'products') : null, [firestore, user]));
+    const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(useMemoFirebase(() => firestore && user ? collection(firestore, 'clients') : null, [firestore, user]));
     const { data: activityFeed, isLoading: isLoadingNotifications } = useCollection<Notification>(useMemoFirebase(() => firestore && user?.uid ? collection(firestore, 'notifications') : null, [firestore, user?.uid]));
     
-    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications;
+    const isLoading = isLoadingOrders || isLoadingDrivers || isLoadingProducts || isLoadingNotifications || isLoadingClients;
 
     const pulseData = useMemo(() => {
-        if (!orders || !drivers) return { activeOrders: { value: 0, trend: [] }, liveSales: { value: 0, trend: [] }, onlineDrivers: { value: 0, trend: [] }, pendingQueue: { value: 0, trend: [] }};
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'dispatched'].includes(o.status));
-        const liveSales = orders.filter(o => (o.timestamps.createdAt as any).toDate() >= today).reduce((sum, o) => sum + o.financials.total, 0);
-        const onlineDrivers = drivers.filter(d => d.is_active); // Simplified logic
-        const pendingQueue = orders.filter(o => o.status === 'incoming');
-
-        // Simplified trend data
-        const generateTrend = (currentValue: number) => [
-            { value: currentValue * 0.8 }, { value: currentValue * 1.1 }, { value: currentValue * 0.9 }, { value: currentValue * 1.2 }, { value: currentValue }
-        ];
-
-        return {
-            activeOrders: { value: activeOrders.length, trend: generateTrend(activeOrders.length) },
-            liveSales: { value: liveSales, trend: generateTrend(liveSales / 1000) },
-            onlineDrivers: { value: onlineDrivers.length, trend: generateTrend(onlineDrivers.length) },
-            pendingQueue: { value: pendingQueue.length, trend: generateTrend(pendingQueue.length) },
-        };
-    }, [orders, drivers]);
+        if (!orders || !drivers || !clients) return { totalSales: 0, totalOrders: 0, totalClients: 0, onlineDrivers: 0 };
+        const totalSales = orders.reduce((sum, o) => sum + o.financials.total, 0);
+        const totalOrders = orders.length;
+        const totalClients = clients.length;
+        const onlineDrivers = drivers.filter(d => d.is_active).length;
+        return { totalSales, totalOrders, totalClients, onlineDrivers };
+    }, [orders, drivers, clients]);
 
     const salesProfitData = useMemo(() => {
         if (!orders) return [];
@@ -91,18 +61,16 @@ function DashboardContent() {
         return weekDays.map(day => ({ name: day, ...dataByDay[day] || {sales: 0, profit: 0} }));
     }, [orders]);
 
-    const orderStatusData = useMemo(() => {
+    const salesByStoreData = useMemo(() => {
         if (!orders) return [];
-        const dataByProvince: { [key: string]: { completed: number; cancelled: number } } = {};
+        const salesMap = new Map<string, number>();
         orders.forEach(order => {
-            const provinceName = order.storeName; // Simplified: using store name as province for demo
-             if (!dataByProvince[provinceName]) {
-                dataByProvince[provinceName] = { completed: 0, cancelled: 0 };
-            }
-            if (order.status === 'delivered') dataByProvince[provinceName].completed += 1;
-            if (order.status === 'cancelled') dataByProvince[provinceName].cancelled += 1;
+            salesMap.set(order.storeName, (salesMap.get(order.storeName) || 0) + order.financials.total);
         });
-        return Object.entries(dataByProvince).map(([name, data]) => ({name, ...data})).slice(0, 5); // Take top 5
+        return Array.from(salesMap.entries())
+            .map(([name, sales]) => ({ name, sales, fill: `hsl(var(--chart-${(Array.from(salesMap.keys()).indexOf(name) % 5) + 1}))`}))
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, 5);
     }, [orders]);
 
     const topProducts = useMemo(() => {
@@ -131,19 +99,6 @@ function DashboardContent() {
         sales: { label: "إجمالي المبيعات", color: "hsl(var(--chart-2))" },
         profit: { label: "صافي الربح", color: "hsl(var(--primary))" },
     };
-    const orderStatusConfig = {
-        completed: { label: "مكتمل", color: "hsl(var(--primary))" },
-        cancelled: { label: "ملغي", color: "hsl(var(--destructive))" },
-    };
-     const performanceIndexConfig = {
-        delegates: { label: "المناديب", color: "hsl(var(--chart-2))" },
-        stores: { label: "المتاجر", color: "hsl(var(--chart-3))" },
-    };
-
-    const performanceIndexData = [
-        { name: 'المناديب', value: 4.8, fill: 'var(--color-delegates)' },
-        { name: 'المتاجر', value: 4.5, fill: 'var(--color-stores)' },
-    ];
 
     if (isLoading) return <DashboardLoading />;
 
@@ -153,48 +108,50 @@ function DashboardContent() {
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">لوحة التحكم الرئيسية</h1>
                 <p className="text-muted-foreground">نظرة شاملة ولحظية على أداء تطبيقك.</p>
             </div>
+            
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">الطلبات النشطة</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle>
+                        <CircleDollarSign className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.activeOrders.value}</div>
-                        <SparklineChart data={pulseData.activeOrders.trend} dataKey="value" color="hsl(var(--primary))"/>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">المبيعات اللحظية (اليوم)</CardTitle>
-                        <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.liveSales.value.toLocaleString()}&nbsp;ر.ي</div>
-                        <SparklineChart data={pulseData.liveSales.trend} dataKey="value" color="hsl(var(--chart-2))"/>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">المناديب المتصلين</CardTitle>
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pulseData.onlineDrivers.value}</div>
-                         <SparklineChart data={pulseData.onlineDrivers.trend} dataKey="value" color="hsl(var(--chart-3))"/>
+                        <div className="text-2xl font-bold">{pulseData.totalSales.toLocaleString()}&nbsp;ر.ي</div>
+                        <p className="text-xs text-muted-foreground">إجمالي الإيرادات من جميع الطلبات</p>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-destructive">طلبات في الانتظار</CardTitle>
-                        <Hourglass className="h-4 w-4 text-destructive" />
+                        <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
+                        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-destructive">{pulseData.pendingQueue.value}</div>
-                        <SparklineChart data={pulseData.pendingQueue.trend} dataKey="value" color="hsl(var(--destructive))"/>
+                        <div className="text-2xl font-bold">{pulseData.totalOrders}</div>
+                        <p className="text-xs text-muted-foreground">مجموع الطلبات في النظام</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">العملاء</CardTitle>
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pulseData.totalClients}</div>
+                         <p className="text-xs text-muted-foreground">إجمالي عدد العملاء المسجلين</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">المناديب النشطين</CardTitle>
+                        <MapPin className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pulseData.onlineDrivers}</div>
+                        <p className="text-xs text-muted-foreground">المناديب المتاحون حاليًا</p>
                     </CardContent>
                 </Card>
             </div>
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="lg:col-span-4">
                     <CardHeader>
@@ -203,66 +160,29 @@ function DashboardContent() {
                     </CardHeader>
                     <CardContent>
                         <ChartContainer config={salesProfitConfig} className="h-[250px] w-full">
-                            <LineChart accessibilityLayer data={salesProfitData} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
+                            <BarChart accessibilityLayer data={salesProfitData} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
                                 <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value / 1000} ألف`} />
                                 <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                 <Legend />
-                                <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={2} />
-                                <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} />
-                            </LineChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>الطلبات المكتملة مقابل الملغاة</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                         <ChartContainer config={orderStatusConfig} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={orderStatusData}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 10)} />
-                                <YAxis />
-                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                <Legend />
-                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
-                                <Bar dataKey="cancelled" fill="var(--color-cancelled)" radius={4} />
-                            </BarChart>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-            </div>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4">
-                    <CardHeader>
-                        <CardTitle>توزيع الطلبات على المتاجر</CardTitle>
-                        <CardDescription>إجمالي الطلبات المكتملة في المتاجر الرئيسية.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <ChartContainer config={{ completed: { label: "مكتمل", color: "hsl(var(--chart-1))" } }} className="h-[250px] w-full">
-                            <BarChart accessibilityLayer data={orderStatusData} margin={{ left: 12, right: 12, top: 5, bottom: 5}}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0,10)} />
-                                <YAxis />
-                                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                                <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
+                                <Bar dataKey="profit" fill="var(--color-profit)" radius={4} />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
                 <Card className="lg:col-span-3">
                     <CardHeader>
-                        <CardTitle>مؤشر كفاءة الأداء</CardTitle>
-                        <CardDescription>متوسط تقييم المناديب والمتاجر.</CardDescription>
+                        <CardTitle>توزيع المبيعات على المتاجر</CardTitle>
+                         <CardDescription>أعلى 5 متاجر تحقيقًا للمبيعات.</CardDescription>
                     </CardHeader>
                      <CardContent className="flex-1 pb-0 flex justify-center items-center">
-                        <ChartContainer config={performanceIndexConfig} className="mx-auto aspect-square h-[250px]">
-                            <PieChart>
+                         <ChartContainer config={salesProfitConfig} className="mx-auto aspect-square h-[250px]">
+                              <PieChart>
                                 <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
-                                <Pie data={performanceIndexData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={80} >
-                                    {performanceIndexData.map((entry) => (
+                                <Pie data={salesByStoreData} dataKey="sales" nameKey="name" innerRadius={60} outerRadius={90} strokeWidth={5}>
+                                    {salesByStoreData.map((entry) => (
                                         <Cell key={entry.name} fill={entry.fill} />
                                     ))}
                                 </Pie>
@@ -270,13 +190,14 @@ function DashboardContent() {
                         </ChartContainer>
                     </CardContent>
                 </Card>
-             </div>
+            </div>
+            
             <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Award/>الأكثر مبيعاً</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
-                            <TableHeader><TableRow><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow className='bg-muted/50'><TableHead>المنتج</TableHead><TableHead className="text-left">المبيعات</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {topProducts.map((product) => (
                                     <TableRow key={product.name}>

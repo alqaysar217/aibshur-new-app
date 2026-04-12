@@ -114,25 +114,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="min-h-screen w-full bg-background flex" dir="rtl">
-            <aside className={cn(
-                "h-screen z-10 bg-sidebar border-l border-sidebar-border flex flex-col transition-all duration-300 ease-in-out sticky top-0",
-                isCollapsed ? 'w-24' : 'w-72'
-            )}>
-                <div className={cn("flex items-center h-16 border-b border-sidebar-border shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
-                    <Image 
-                        src="/logo.png" 
-                        alt="أبشر Logo" 
-                        width={35} 
-                        height={35} 
-                        className="object-cover"
-                    />
-                    <span className={cn(
-                        "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-sidebar-foreground",
-                        isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100'
-                    )}>
-                        لوحة التحكم
-                    </span>
-                </div>
+                        <aside className={cn(
+                            "h-screen z-10 bg-sidebar border-l border-sidebar-border flex flex-col transition-all duration-300 ease-in-out sticky top-0",
+                            isCollapsed ? 'w-24' : 'w-72'
+                        )}>
+                            <div className={cn("flex items-center h-16 border-b shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
+                <Image 
+                    src="/logo-app.png" 
+                    alt="أبشر Logo" 
+                    width={35} // قمت بتكبير الحجم قليلاً ليكون أكثر وضوحاً مع الحواف
+                    height={35} 
+                    className="rounded-[10px] object-cover aspect-square border border-secondary" 
+                />
+                <span className={cn(
+                    "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-primary",
+                    isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100'
+                )}>
+                    لوحة التحكم
+                </span>
+            </div>
 
                 <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
                     {sidebarNavItems.map((link) => (
