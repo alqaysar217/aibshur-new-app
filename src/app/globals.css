@@ -44,14 +44,14 @@
     --chart-5: 27 87% 67%;
 
     /* Sidebar Colors */
-    --sidebar-background: 224 71% 4%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-border: 224 71% 10%;
+    --sidebar-background: 240 5% 96%; /* Neutral light gray */
+    --sidebar-foreground: 240 6% 10%; /* Nearly black */
+    --sidebar-border: 240 5% 89%; /* Slightly darker border */
     --sidebar-ring: 171 70% 40%;
-    --sidebar-accent: 224 71% 12%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-primary: 171 70% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 90%; /* A bit darker on hover */
+    --sidebar-accent-foreground: 240 6% 10%; /* Text color on hover */
+    --sidebar-primary: 171 70% 40%; /* The main green color */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on active */
   }
 }
 

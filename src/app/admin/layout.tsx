@@ -20,7 +20,7 @@ import type { Admin } from '../users/page';
 
 const sidebarNavItems = [
     { label: 'الرئيسية', href: '/admin/dashboard', icon: Home },
-    { label: 'إدارة تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart3 },
+    { label: 'تقارير المبيعات', href: '/admin/sales-reports', icon: BarChart3 },
     { label: 'إدارة الطلبات', href: '/admin/orders', icon: ClipboardList },
     { label: 'إدارة المواعيد', href: '/admin/appointments', icon: Calendar },
     { label: 'إدارة المتاجر', href: '/admin/stores', icon: Store },
@@ -33,11 +33,11 @@ const sidebarNavItems = [
     { label: 'إدارة الإشعارات', href: '/admin/notifications', icon: Bell },
     { label: 'إدارة التبرعات', href: '/admin/donations', icon: HandHeart },
     { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
-    { label: 'إدارة باقات VIP', href: '/admin/vip', icon: Diamond },
-    { label: 'إدارة نقاط الولاء', href: '/admin/loyalty', icon: Star },
+    { label: 'باقات VIP', href: '/admin/vip', icon: Diamond },
+    { label: 'نقاط الولاء', href: '/admin/loyalty', icon: Star },
     { label: 'إدارة المحافظات', href: '/admin/governorates', icon: Map },
-    { label: 'إدارة الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
-    { label: 'إدارة أداء الموظفين', href: '/admin/performance', icon: TrendingUp },
+    { label: 'الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
+    { label: 'أداء الموظفين', href: '/admin/performance', icon: TrendingUp },
     { label: 'إعدادات النظام', href: '/admin/settings', icon: Settings },
     { label: 'الدعم الفني', href: '/admin/support', icon: LifeBuoy },
 ];
@@ -96,13 +96,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href={href} title={isCollapsed ? text : ''}>
             <span
               className={cn(
-                'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors duration-200',
-                isActive ? 'bg-sidebar-accent text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                'flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200',
+                isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 isCollapsed ? 'justify-center' : 'justify-start'
               )}
             >
-              <Icon className={cn('w-5 h-5 shrink-0')} />
-              <span className={cn('transition-opacity duration-200 whitespace-nowrap font-bold', isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100')}>
+              <div className={cn("p-1.5 rounded-md", isActive ? 'bg-sidebar-primary-foreground/10' : 'bg-sidebar-accent/50')}>
+                <Icon className={cn('w-5 h-5 shrink-0', isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-primary' )} />
+              </div>
+              <span className={cn('transition-opacity duration-200 whitespace-nowrap', isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100')}>
                 {text}
               </span>
             </span>
@@ -114,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="min-h-screen w-full bg-background flex" dir="rtl">
             <aside className={cn(
                 "h-screen z-10 bg-sidebar border-l border-sidebar-border flex flex-col transition-all duration-300 ease-in-out sticky top-0",
-                isCollapsed ? 'w-20' : 'w-72'
+                isCollapsed ? 'w-24' : 'w-72'
             )}>
                 <div className={cn("flex items-center h-16 border-b border-sidebar-border shrink-0 px-4 gap-3", isCollapsed && "justify-center px-2")}>
                     <Image 
@@ -125,14 +127,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         className="object-cover"
                     />
                     <span className={cn(
-                        "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-sidebar-primary-foreground",
+                        "font-black text-lg transition-opacity duration-200 whitespace-nowrap text-sidebar-foreground",
                         isCollapsed ? 'w-0 opacity-0 hidden' : 'opacity-100'
                     )}>
                         لوحة التحكم
                     </span>
                 </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
                     {sidebarNavItems.map((link) => (
                         <NavLink key={link.label} href={link.href} icon={link.icon} text={link.label} isCollapsed={isCollapsed} />
                     ))}
@@ -143,7 +145,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         variant="ghost"
                         onClick={handleLogout}
                         className={cn(
-                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 text-red-500/80 hover:bg-destructive/20 hover:text-red-400',
+                            'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors duration-200 text-red-500/80 hover:bg-destructive/10 hover:text-red-500',
                             isCollapsed ? 'justify-center' : 'justify-start'
                         )}
                     >

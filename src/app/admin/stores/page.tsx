@@ -224,7 +224,7 @@ export default function StoresPage() {
                                             <TableCell className="text-center">{provincesMap[store.provinceId] || 'غير محدد'}</TableCell>
                                             <TableCell className="text-center">{categoriesMap[store.categoryId] || 'غير محدد'}</TableCell>
                                             <TableCell className="text-center">
-                                                <Badge variant={store.is_active ? 'default' : 'destructive'} className={cn(store.is_active ? "bg-green-500" : "bg-red-500", "text-white")}>
+                                                <Badge variant={store.is_active ? 'default' : 'destructive'}>
                                                     {store.is_active ? 'نشط' : 'معطل'}
                                                 </Badge>
                                             </TableCell>
