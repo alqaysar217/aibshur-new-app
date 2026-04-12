@@ -111,7 +111,7 @@ export default function LoginPage() {
                     {countries.map((country) => (
                       <DropdownMenuItem
                         key={country.code}
-                        onSelect={() => setSelectedCountry(country)}
+                        onSelect={(e) => { e.preventDefault(); setSelectedCountry(country); }}
                         className="flex items-center gap-2 cursor-pointer"
                       >
                         <span className="text-xl">{country.flag}</span>

@@ -274,7 +274,7 @@ export default function RegisterPage() {
                         {countries.map((country) => (
                           <DropdownMenuItem
                             key={country.code}
-                            onSelect={() => setSelectedCountry(country)}
+                            onSelect={(e) => { e.preventDefault(); setSelectedCountry(country); }}
                             className="flex items-center gap-2 cursor-pointer"
                           >
                             <span className="text-xl">{country.flag}</span>
@@ -397,7 +397,7 @@ export default function RegisterPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="max-h-60 overflow-y-auto">
                             {countries.map((country) => (
-                              <DropdownMenuItem key={country.code} onSelect={() => setSelectedCountry(country)} className="flex items-center gap-2 cursor-pointer">
+                              <DropdownMenuItem key={country.code} onSelect={(e) => { e.preventDefault(); setSelectedCountry(country); }} className="flex items-center gap-2 cursor-pointer">
                                 <span className="text-xl">{country.flag}</span>
                                 <span>{country.name} ({country.dialCode})</span>
                               </DropdownMenuItem>
@@ -486,5 +486,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    
