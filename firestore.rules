@@ -21,10 +21,10 @@ service cloud.firestore {
     }
 
     // --- Admin-Managed Collections ---
-    match /clients/{docId} { allow read, write: if isAdmin(); }
-    match /drivers_v2/{docId} { allow read, write: if isAdmin(); }
-    match /storeOwners/{docId} { allow read, write: if isAdmin(); }
-    match /admins/{docId} { allow read, write: if isAdmin(); }
+    match /clients/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /drivers_v2/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /storeOwners/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /admins/{docId} { allow read: if true; allow write: if isAdmin(); }
     match /bankAccounts/{docId} { allow read, write: if isAdmin(); }
     match /app_categories/{docId} { allow read, write: if isAdmin(); }
     match /store_filters/{docId} { allow read, write: if isAdmin(); }
