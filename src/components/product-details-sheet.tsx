@@ -65,8 +65,8 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
       <DialogContent 
         className="p-0 flex flex-col max-h-[90dvh] w-full max-w-sm rounded-2xl gap-0 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
       >
-        <Button variant="ghost" size="icon" className="absolute left-4 top-3 z-10 h-9 w-9 text-primary bg-white/80 hover:bg-white/90" onClick={onToggleFavorite}>
-            <Heart className={cn("h-5 w-5", isFavorite && "fill-primary text-primary")} />
+        <Button variant="ghost" size="icon" className="absolute left-4 top-3 z-10 h-9 w-9 bg-white/80 hover:bg-white/90" onClick={onToggleFavorite}>
+            <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-red-500" : "text-primary fill-transparent" )} />
         </Button>
         <div className="relative h-48 w-full">
             <Image

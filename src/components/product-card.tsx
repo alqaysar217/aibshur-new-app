@@ -73,8 +73,8 @@ export function ProductCard({ product, onShowDetails, onToggleFavorite }: Produc
           {/* Row 1 */}
           <div className="flex justify-between items-start">
             <h3 className="font-bold text-base leading-tight pr-2 line-clamp-1 text-primary">{product.name}</h3>
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-primary flex-shrink-0 -mt-1 -mr-2" onClick={handleFavoriteClick}>
-              <Heart className={cn("h-5 w-5", product.isFavorite && "text-primary fill-primary")} />
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-primary flex-shrink-0 -mt-1 -mr-2 hover:bg-primary/10" onClick={handleFavoriteClick}>
+              <Heart className={cn("h-5 w-5", product.isFavorite ? "text-red-500 fill-red-500" : "fill-transparent")} />
             </Button>
           </div>
           {/* Row 2 */}
@@ -92,7 +92,7 @@ export function ProductCard({ product, onShowDetails, onToggleFavorite }: Produc
             </div>
             <div className="flex-shrink-0">
                 {product.hasVariants ? (
-                  <Button size="sm" className="h-9 px-3 text-xs bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={(e) => {e.stopPropagation(); handleShowDetails();}}>
+                  <Button size="sm" className="h-9 px-3 text-xs bg-sidebar-active-gradient text-sidebar-primary-foreground">
                       عرض التفاصيل
                   </Button>
                 ) : quantity > 0 ? (
