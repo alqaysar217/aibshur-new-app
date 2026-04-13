@@ -95,7 +95,7 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
             </div>
 
 
-            {product.hasVariants ? (
+            {product.hasVariants && product.variants ? (
                 <div className="space-y-3 pt-2">
                     <h4 className="text-right font-bold flex items-center justify-start gap-2 text-lg">
                         <Layers className="h-5 w-5" />
@@ -105,7 +105,16 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                         const currentQuantity = variantQuantities[variant.name] || 0;
                         return (
                             <Card key={variant.name} className='p-3 shadow-sm border-border/80'>
-                                <div className='flex justify-between items-start gap-3'>
+                                <div className='flex justify-between items-center gap-3'>
+                                    <div className='flex items-center gap-3 text-right flex-1'>
+                                        <Image src={variant.imageUrl || product.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover flex-shrink-0" />
+                                        <div className='flex-1'>
+                                            <p className='font-semibold text-base'>{variant.name}</p>
+                                            <div className='font-bold text-primary'>
+                                                <span>{formatPrice(variant.price)}&nbsp;ريال</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="flex-shrink-0">
                                         {currentQuantity > 0 ? (
                                             <QuantityCounter 
@@ -119,15 +128,6 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                                                 إضافة
                                             </Button>
                                         )}
-                                    </div>
-                                    <div className='flex items-center gap-3 text-right flex-1 justify-end'>
-                                        <div className='flex-1'>
-                                            <p className='font-semibold text-base'>{variant.name}</p>
-                                            <div className='font-bold text-primary'>
-                                                <span>{formatPrice(variant.price)}&nbsp;ريال</span>
-                                            </div>
-                                        </div>
-                                         <Image src={variant.imageUrl || product.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" />
                                     </div>
                                 </div>
                             </Card>
