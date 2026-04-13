@@ -100,7 +100,7 @@ export default function StoreDetailsPage() {
                 const [morningEndHour] = todayWorkingHours.morning_to.split(':').map(Number);
     
                 if (currentHour >= morningStartHour && currentHour < morningEndHour) {
-                    setWorkingHoursText(`الدوام : ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to}`);
+                    setWorkingHoursText(`الدوام : ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to} صباحاً`);
                     return;
                 }
     
@@ -109,7 +109,7 @@ export default function StoreDetailsPage() {
                     const [eveningEndHour] = todayWorkingHours.evening_to.split(':').map(Number);
     
                     if (currentHour >= eveningStartHour && currentHour < eveningEndHour) {
-                        setWorkingHoursText(`الدوام : ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}`);
+                        setWorkingHoursText(`الدوام : ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to} مساءً`);
                         return;
                     }
                 }
@@ -218,7 +218,7 @@ export default function StoreDetailsPage() {
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2" onClick={handleToggleFavoriteStore}>
-                            <Heart className={cn("h-5 w-5", isStoreFavorite && "text-primary fill-primary")}/>
+                            <Heart className={cn("h-5 w-5", isStoreFavorite ? "text-red-500 fill-red-500" : "fill-transparent")}/>
                         </Button>
                     </div>
                     {/* Row 2 */}
