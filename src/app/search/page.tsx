@@ -10,8 +10,8 @@ import { StoreCard } from '@/components/store-card';
 import { ProductCard, type Product as ProductType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { BottomNav } from '@/components/bottom-nav';
-import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, query, where, doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc, setDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,7 @@ type StoreType = {
   provinceId: string;
   categoryId: string;
   is_active: boolean;
+  workingHours: any[];
 };
 
 type FirestoreProduct = {
@@ -104,7 +105,7 @@ export default function SearchPage() {
   const handleToggleFavoriteStore = async (storeId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
-    await setDoc(userProfileRef, {
+    setDocumentNonBlocking(userProfileRef, {
       favoriteStoreIds: isCurrentlyFavorite ? arrayRemove(storeId) : arrayUnion(storeId),
     }, { merge: true });
   };
@@ -112,7 +113,7 @@ export default function SearchPage() {
   const handleToggleFavoriteProduct = async (productId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
-    await setDoc(userProfileRef, {
+    setDocumentNonBlocking(userProfileRef, {
       favoriteProductIds: isCurrentlyFavorite ? arrayRemove(productId) : arrayUnion(productId),
     }, { merge: true });
   };
@@ -246,7 +247,7 @@ export default function SearchPage() {
                             distance="0 كم" // Placeholder
                             category={categoriesMap[store.categoryId] || 'غير محدد'}
                             rating={store.rating}
-                            isActive={store.is_active}
+                            workingHours={store.workingHours}
                             isFavorite={isFavorite}
                             onToggleFavorite={handleToggleFavoriteStore}
                         />
