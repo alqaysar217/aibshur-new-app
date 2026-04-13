@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -43,6 +43,7 @@ export default function StoreDetailsPage() {
   const [activeFilter, setActiveFilter] = useState('الكل');
   const [selectedProduct, setSelectedProduct] = useState<ProductCardType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [workingHoursText, setWorkingHoursText] = useState('');
   
   const firestore = useFirestore();
 
@@ -71,6 +72,48 @@ export default function StoreDetailsPage() {
         return acc;
     }, {} as Record<string, string>);
   }, [categories]);
+
+    // Effect to calculate working hours string on the client
+    useEffect(() => {
+        if (store) {
+            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === todayName);
+
+            if (todayWorkingHours?.isOpen) {
+                const now = new Date();
+                const currentHour = now.getHours();
+    
+                const [morningStartHour] = todayWorkingHours.morning_from.split(':').map(Number);
+                const [morningEndHour] = todayWorkingHours.morning_to.split(':').map(Number);
+    
+                if (currentHour >= morningStartHour && currentHour < morningEndHour) {
+                    setWorkingHoursText(`الفترة الحالية: ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to}`);
+                    return;
+                }
+    
+                if (todayWorkingHours.evening_from && todayWorkingHours.evening_to) {
+                    const [eveningStartHour] = todayWorkingHours.evening_from.split(':').map(Number);
+                    const [eveningEndHour] = todayWorkingHours.evening_to.split(':').map(Number);
+    
+                    if (currentHour >= eveningStartHour && currentHour < eveningEndHour) {
+                        setWorkingHoursText(`الفترة الحالية: ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}`);
+                        return;
+                    }
+                }
+                
+                // If not in an active period, but the store is open for the day, show the next upcoming period.
+                if (currentHour < morningStartHour) {
+                    setWorkingHoursText(`يفتح صباحاً: ${todayWorkingHours.morning_from}`);
+                } else if (todayWorkingHours.evening_from && currentHour < parseInt(todayWorkingHours.evening_from.split(':')[0], 10)) {
+                    setWorkingHoursText(`يفتح مساءً: ${todayWorkingHours.evening_from}`);
+                } else {
+                    setWorkingHoursText(''); // Closed for the day
+                }
+            } else {
+                setWorkingHoursText('');
+            }
+        }
+    }, [store]);
 
   const handleShowDetails = (product: ProductCardType) => {
     setSelectedProduct(product);
@@ -127,7 +170,7 @@ export default function StoreDetailsPage() {
 
       <main className="pb-4">
         {/* Store Info */}
-        <div className="p-4 bg-card border-b">
+        <div className="p-4 bg-card border-b space-y-4">
             <div className="flex items-start gap-4">
                 <div className="relative w-20 h-20 flex-shrink-0">
                     <Image 
@@ -138,31 +181,26 @@ export default function StoreDetailsPage() {
                         className="object-cover rounded-full border-4 border-background shadow-lg ring-2 ring-primary/30"
                     />
                 </div>
-                <div className="flex-1 space-y-2">
-                    {/* Row 1: Store Name & Favorite Button */}
+                <div className="flex-1 space-y-1">
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2">
                             <Heart className="h-5 w-5 text-primary"/>
                         </Button>
                     </div>
-                    {/* Row 2: Address & Distance */}
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-primary" />
-                            <span>{store.address}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4 text-primary" />
-                            <span>0 كم</span>
-                        </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span>{store.address}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                       <MapPin className="h-4 w-4 text-primary" />
+                       <span>0 كم</span>
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-3 border-t pt-3 mt-3">
-                {/* Row 3: Category/Rating & Status */}
-                <div className="flex justify-between items-center text-sm">
+            <div className="space-y-3 border-t pt-3">
+                 <div className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="font-semibold">{categoriesMap[store.categoryId] || ''}</Badge>
                         <div className="flex items-center gap-1">
@@ -174,19 +212,15 @@ export default function StoreDetailsPage() {
                         {todayWorkingHours?.isOpen ? 'مفتوح' : 'مغلق'}
                     </Badge>
                 </div>
-
-                {/* Row 4: Delivery & Hours */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <Bike className="h-4 w-4 text-primary"/>
                         <span>توصيل خلال {store.deliveryTime} دقيقة</span>
                     </div>
-                    {todayWorkingHours?.isOpen && (
+                    {todayWorkingHours?.isOpen && workingHoursText && (
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-primary"/>
-                            <span>
-                                اليوم: {todayWorkingHours.morning_from} - {todayWorkingHours.morning_to}{todayWorkingHours.evening_from ? `, ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}` : ''}
-                            </span>
+                            <span>{workingHoursText}</span>
                         </div>
                     )}
                 </div>
