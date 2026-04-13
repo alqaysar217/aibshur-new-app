@@ -17,6 +17,8 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+
 
 // Define types from Firestore
 type AppCategory = {
@@ -47,6 +49,7 @@ const filters = [
 export default function HomePage() {
   const firestore = useFirestore();
   const [selectedGovernorateId, setSelectedGovernorateId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
 
   // Get selected governorate from localStorage on client-side
   useEffect(() => {
@@ -60,6 +63,11 @@ export default function HomePage() {
     return query(collection(firestore, 'app_categories'), where('is_active', '==', true));
   }, [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<AppCategory>(categoriesQuery);
+  
+  const allCategories = useMemo(() => {
+    if (!categories) return [];
+    return [{ id: 'all', name: 'الكل', image: '', is_active: true }, ...categories];
+  }, [categories]);
 
   // Fetch active stores for the selected governorate
   const storesQuery = useMemoFirebase(() => {
@@ -71,6 +79,12 @@ export default function HomePage() {
     );
   }, [firestore, selectedGovernorateId]);
   const { data: stores, isLoading: isLoadingStores } = useCollection<Store>(storesQuery);
+  
+  const filteredStores = useMemo(() => {
+    if (!stores) return [];
+    if (selectedCategoryId === 'all') return stores;
+    return stores.filter(store => store.categoryId === selectedCategoryId);
+  }, [stores, selectedCategoryId]);
 
   // Create a map for category names for quick lookup
   const categoriesMap = useMemo(() => {
@@ -92,31 +106,57 @@ export default function HomePage() {
       <main className="p-4 space-y-6">
         {/* Store Categories */}
         <div className="overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
-          <div className="flex gap-4">
-            {isLoadingCategories ? (
-              [...Array(6)].map((_, i) => (
-                <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                  <Skeleton className="w-16 h-16 rounded-xl" />
-                  <Skeleton className="w-12 h-4 rounded-md" />
-                </div>
-              ))
-            ) : (
-              categories?.map((cat) => (
-                <div key={cat.id} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                  <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center shadow-sm border overflow-hidden">
-                    <Image
-                      src={cat.image}
-                      alt={cat.name}
-                      width={64}
-                      height={64}
-                      className="object-cover w-full h-full"
-                    />
+            <div className="flex gap-3">
+              {isLoadingCategories ? (
+                [...Array(6)].map((_, i) => (
+                  <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
+                    <Skeleton className="w-16 h-16 rounded-2xl" />
+                    <Skeleton className="w-12 h-4 rounded-md" />
                   </div>
-                  <p className="text-xs font-medium text-center text-muted-foreground">{cat.name}</p>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              ) : (
+                allCategories.map((cat) => {
+                  const isActive = selectedCategoryId === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategoryId(cat.id)}
+                      className={cn(
+                        "flex-shrink-0 flex flex-col items-center gap-2 w-20 group transition-all duration-300",
+                        !isActive && "opacity-80 hover:opacity-100"
+                      )}
+                    >
+                      <div className={cn(
+                          "w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm border transition-all duration-300 transform-gpu",
+                          isActive
+                              ? 'bg-primary/10 border-primary/30 shadow-[0_0_15px_-3px_hsl(var(--primary)/0.4)] scale-105'
+                              : 'bg-card border-border group-hover:border-primary/50 group-hover:bg-primary/5'
+                      )}>
+                          <div className="w-14 h-14 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
+                              {cat.id === 'all' ? (
+                                  <List className={cn("h-7 w-7 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}/>
+                              ) : (
+                                  <Image
+                                      src={cat.image}
+                                      alt={cat.name}
+                                      width={56}
+                                      height={56}
+                                      className="object-cover w-full h-full"
+                                  />
+                              )}
+                          </div>
+                      </div>
+                      <p className={cn(
+                          "text-xs font-bold text-center transition-colors",
+                          isActive ? "text-primary" : "text-muted-foreground"
+                      )}>
+                          {cat.name}
+                      </p>
+                    </button>
+                  )
+                })
+              )}
+            </div>
         </div>
 
         {/* Ads Banner */}
@@ -148,23 +188,29 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-4">
           {showStoreLoading ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} className="h-[104px] w-full rounded-lg" />)
-          ) : stores && stores.length > 0 ? (
-            stores.map(store => (
+          ) : filteredStores && filteredStores.length > 0 ? (
+            filteredStores.map(store => {
+              const isValidUrl = store.imageUrl && (store.imageUrl.startsWith('http') || store.imageUrl.startsWith('/'));
+              return (
               <StoreCard 
                 key={store.id} 
                 id={store.id}
                 name={store.name}
-                imageUrl={store.imageUrl}
+                imageUrl={isValidUrl ? store.imageUrl : '/logo.png'}
                 deliveryTime={store.deliveryTime}
                 distance="0 كم"
                 category={categoriesMap[store.categoryId] || 'فئة غير معروفة'}
                 rating={store.rating}
                 isActive={store.is_active}
               />
-            ))
+            )})
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              <p>لا توجد متاجر متاحة في محافظتك حالياً.</p>
+                {stores && stores.length > 0 ? (
+                     <p>لا توجد متاجر في هذه الفئة حالياً.</p>
+                ) : (
+                     <p>لا توجد متاجر متاحة في محافظتك حالياً.</p>
+                )}
             </div>
           )}
         </div>
