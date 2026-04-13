@@ -3,18 +3,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, HandHeart, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone, Edit } from 'lucide-react';
+import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, HandHeart, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { BottomNav } from '@/components/bottom-nav';
 import { Separator } from '@/components/ui/separator';
-import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useAuth } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore'; // Import query and where
-import { useMemo, useState, useEffect } from 'react'; // Import useState and useEffect
+import { useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { signOut } from 'firebase/auth';
 
@@ -34,7 +32,7 @@ type Governorate = {
 };
 
 const accountLinks = [
-  { href: '#', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: MapPin },
+  { href: '/select-governorate?redirect=/account', label: 'تغيير المحافظة', description: 'تغيير موقعك لعرض متاجر مختلفة', icon: MapPin },
   { href: '#', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
   { href: '#', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
   { href: '#', label: 'الخصوصية والامان', description: 'سياسة حماية بيانات', icon: Shield },
@@ -46,16 +44,16 @@ export default function AccountPage() {
     const firestore = useFirestore();
     const auth = useAuth();
     const router = useRouter();
-    const { toast } = useToast();
     const [userPhone, setUserPhone] = useState<string | null>(null);
 
+    // This effect now also handles listening for storage changes to update the page
     useEffect(() => {
-        // This code runs on the client-side only
         const phoneFromStorage = localStorage.getItem('userPhone');
         if (phoneFromStorage) {
             setUserPhone(phoneFromStorage);
         }
     }, []);
+
 
     // Create a query that filters clients by phone number
     const clientsQuery = useMemoFirebase(() => {
@@ -72,23 +70,23 @@ export default function AccountPage() {
 
     const governoratesMap = useMemo(() => governorates?.reduce((acc, g) => ({ ...acc, [g.id]: g.province_name }), {} as Record<string, string>) || {}, [governorates]);
     
-    const currentGovernorateName = clientProfile ? governoratesMap[clientProfile.governorateId] : '...';
+    const [currentGovernorateName, setCurrentGovernorateName] = useState('...');
+    
+    useEffect(() => {
+      if (isLoadingGovernorates) return;
+      const selectedGovId = localStorage.getItem('selectedGovernorateId');
+      
+      if (selectedGovId && governoratesMap[selectedGovId]) {
+        setCurrentGovernorateName(governoratesMap[selectedGovId]);
+      } else if (clientProfile && governoratesMap[clientProfile.governorateId]) {
+        setCurrentGovernorateName(governoratesMap[clientProfile.governorateId]);
+      } else if (!isLoadingClients) {
+        setCurrentGovernorateName('...');
+      }
+    }, [clientProfile, governoratesMap, isLoadingClients, isLoadingGovernorates]);
+
 
     const isLoading = isLoadingClients || isLoadingGovernorates;
-
-    const handleGovernorateChange = (governorateId: string) => {
-        if (!firestore || !clientProfile) return;
-        
-        const clientDocRef = doc(firestore, 'clients', clientProfile.id);
-        updateDocumentNonBlocking(clientDocRef, { governorateId });
-
-        localStorage.setItem('selectedGovernorateId', governorateId);
-        
-        toast({
-            title: "تم تغيير المحافظة",
-            description: `تم تحديث محافظتك إلى ${governoratesMap[governorateId]}.`,
-        });
-    };
 
     const handleLogout = async () => {
         try {
@@ -153,22 +151,10 @@ export default function AccountPage() {
                                     <span className="text-foreground" dir="ltr">{clientProfile.phone}</span>
                                 </div>
                                 <div className="hidden sm:block">•</div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:bg-accent p-2 rounded-lg transition-colors">
-                                            <MapPin className="h-4 w-4 text-primary" />
-                                            <span className="text-foreground font-medium">{currentGovernorateName}</span>
-                                            <Edit className="h-3 w-3 text-muted-foreground" />
-                                        </div>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {governorates?.map((gov) => (
-                                            <DropdownMenuItem key={gov.id} onSelect={() => handleGovernorateChange(gov.id)}>
-                                                {gov.province_name}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                <div className="flex items-center gap-1.5">
+                                    <MapPin className="h-4 w-4 text-primary" />
+                                    <span className="text-foreground font-medium">{currentGovernorateName}</span>
+                                </div>
                             </div>
                         </>
                     ) : (

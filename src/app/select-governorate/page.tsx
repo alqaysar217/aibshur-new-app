@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Search, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,8 @@ type Governorate = {
 export default function GovernorateSelectionPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const selectionImage = PlaceHolderImages.find(p => p.id === 'governorate-selection-illustration');
   
   // --- Firebase Data Fetching ---
@@ -46,9 +48,8 @@ export default function GovernorateSelectionPage() {
   const handleSelect = (governorate: Governorate) => {
     // Save the selected governorate ID to localStorage
     localStorage.setItem('selectedGovernorateId', governorate.id);
-    console.log(`Selected governorate: ${governorate.province_name} (ID: ${governorate.id})`);
-    // Navigate to the next step
-    router.push('/login');
+    // Navigate to the next step, which is either the redirect URL or the login page
+    router.push(redirectUrl || '/login');
   };
 
   return (
