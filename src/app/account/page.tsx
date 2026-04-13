@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, HandHeart, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone } from 'lucide-react';
+import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, HandHeart, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +32,7 @@ type Governorate = {
 };
 
 const accountLinks = [
+  { href: '#', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: Home },
   { href: '/select-governorate?redirect=/account', label: 'تغيير المحافظة', description: 'تغيير موقعك لعرض متاجر مختلفة', icon: MapPin },
   { href: '#', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
   { href: '#', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
@@ -169,11 +170,11 @@ export default function AccountPage() {
                             <Card className="hover:bg-secondary/50 transition-colors active:scale-[0.98] shadow-sm">
                                 <CardContent className="p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="bg-primary/10 p-2 rounded-lg">
-                                           <item.icon className="h-6 w-6 text-primary" />
+                                        <div className="bg-sidebar-active-gradient p-2 rounded-lg text-primary-foreground">
+                                           <item.icon className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <span className="font-semibold text-base">{item.label}</span>
+                                            <span className="font-bold text-base bg-sidebar-active-gradient text-transparent bg-clip-text">{item.label}</span>
                                             <p className="text-sm text-muted-foreground">{item.description}</p>
                                         </div>
                                     </div>
