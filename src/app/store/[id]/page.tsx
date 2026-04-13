@@ -215,7 +215,7 @@ export default function StoreDetailsPage() {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <Bike className="h-4 w-4 text-primary"/>
-                        <span>توصيل خلال {store.deliveryTime} دقيقة</span>
+                        <span>الطلب يستغرق : {store.deliveryTime}د</span>
                     </div>
                     {todayWorkingHours?.isOpen && workingHoursText && (
                         <div className="flex items-center gap-2">
