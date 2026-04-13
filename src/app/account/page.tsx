@@ -32,7 +32,7 @@ type Governorate = {
 };
 
 const accountLinks = [
-  { href: '#', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: Home },
+  { href: '/account/addresses', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: Home },
   { href: '/select-governorate?redirect=/account', label: 'تغيير المحافظة', description: 'تغيير موقعك لعرض متاجر مختلفة', icon: MapPin },
   { href: '#', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
   { href: '#', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
