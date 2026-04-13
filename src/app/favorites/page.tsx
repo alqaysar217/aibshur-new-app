@@ -9,8 +9,8 @@ import { StoreCard } from '@/components/store-card';
 import { ProductCard, type Product as ProductType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { BottomNav } from '@/components/bottom-nav';
-import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { collection, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +76,26 @@ export default function FavoritesPage() {
     if (!categories) return {};
     return categories.reduce((acc, cat) => ({ ...acc, [cat.id]: cat.name }), {} as Record<string, string>);
   }, [categories]);
+  
+  const handleToggleFavoriteStore = async (storeId: string) => {
+    if (!userProfileRef) return;
+    const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
+    setDocumentNonBlocking(userProfileRef, {
+        favoriteStoreIds: isCurrentlyFavorite
+        ? arrayRemove(storeId)
+        : arrayUnion(storeId),
+    }, { merge: true });
+  };
+  
+  const handleToggleFavoriteProduct = async (productId: string) => {
+    if (!userProfileRef) return;
+    const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
+    setDocumentNonBlocking(userProfileRef, {
+        favoriteProductIds: isCurrentlyFavorite
+        ? arrayRemove(productId)
+        : arrayUnion(productId),
+    }, { merge: true });
+  };
 
   const favoriteStores = useMemo(() => {
     if (!allStores || !userProfile?.favoriteStoreIds) return [];
@@ -97,6 +117,7 @@ export default function FavoritesPage() {
             hasVariants: p.hasVariants,
             imageUrl: isValidUrl ? p.mainImageUrl! : '/logo.png',
             imageHint: p.name,
+            isFavorite: true,
           };
         });
   }, [allProducts, userProfile]);
@@ -113,6 +134,8 @@ export default function FavoritesPage() {
   const renderProductSkeletons = () => (
     [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
   );
+
+  const isSelectedProductFavorite = selectedProduct ? userProfile?.favoriteProductIds?.includes(selectedProduct.id) : false;
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-16">
@@ -153,6 +176,7 @@ export default function FavoritesPage() {
                 <div className="grid grid-cols-1 gap-4">
                     {favoriteStores.map(store => {
                        const isValidUrl = store.imageUrl && (store.imageUrl.startsWith('http') || store.imageUrl.startsWith('/'));
+                       const isFavorite = userProfile?.favoriteStoreIds?.includes(store.id) ?? false;
                        return (
                           <StoreCard
                             key={store.id}
@@ -165,6 +189,8 @@ export default function FavoritesPage() {
                             category={categoriesMap[store.categoryId] || 'غير محدد'}
                             rating={store.rating}
                             isActive={store.is_active}
+                            isFavorite={isFavorite}
+                            onToggleFavorite={handleToggleFavoriteStore}
                           />
                        );
                     })}
@@ -179,7 +205,7 @@ export default function FavoritesPage() {
           <TabsContent value="products" className="space-y-4 mt-4">
              {isLoading ? renderProductSkeletons() : favoriteProducts.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
-                    {favoriteProducts.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />)}
+                    {favoriteProducts.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} onToggleFavorite={handleToggleFavoriteProduct} />)}
                 </div>
              ) : (
                 <div className="text-center py-16 text-muted-foreground">
@@ -194,6 +220,8 @@ export default function FavoritesPage() {
         product={selectedProduct}
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        isFavorite={isSelectedProductFavorite}
+        onToggleFavorite={() => selectedProduct && handleToggleFavoriteProduct(selectedProduct.id)}
       />
       <BottomNav />
     </div>
