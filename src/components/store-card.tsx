@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Star, MapPin } from 'lucide-react';
+import { Heart, Star, MapPin, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +58,7 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
                     <span className="truncate">{address}</span>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                    <MapPin className="h-4 w-4 text-primary" />
+                    <Navigation className="h-4 w-4 text-primary" />
                     <span>{distance}</span>
                 </div>
             </div>
