@@ -51,7 +51,7 @@ const bankLogos = orderDetails.bankAccounts.map(b => {
 });
 
 export default function OrderDetailsPage() {
-    const params = useParams<{ id: string }>();
+    const { id } = useParams<{ id: string }>();
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
 
@@ -114,7 +114,7 @@ export default function OrderDetailsPage() {
         <Card>
             <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                    <span className="font-bold text-lg">طلب رقم #{params.id}</span>
+                    <span className="font-bold text-lg">طلب رقم #{id}</span>
                     <OrderStatusBadge status={orderDetails.status} />
                 </div>
                 <Separator/>

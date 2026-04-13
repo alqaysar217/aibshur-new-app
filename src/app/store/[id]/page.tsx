@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, query, where, setDoc, arrayUnion, arrayRemove, DocumentReference, DocumentData } from 'firebase/firestore';
 import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X, Bike, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, type Product as ProductCardType } from '@/components/product-card';
@@ -45,7 +45,7 @@ type UserProfile = {
 };
 
 export default function StoreDetailsPage() {
-  const params = useParams();
+  const { id } = useParams<{ id: string }>();
   const [activeFilter, setActiveFilter] = useState('الكل');
   const [selectedProduct, setSelectedProduct] = useState<ProductCardType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -56,14 +56,14 @@ export default function StoreDetailsPage() {
   const { user } = useUser();
 
   // Fetch user profile
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemoFirebase<DocumentReference<DocumentData> | null>(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid, 'profile', 'main');
   }, [firestore, user]);
   const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Fetch store details
-  const storeDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'stores', params.id as string) : null, [firestore, params.id]);
+  const storeDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'stores', id) : null, [firestore, id]);
   const { data: store, isLoading: isLoadingStore } = useDoc<Store>(storeDocRef);
 
   // Fetch products for this store
@@ -71,10 +71,10 @@ export default function StoreDetailsPage() {
     if (!firestore) return null;
     return query(
         collection(firestore, 'products'),
-        where('storeId', '==', params.id),
+        where('storeId', '==', id),
         where('is_active', '==', true)
     );
-  }, [firestore, params.id]);
+  }, [firestore, id]);
   const { data: products, isLoading: isLoadingProducts } = useCollection<FirestoreProduct>(productsQuery);
 
   // Fetch categories to get category name
@@ -167,7 +167,7 @@ export default function StoreDetailsPage() {
   };
   
   const isLoading = isLoadingStore || isLoadingProducts || isLoadingCategories || isLoadingProfile;
-  const isStoreFavorite = userProfile?.favoriteStoreIds?.includes(params.id as string) ?? false;
+  const isStoreFavorite = userProfile?.favoriteStoreIds?.includes(id as string) ?? false;
   const isSelectedProductFavorite = selectedProduct ? userProfile?.favoriteProductIds?.includes(selectedProduct.id) : false;
 
   if (isLoading || !store) {
