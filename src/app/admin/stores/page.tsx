@@ -136,7 +136,7 @@ export default function StoresPage() {
     const handleEdit = (store: Store) => {
         setIsEditing(true);
         setSelectedStore(store);
-        form.reset({ ...store, is_active: store.is_active ?? true });
+        form.reset({ ...store, address: store.address || '', is_active: store.is_active ?? true });
         setIsDialogOpen(true);
     };
 
