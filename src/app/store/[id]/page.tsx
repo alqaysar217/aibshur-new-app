@@ -88,51 +88,54 @@ export default function StoreDetailsPage() {
 
     // Effect to calculate working hours string on the client
     useEffect(() => {
-        if (store) {
-            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-            const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === todayName);
+        if (store?.workingHours) {
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const todayName = dayNames[new Date().getDay()];
+            const todayWorkingHours = store.workingHours.find((wh: any) => wh.day === todayName);
 
-            if (todayWorkingHours?.isOpen) {
-                const now = new Date();
-                const currentHour = now.getHours();
-    
-                if (todayWorkingHours.morning_from && todayWorkingHours.morning_to) {
-                    const [morningStartHour] = todayWorkingHours.morning_from.split(':').map(Number);
-                    const [morningEndHour] = todayWorkingHours.morning_to.split(':').map(Number);
-        
-                    if (currentHour >= morningStartHour && currentHour < morningEndHour) {
-                        setWorkingHoursText(`الدوام : ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to} صباحاً`);
-                        return;
-                    }
-                }
-    
-                if (todayWorkingHours.evening_from && todayWorkingHours.evening_to) {
-                    const [eveningStartHour] = todayWorkingHours.evening_from.split(':').map(Number);
-                    const [eveningEndHour] = todayWorkingHours.evening_to.split(':').map(Number);
-    
-                    if (currentHour >= eveningStartHour && currentHour < eveningEndHour) {
-                        setWorkingHoursText(`الدوام : ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to} مساءً`);
-                        return;
-                    }
-                }
-                
-                const morningStart = todayWorkingHours.morning_from ? parseInt(todayWorkingHours.morning_from.split(':')[0], 10) : NaN;
-                if (!isNaN(morningStart) && currentHour < morningStart) {
-                     setWorkingHoursText(`يفتح صباحاً: ${todayWorkingHours.morning_from}`);
-                     return;
-                }
-
-                const eveningStart = todayWorkingHours.evening_from ? parseInt(todayWorkingHours.evening_from.split(':')[0], 10) : NaN;
-                const morningEnd = todayWorkingHours.morning_to ? parseInt(todayWorkingHours.morning_to.split(':')[0], 10) : NaN;
-                if (!isNaN(eveningStart) && (isNaN(morningEnd) || currentHour >= morningEnd) && currentHour < eveningStart) {
-                    setWorkingHoursText(`يفتح مساءً: ${todayWorkingHours.evening_from}`);
-                    return;
-                }
-
-                setWorkingHoursText('');
-            } else {
-                setWorkingHoursText('');
+            if (!todayWorkingHours || !todayWorkingHours.isOpen) {
+                setWorkingHoursText('مغلق اليوم');
+                return;
             }
+
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentTime = currentHour + currentMinute / 60;
+
+            const parseTime = (timeStr: string) => {
+                if (!timeStr || !timeStr.includes(':')) return NaN;
+                const [hour, minute] = timeStr.split(':').map(Number);
+                if (isNaN(hour) || isNaN(minute)) return NaN;
+                return hour + minute / 60;
+            };
+
+            const morningStart = parseTime(todayWorkingHours.morning_from);
+            const morningEnd = parseTime(todayWorkingHours.morning_to);
+            const eveningStart = parseTime(todayWorkingHours.evening_from);
+            const eveningEnd = parseTime(todayWorkingHours.evening_to);
+            
+            let statusText = '';
+
+            // Check if we are inside an active period
+            if (!isNaN(morningStart) && !isNaN(morningEnd) && currentTime >= morningStart && currentTime < morningEnd) {
+                statusText = `الدوام: ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to} صباحاً`;
+            } else if (!isNaN(eveningStart) && !isNaN(eveningEnd) && currentTime >= eveningStart && currentTime < eveningEnd) {
+                statusText = `الدوام: ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to} مساءً`;
+            } else {
+                // If not in an active period, check for upcoming periods
+                if (!isNaN(morningStart) && currentTime < morningStart) {
+                    statusText = `يفتح صباحاً: ${todayWorkingHours.morning_from}`;
+                } else if (!isNaN(eveningStart) && currentTime < eveningStart && (isNaN(morningEnd) || currentTime >= morningEnd)) {
+                     statusText = `يفتح مساءاً: ${todayWorkingHours.evening_from}`;
+                } else {
+                    // After all periods, it's considered closed for now.
+                     statusText = 'مغلق الآن';
+                }
+            }
+             setWorkingHoursText(statusText);
+        } else {
+            setWorkingHoursText('');
         }
     }, [store]);
 
@@ -144,7 +147,7 @@ export default function StoreDetailsPage() {
   const handleToggleFavoriteStore = async () => {
     if (!userProfileRef || !store) return;
     const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(store.id);
-    await setDoc(userProfileRef, {
+    setDoc(userProfileRef, {
       favoriteStoreIds: isCurrentlyFavorite ? arrayRemove(store.id) : arrayUnion(store.id),
     }, { merge: true });
   };
@@ -152,7 +155,7 @@ export default function StoreDetailsPage() {
   const handleToggleFavoriteProduct = async (productId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
-    await setDoc(userProfileRef, {
+    setDoc(userProfileRef, {
       favoriteProductIds: isCurrentlyFavorite ? arrayRemove(productId) : arrayUnion(productId),
     }, { merge: true });
   };
@@ -185,7 +188,9 @@ export default function StoreDetailsPage() {
   }
 
   const categoryName = categoriesMap[store.categoryId] || '';
-  const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const todayName = dayNames[new Date().getDay()];
+  const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === todayName);
 
   const productFilters = [
     { name: 'الكل', icon: List },
@@ -226,7 +231,7 @@ export default function StoreDetailsPage() {
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
                         <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 -mr-2" onClick={handleToggleFavoriteStore}>
-                            <Heart className={cn("h-5 w-5", isStoreFavorite ? "text-red-500 fill-red-500" : "text-primary/70 fill-transparent")} />
+                            <Heart className={cn("h-5 w-5", isStoreFavorite ? "text-red-500 fill-red-500" : "text-primary/70 fill-transparent" )} />
                         </Button>
                     </div>
                     {/* Row 2 */}
@@ -261,7 +266,7 @@ export default function StoreDetailsPage() {
                     <Bike className="h-4 w-4 text-primary"/>
                     <span>الطلب يستغرق : {store.deliveryTime}د</span>
                 </div>
-                {todayWorkingHours?.isOpen && workingHoursText && (
+                {workingHoursText && (
                     <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-primary"/>
                         <span>{workingHoursText}</span>
