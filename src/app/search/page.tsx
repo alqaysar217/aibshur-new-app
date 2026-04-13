@@ -13,6 +13,7 @@ import { BottomNav } from '@/components/bottom-nav';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 // Types from Firestore
 type StoreType = {
@@ -164,12 +165,12 @@ export default function SearchPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="stores" className="w-full" dir="rtl" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="stores" className="gap-2 h-full">
+          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl bg-muted p-1 h-auto">
+            <TabsTrigger value="stores" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
                 <Store className="h-5 w-5" />
                 المتاجر
             </TabsTrigger>
-            <TabsTrigger value="products" className="gap-2 h-full">
+            <TabsTrigger value="products" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
                 <ShoppingBasket className="h-5 w-5" />
                 المنتجات
             </TabsTrigger>
@@ -178,17 +179,23 @@ export default function SearchPage() {
           <TabsContent value="stores" className="space-y-4 mt-4">
             {/* Store Filters */}
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              {storeFilters.map((filter) => (
-                <Button 
-                    key={filter.name} 
-                    variant={activeStoreFilter === filter.name ? 'default' : 'outline'} 
-                    className="rounded-full whitespace-nowrap"
-                    onClick={() => setActiveStoreFilter(filter.name)}
-                >
-                  <filter.icon />
-                  {filter.name}
-                </Button>
-              ))}
+              {storeFilters.map((filter) => {
+                  const isActive = activeStoreFilter === filter.name;
+                  return (
+                    <Button 
+                        key={filter.name} 
+                        variant={isActive ? 'default' : 'outline'}
+                        className={cn(
+                            "rounded-full whitespace-nowrap shadow-sm transition-colors",
+                            isActive ? "bg-sidebar-active-gradient text-primary-foreground" : "border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                        )}
+                        onClick={() => setActiveStoreFilter(filter.name)}
+                    >
+                      <filter.icon className="h-4 w-4" />
+                      {filter.name}
+                    </Button>
+                  )
+              })}
             </div>
             {/* Store Results */}
             <div className="grid grid-cols-1 gap-4">
@@ -218,17 +225,23 @@ export default function SearchPage() {
           <TabsContent value="products" className="space-y-4 mt-4">
             {/* Product Filters */}
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              {productFilters.map((filter) => (
-                <Button 
-                    key={filter.name} 
-                    variant={activeProductFilter === filter.name ? 'default' : 'outline'} 
-                    className="rounded-full whitespace-nowrap"
-                    onClick={() => setActiveProductFilter(filter.name)}
-                >
-                  <filter.icon />
-                  {filter.name}
-                </Button>
-              ))}
+              {productFilters.map((filter) => {
+                  const isActive = activeProductFilter === filter.name;
+                  return (
+                    <Button 
+                        key={filter.name} 
+                        variant={isActive ? 'default' : 'outline'} 
+                        className={cn(
+                            "rounded-full whitespace-nowrap shadow-sm transition-colors",
+                            isActive ? "bg-sidebar-active-gradient text-primary-foreground" : "border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                        )}
+                        onClick={() => setActiveProductFilter(filter.name)}
+                    >
+                      <filter.icon className="h-4 w-4"/>
+                      {filter.name}
+                    </Button>
+                  )
+              })}
             </div>
             {/* Product Results */}
             <div className="grid grid-cols-1 gap-3">
