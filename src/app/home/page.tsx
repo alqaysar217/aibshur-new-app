@@ -50,6 +50,7 @@ export default function HomePage() {
   const firestore = useFirestore();
   const [selectedGovernorateId, setSelectedGovernorateId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [activeStoreFilter, setActiveStoreFilter] = useState('الكل');
 
   // Get selected governorate from localStorage on client-side
   useEffect(() => {
@@ -123,24 +124,19 @@ export default function HomePage() {
                       onClick={() => setSelectedCategoryId(cat.id)}
                       className="flex-shrink-0 flex flex-col items-center gap-2 w-20 group"
                     >
-                      <div
-                        className={cn(
-                          'relative w-16 h-16 rounded-xl transition-all duration-300 transform-gpu',
-                          isActive ? 'scale-110' : 'group-hover:scale-105'
-                        )}
-                      >
+                       <div className="w-20 h-20 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105">
                         <Image
                           src={cat.image}
                           alt={cat.name}
-                          width={64}
-                          height={64}
+                          width={80}
+                          height={80}
                           className={cn(
-                            'object-cover w-full h-full rounded-xl'
+                            'object-cover w-full h-full transition-all duration-300',
+                            isActive ? 'scale-110' : ''
                           )}
                         />
-                        {/* This is the border/glow overlay */}
                         {isActive && (
-                          <div className="absolute inset-0 rounded-xl ring-2 ring-primary shadow-lg shadow-primary/30"></div>
+                            <div className="absolute inset-0 rounded-xl ring-2 ring-primary/80 ring-offset-2 ring-offset-background shadow-[0_0_20px_2px] shadow-primary/40 bg-black/20"></div>
                         )}
                       </div>
                       <p
@@ -175,12 +171,23 @@ export default function HomePage() {
 
         {/* Store Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {filters.map((filter, index) => (
-                <Button key={filter.name} variant={index === 0 ? 'default' : 'outline'} className="rounded-full whitespace-nowrap">
-                    <filter.icon />
-                    {filter.name}
-                </Button>
-            ))}
+            {filters.map((filter) => {
+                const isActive = activeStoreFilter === filter.name;
+                return (
+                    <Button
+                        key={filter.name}
+                        variant={isActive ? 'default' : 'outline'}
+                        className={cn(
+                            "rounded-full whitespace-nowrap shadow-sm transition-colors",
+                            !isActive && "border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                        )}
+                        onClick={() => setActiveStoreFilter(filter.name)}
+                    >
+                        <filter.icon />
+                        {filter.name}
+                    </Button>
+                )
+            })}
         </div>
 
         {/* Store Cards */}
