@@ -61,7 +61,7 @@ export default function FavoritesPage() {
   // Fetch user profile to get favorite IDs
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, `users/${user.uid}/profile`);
+    return doc(firestore, 'users', user.uid, 'profile', 'main');
   }, [firestore, user]);
   const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(userProfileRef);
 
