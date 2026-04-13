@@ -110,7 +110,7 @@ export default function HomePage() {
               {isLoadingCategories ? (
                 [...Array(6)].map((_, i) => (
                   <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                    <Skeleton className="w-20 h-20 rounded-2xl" />
+                    <Skeleton className="w-16 h-16 rounded-xl" />
                     <Skeleton className="w-12 h-4 rounded-md" />
                   </div>
                 ))
@@ -121,32 +121,35 @@ export default function HomePage() {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategoryId(cat.id)}
-                      className={cn(
-                        "flex-shrink-0 flex flex-col items-center gap-2 w-20 group transition-all duration-300",
-                        !isActive && "opacity-80 hover:opacity-100"
-                      )}
+                      className="flex-shrink-0 flex flex-col items-center gap-2 w-20 group"
                     >
-                      <div className={cn(
-                          "w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm border transition-all duration-300 transform-gpu",
-                          isActive
-                              ? 'bg-primary/10 border-primary/30 shadow-lg shadow-primary/30 scale-105'
-                              : 'bg-card border-border group-hover:border-primary/50 group-hover:bg-primary/5'
-                      )}>
-                          <div className="w-16 h-16 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
-                              <Image
-                                  src={cat.image}
-                                  alt={cat.name}
-                                  width={64}
-                                  height={64}
-                                  className="object-cover w-full h-full"
-                              />
-                          </div>
+                      <div
+                        className={cn(
+                          'relative w-16 h-16 rounded-xl transition-all duration-300 transform-gpu',
+                          isActive ? 'scale-110' : 'group-hover:scale-105'
+                        )}
+                      >
+                        <Image
+                          src={cat.image}
+                          alt={cat.name}
+                          width={64}
+                          height={64}
+                          className={cn(
+                            'object-cover w-full h-full rounded-xl'
+                          )}
+                        />
+                        {/* This is the border/glow overlay */}
+                        {isActive && (
+                          <div className="absolute inset-0 rounded-xl ring-2 ring-primary shadow-lg shadow-primary/30"></div>
+                        )}
                       </div>
-                      <p className={cn(
-                          "text-xs font-bold text-center transition-colors",
-                          isActive ? "text-primary" : "text-muted-foreground"
-                      )}>
-                          {cat.name}
+                      <p
+                        className={cn(
+                          'text-xs font-bold text-center transition-colors',
+                          isActive ? 'text-primary' : 'text-muted-foreground'
+                        )}
+                      >
+                        {cat.name}
                       </p>
                     </button>
                   )
