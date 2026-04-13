@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, query, where, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X, Bike, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, type Product as ProductCardType } from '@/components/product-card';
@@ -136,17 +136,17 @@ export default function StoreDetailsPage() {
   const handleToggleFavoriteStore = async () => {
     if (!userProfileRef || !store) return;
     const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(store.id);
-    await updateDoc(userProfileRef, {
+    await setDoc(userProfileRef, {
       favoriteStoreIds: isCurrentlyFavorite ? arrayRemove(store.id) : arrayUnion(store.id),
-    });
+    }, { merge: true });
   };
 
   const handleToggleFavoriteProduct = async (productId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
-    await updateDoc(userProfileRef, {
+    await setDoc(userProfileRef, {
       favoriteProductIds: isCurrentlyFavorite ? arrayRemove(productId) : arrayUnion(productId),
-    });
+    }, { merge: true });
   };
   
   const isLoading = isLoadingStore || isLoadingProducts || isLoadingCategories || isLoadingProfile;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HomeHeader } from '@/components/home-header';
 import { BottomNav } from '@/components/bottom-nav';
@@ -117,11 +117,11 @@ export default function HomePage() {
   const handleToggleFavoriteStore = async (storeId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
-    await updateDoc(userProfileRef, {
+    await setDoc(userProfileRef, {
       favoriteStoreIds: isCurrentlyFavorite
         ? arrayRemove(storeId)
         : arrayUnion(storeId),
-    });
+    }, { merge: true });
   };
 
   return (

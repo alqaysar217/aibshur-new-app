@@ -11,7 +11,7 @@ import { ProductCard, type Product as ProductType } from '@/components/product-c
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { BottomNav } from '@/components/bottom-nav';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -104,17 +104,17 @@ export default function SearchPage() {
   const handleToggleFavoriteStore = async (storeId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
-    await updateDoc(userProfileRef, {
+    await setDoc(userProfileRef, {
       favoriteStoreIds: isCurrentlyFavorite ? arrayRemove(storeId) : arrayUnion(storeId),
-    });
+    }, { merge: true });
   };
 
   const handleToggleFavoriteProduct = async (productId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
-    await updateDoc(userProfileRef, {
+    await setDoc(userProfileRef, {
       favoriteProductIds: isCurrentlyFavorite ? arrayRemove(productId) : arrayUnion(productId),
-    });
+    }, { merge: true });
   };
 
   // Filtering Logic
