@@ -69,7 +69,7 @@ export function ProductCard({ product, onShowDetails, onToggleFavorite }: Produc
           />
            <div className="absolute inset-0 rounded-md ring-1 ring-inset ring-black/10 group-hover:ring-2 group-hover:ring-primary/50 transition-all duration-300"></div>
         </div>
-        <div className="flex-1 flex flex-col justify-between self-stretch">
+        <div className="flex-1 flex flex-col justify-between self-stretch min-w-0">
           {/* Row 1 */}
           <div className="flex justify-between items-start">
             <h3 className="font-bold text-base leading-tight pr-2 line-clamp-1 text-primary">{product.name}</h3>
