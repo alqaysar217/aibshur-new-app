@@ -1,51 +1,118 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Bell, ShoppingCart, Store, ShoppingBasket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreCard } from '@/components/store-card';
-import { ProductCard, type Product } from '@/components/product-card';
+import { ProductCard, type Product as ProductType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { BottomNav } from '@/components/bottom-nav';
+import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
-// MOCK DATA (reusing from other pages)
-const storesData = [
-  { id: '1', name: 'مطعم البيت الصنعاني', imageId: 'store-yemeni-food', address: 'شارع حدة، صنعاء', distance: '1.2 كم', category: 'مطعم', rating: 4.5, status: 'مفتوح' },
-  { id: '4', name: 'كافيتيريا مزاج', imageId: 'store-cafe', address: 'شارع الجزائر، صنعاء', distance: '1.5 كم', category: 'كافيه', rating: 4.9, status: 'مفتوح' },
-];
+// Types from Firestore
+type StoreType = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  address: string;
+  rating: number;
+  deliveryTime: string;
+  provinceId: string;
+  categoryId: string;
+  is_active: boolean;
+};
 
-const productsData: Omit<Product, 'imageUrl' | 'imageHint'>[] = [
-  { id: 'p2', name: 'عقدة لحم', description: 'قطع لحم طازجة مطبوخة مع الخضروات والبهارات اليمنية الأصيلة.', price: 3000, rating: 4.9, hasVariants: true, imageId: 'product-ogda-meat' },
-  { id: 'p3', name: 'فحسة', description: 'طبق يمني تقليدي من اللحم المفروم والمرق، يقدم في وعاء حجري ساخن.', price: 2800, rating: 4.7, hasVariants: false, imageId: 'product-fahsa' },
-];
+type FirestoreProduct = {
+  id: string;
+  name: string;
+  description: string;
+  mainImageUrl?: string;
+  rating: number;
+  hasVariants: boolean;
+  basePrice?: number;
+  storeId: string;
+  categoryId: string;
+  is_active: boolean;
+};
 
+type UserProfile = {
+  favoriteStoreIds?: string[];
+  favoriteProductIds?: string[];
+};
 
-const favoriteStores = storesData.map(store => {
-    const imageData = PlaceHolderImages.find(p => p.id === store.imageId);
-    return {
-        ...store,
-        imageUrl: imageData?.imageUrl || '',
-        imageHint: imageData?.imageHint || '',
-    }
-});
-
-const favoriteProducts: Product[] = productsData.map(p => {
-    const imageData = PlaceHolderImages.find(img => img.id === (p as any).imageId);
-    return { ...p, imageUrl: imageData?.imageUrl || '', imageHint: imageData?.imageHint || '' };
-});
-
+type AppCategory = {
+  id: string;
+  name: string;
+  image: string;
+};
 
 export default function FavoritesPage() {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const handleShowDetails = (product: Product) => {
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  // Fetch user profile to get favorite IDs
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, `users/${user.uid}/profile`);
+  }, [firestore, user]);
+  const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(userProfileRef);
+
+  // Fetch all stores, products, and categories
+  const { data: allStores, isLoading: isLoadingStores } = useCollection<StoreType>(useMemoFirebase(() => firestore ? collection(firestore, 'stores') : null, [firestore]));
+  const { data: allProducts, isLoading: isLoadingProducts } = useCollection<FirestoreProduct>(useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]));
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<AppCategory>(useMemoFirebase(() => firestore ? collection(firestore, 'app_categories') : null, [firestore]));
+
+  const isLoading = isUserLoading || isLoadingProfile || isLoadingStores || isLoadingProducts || isLoadingCategories;
+
+  const categoriesMap = useMemo(() => {
+    if (!categories) return {};
+    return categories.reduce((acc, cat) => ({ ...acc, [cat.id]: cat.name }), {} as Record<string, string>);
+  }, [categories]);
+
+  const favoriteStores = useMemo(() => {
+    if (!allStores || !userProfile?.favoriteStoreIds) return [];
+    return allStores.filter(store => userProfile.favoriteStoreIds!.includes(store.id));
+  }, [allStores, userProfile]);
+
+  const favoriteProducts: ProductType[] = useMemo(() => {
+    if (!allProducts || !userProfile?.favoriteProductIds) return [];
+    return allProducts
+        .filter(product => userProfile.favoriteProductIds!.includes(product.id))
+        .map(p => {
+          const isValidUrl = p.mainImageUrl && (p.mainImageUrl.startsWith('http') || p.mainImageUrl.startsWith('/'));
+          return {
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: p.basePrice || 0,
+            rating: p.rating,
+            hasVariants: p.hasVariants,
+            imageUrl: isValidUrl ? p.mainImageUrl! : '/logo.png',
+            imageHint: p.name,
+          };
+        });
+  }, [allProducts, userProfile]);
+
+  const handleShowDetails = (product: ProductType) => {
     setSelectedProduct(product);
     setIsSheetOpen(true);
   };
+  
+  const renderStoreSkeletons = () => (
+    [...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)
+  );
+
+  const renderProductSkeletons = () => (
+    [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-16">
@@ -70,37 +137,53 @@ export default function FavoritesPage() {
       <main className="flex-1 p-4 space-y-4">
         {/* Tabs */}
         <Tabs defaultValue="stores" className="w-full" dir="rtl">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="stores" className="gap-2 h-full">
+          <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl bg-muted p-1 h-auto">
+            <TabsTrigger value="stores" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
                 <Store className="h-5 w-5" />
                 المتاجر
             </TabsTrigger>
-            <TabsTrigger value="products" className="gap-2 h-full">
+            <TabsTrigger value="products" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
                 <ShoppingBasket className="h-5 w-5" />
                 المنتجات
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="stores" className="space-y-4 mt-4">
-            {favoriteStores.length > 0 ? (
+            {isLoading ? renderStoreSkeletons() : favoriteStores.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
-                    {favoriteStores.map(store => <StoreCard key={store.id} {...store} />)}
+                    {favoriteStores.map(store => {
+                       const isValidUrl = store.imageUrl && (store.imageUrl.startsWith('http') || store.imageUrl.startsWith('/'));
+                       return (
+                          <StoreCard
+                            key={store.id}
+                            id={store.id}
+                            name={store.name}
+                            address={store.address}
+                            imageUrl={isValidUrl ? store.imageUrl : '/logo.png'}
+                            deliveryTime={store.deliveryTime}
+                            distance="0 كم" // Placeholder
+                            category={categoriesMap[store.categoryId] || 'غير محدد'}
+                            rating={store.rating}
+                            isActive={store.is_active}
+                          />
+                       );
+                    })}
                 </div>
             ) : (
-                <div className="text-center py-16">
-                    <p className="text-muted-foreground">لا يوجد متاجر مفضلة بعد.</p>
+                <div className="text-center py-16 text-muted-foreground">
+                    <p>لا يوجد متاجر مفضلة بعد.</p>
                 </div>
             )}
           </TabsContent>
 
           <TabsContent value="products" className="space-y-4 mt-4">
-             {favoriteProducts.length > 0 ? (
+             {isLoading ? renderProductSkeletons() : favoriteProducts.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3">
                     {favoriteProducts.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />)}
                 </div>
              ) : (
-                <div className="text-center py-16">
-                    <p className="text-muted-foreground">لا يوجد منتجات مفضلة بعد.</p>
+                <div className="text-center py-16 text-muted-foreground">
+                    <p>لا يوجد منتجات مفضلة بعد.</p>
                 </div>
              )}
           </TabsContent>

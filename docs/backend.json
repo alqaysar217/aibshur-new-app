@@ -306,6 +306,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "favoriteProductIds": {
+          "type": "array",
+          "description": "References to Products the user has marked as favorites. (Relationship: UserProfile N:N Product)",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
