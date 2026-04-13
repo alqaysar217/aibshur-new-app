@@ -27,8 +27,8 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
   return (
     <Link href={`/store/${id}`} className="block group">
       <Card className="shadow-md hover:shadow-lg transition-shadow bg-card">
-        <CardContent className="p-3 flex gap-4">
-          <div className="relative w-24 h-24 flex-shrink-0">
+        <CardContent className="p-2 flex gap-3">
+          <div className="relative w-20 h-20 flex-shrink-0">
             <Image
               src={imageUrl}
               alt={name}
@@ -38,7 +38,7 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
             />
             <div className="absolute inset-0 rounded-md ring-1 ring-inset ring-black/10 group-hover:ring-primary/50 transition-shadow"></div>
           </div>
-          <div className="flex-1 flex flex-col justify-between gap-1 py-1">
+          <div className="flex-1 flex flex-col justify-between gap-1">
             {/* Row 1 */}
             <div className="flex justify-between items-start">
               <h3 className="font-bold text-base truncate">{name}</h3>
