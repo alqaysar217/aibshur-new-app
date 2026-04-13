@@ -66,7 +66,7 @@ export default function HomePage() {
   
   const allCategories = useMemo(() => {
     if (!categories) return [];
-    return [{ id: 'all', name: 'الكل', image: '', is_active: true }, ...categories];
+    return [{ id: 'all', name: 'الكل', image: '/stor-1.png', is_active: true }, ...categories];
   }, [categories]);
 
   // Fetch active stores for the selected governorate
@@ -105,7 +105,7 @@ export default function HomePage() {
       
       <main className="p-4 space-y-6">
         {/* Store Categories */}
-        <div className="overflow-x-auto pb-2 -mx-4 px-2 no-scrollbar">
+        <div className="overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
             <div className="flex gap-3">
               {isLoadingCategories ? (
                 [...Array(6)].map((_, i) => (
@@ -133,17 +133,13 @@ export default function HomePage() {
                               : 'bg-card border-border group-hover:border-primary/50 group-hover:bg-primary/5'
                       )}>
                           <div className="w-16 h-16 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
-                              {cat.id === 'all' ? (
-                                  <List className={cn("h-8 w-8 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}/>
-                              ) : (
-                                  <Image
-                                      src={cat.image}
-                                      alt={cat.name}
-                                      width={64}
-                                      height={64}
-                                      className="object-cover w-full h-full"
-                                  />
-                              )}
+                              <Image
+                                  src={cat.image}
+                                  alt={cat.name}
+                                  width={64}
+                                  height={64}
+                                  className="object-cover w-full h-full"
+                              />
                           </div>
                       </div>
                       <p className={cn(
