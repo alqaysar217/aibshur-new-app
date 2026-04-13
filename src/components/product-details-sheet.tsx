@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Star, CircleDollarSign, Layers } from 'lucide-react';
+import { Star, Layers, ShoppingCart, Store, Tag } from 'lucide-react';
 import type { Product } from './product-card';
 import { QuantityCounter } from './quantity-counter';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 type ProductDetailsSheetProps = {
   product: Product | null;
+  storeName?: string;
+  categoryName?: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 };
@@ -23,10 +25,9 @@ const variants = [
     { id: 'v3', name: 'كبير', price: 5000, imageId: 'product-variant-large' },
 ];
 
-export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDetailsSheetProps) {
+export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, onOpenChange }: ProductDetailsSheetProps) {
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
-
+  const [variantQuantities, setVariantQuantities] = useState<Record<string, number>>({});
 
   const productVariants = variants.map(v => {
     const imageData = PlaceHolderImages.find(img => img.id === v.imageId);
@@ -36,34 +37,29 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
   useEffect(() => {
     if (isOpen) {
         setQuantity(1);
-        setSelectedVariant(null);
+        setVariantQuantities({});
     }
   }, [isOpen]);
 
   if (!product) return null;
 
-  const handleAddToCart = () => {
-    // Logic to add to cart
-    console.log(`Added ${quantity} of ${product.name} to cart.`);
+  const handleConfirmAddToCart = () => {
+    console.log(`Confirmed adding ${quantity} of ${product.name} to cart.`);
     onOpenChange(false);
   }
-  
-  const handleVariantAddToCart = (variantId: string) => {
-      const variant = productVariants.find(v => v.id === variantId);
-      console.log(`Added 1 of ${product.name} (${variant?.name}) to cart.`);
-      // Potentially close sheet or show added confirmation
+
+  const handleVariantQuantityChange = (variantId: string, newQuantity: number) => {
+    setVariantQuantities(prev => ({...prev, [variantId]: Math.max(0, newQuantity)}));
   }
-  
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US').format(price);
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent 
-        side="bottom" 
-        dir="rtl" 
-        className="p-0 flex flex-col max-h-[90dvh] overflow-hidden bg-background border-t-0 shadow-2xl mx-auto w-full max-w-md rounded-t-2xl"
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent 
+        className="p-0 flex flex-col max-h-[90dvh] w-full max-w-sm rounded-2xl gap-0 [&>button]:right-auto [&>button]:left-4 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
       >
         <div className="relative h-48 w-full">
             <Image
@@ -73,70 +69,93 @@ export function ProductDetailsSheet({ product, isOpen, onOpenChange }: ProductDe
                 className="object-cover rounded-t-2xl"
                 data-ai-hint={product.imageHint}
             />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-2xl"></div>
-              <SheetClose className="absolute top-4 left-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary bg-white/50 hover:bg-white/75 p-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                <span className="sr-only">Close</span>
-            </SheetClose>
         </div>
-        <div className="p-4 flex-1 overflow-y-auto">
-            <SheetHeader className="mb-4 text-right">
-                <SheetTitle className="text-right text-2xl font-bold text-foreground">{product.name}</SheetTitle>
-                <SheetDescription className="text-right text-base text-muted-foreground">{product.description}</SheetDescription>
-            </SheetHeader>
-            
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-1.5">
-                    <Star className="h-5 w-5 fill-amber-100 text-amber-400" strokeWidth={1.5} />
-                    <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
+        <div className="p-4 flex-1 overflow-y-auto space-y-4">
+            <DialogHeader className="text-right space-y-2">
+                 <div className='flex justify-between items-start'>
+                    <div>
+                        <DialogTitle className="text-right text-2xl font-bold text-foreground">{product.name}</DialogTitle>
+                        <DialogDescription className="text-right text-base text-muted-foreground pt-1">{product.description}</DialogDescription>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0 pt-1">
+                        <Star className="h-5 w-5 text-primary" strokeWidth={3} />
+                        <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
+                    </div>
                 </div>
-
-                {!product.hasVariants && (
-                    <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                        <CircleDollarSign className="h-6 w-6" />
-                        <span>{formatPrice(product.price)}&nbsp;ر.ي</span>
+            </DialogHeader>
+            
+            <div className='space-y-3 text-sm'>
+                {storeName && (
+                    <div className='flex items-center gap-2 text-muted-foreground'>
+                        <Store className="h-4 w-4 text-primary" />
+                        <span>من متجر: <span className='font-semibold text-foreground'>{storeName}</span></span>
+                    </div>
+                )}
+                 {categoryName && (
+                    <div className='flex items-center gap-2 text-muted-foreground'>
+                        <Tag className="h-4 w-4 text-primary" />
+                        <span>الفئة: <span className='font-semibold text-foreground'>{categoryName}</span></span>
                     </div>
                 )}
             </div>
 
-            {product.hasVariants && (
-                <div className="space-y-3">
+
+            {product.hasVariants ? (
+                <div className="space-y-3 pt-2">
                     <h4 className="text-right font-bold flex items-center justify-start gap-2 text-lg">
                         <Layers className="h-5 w-5" />
                         <span>اختر الحجم:</span>
                     </h4>
-                     {productVariants.map(variant => (
-                        <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
-                            <div className='flex justify-between items-center gap-4'>
-                                 <Button size="sm" className="h-9 px-4 text-sm flex-shrink-0" onClick={() => handleVariantAddToCart(variant.id)}>إضافة</Button>
-                                <div className='text-right flex-1'>
-                                    <p className='font-semibold text-base'>{variant.name}</p>
-                                    <div className='flex items-center justify-end gap-1.5 font-bold text-primary'>
-                                        <CircleDollarSign className="h-4 w-4" />
-                                        <span>{formatPrice(variant.price)}&nbsp;ر.ي</span>
+                     {productVariants.map(variant => {
+                        const currentQuantity = variantQuantities[variant.id] || 0;
+                        return (
+                            <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
+                                <div className='flex justify-between items-center gap-4'>
+                                    {currentQuantity > 0 ? (
+                                        <QuantityCounter 
+                                            value={currentQuantity}
+                                            onIncrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity + 1)}}
+                                            onDecrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity - 1)}}
+                                        />
+                                    ) : (
+                                        <Button size="sm" className="h-9 px-4 text-xs flex-shrink-0" onClick={(e) => {e.stopPropagation(); handleVariantQuantityChange(variant.id, 1)}}>
+                                            <ShoppingCart className="h-4 w-4 text-primary-foreground"/>
+                                            إضافة
+                                        </Button>
+                                    )}
+                                    <div className='text-right flex-1'>
+                                        <p className='font-semibold text-base'>{variant.name}</p>
+                                        <div className='flex items-center justify-end gap-1.5 font-bold text-foreground'>
+                                            <span>{formatPrice(variant.price)}&nbsp;ر.ي</span>
+                                        </div>
                                     </div>
+                                    <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                 </div>
-                                <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
-                            </div>
-                        </Card>
-                    ))}
+                            </Card>
+                        )
+                    })}
+                </div>
+            ) : (
+                 <div className="flex justify-between items-center py-4">
+                    <QuantityCounter 
+                        value={quantity} 
+                        onIncrement={() => setQuantity(q => q + 1)} 
+                        onDecrement={() => setQuantity(q => (q > 1 ? q - 1 : 1))}
+                    />
+                    <div className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                        <span>{formatPrice(product.price * quantity)}&nbsp;ر.ي</span>
+                    </div>
                 </div>
             )}
         </div>
         
-        {!product.hasVariants && (
-            <div className="p-4 border-t flex items-center justify-between gap-4 bg-background/95 backdrop-blur-sm sticky bottom-0">
-                 <Button className="flex-1 h-12 text-lg font-semibold" onClick={handleAddToCart}>
-                    إضافة إلى السلة
-                </Button>
-                <QuantityCounter 
-                    value={quantity} 
-                    onIncrement={(e) => { e.stopPropagation(); setQuantity(q => q + 1); }} 
-                    onDecrement={(e) => { e.stopPropagation(); setQuantity(q => (q > 1 ? q - 1 : 1)); }}
-                />
-            </div>
-        )}
-      </SheetContent>
-    </Sheet>
+        <div className="p-4 border-t sticky bottom-0 bg-background/95">
+             <Button className="w-full h-12 text-lg font-semibold" onClick={handleConfirmAddToCart}>
+                <ShoppingCart className="h-5 w-5"/>
+                تأكيد الإضافة للسلة
+            </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

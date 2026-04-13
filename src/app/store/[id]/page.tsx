@@ -145,6 +145,7 @@ export default function StoreDetailsPage() {
       );
   }
 
+  const categoryName = categoriesMap[store.categoryId] || '';
   const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === todayName);
 
@@ -170,7 +171,7 @@ export default function StoreDetailsPage() {
 
       <main className="pb-4">
         {/* Store Info */}
-        <div className="p-4 bg-card border-b space-y-3">
+        <div className="p-4 bg-card border-b space-y-4">
             <div className="flex items-start gap-4">
                 <div className="relative w-20 h-20 flex-shrink-0">
                     <Image 
@@ -178,10 +179,11 @@ export default function StoreDetailsPage() {
                         alt={store.name} 
                         width={80} 
                         height={80}
-                        className="object-cover rounded-full border-4 border-background shadow-lg ring-2 ring-primary/30"
+                        className="object-cover rounded-full border-4 border-background shadow-lg"
                     />
+                     <div className="absolute inset-0 rounded-full ring-2 ring-primary/50 group-hover:ring-4 transition-all duration-300"></div>
                 </div>
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-1">
                     {/* Row 1 */}
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
@@ -203,7 +205,7 @@ export default function StoreDetailsPage() {
                     {/* Row 3 */}
                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2">
-                            <Badge variant="secondary">{categoriesMap[store.categoryId] || ''}</Badge>
+                            <Badge variant="secondary">{categoryName}</Badge>
                             <div className="flex items-center gap-1">
                                 <Star className="h-4 w-4 text-primary fill-primary" />
                                 <span className="font-semibold text-foreground">{store.rating.toFixed(1)}</span>
@@ -283,6 +285,8 @@ export default function StoreDetailsPage() {
 
       <ProductDetailsSheet 
         product={selectedProduct}
+        storeName={store.name}
+        categoryName={categoryName}
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
       />
