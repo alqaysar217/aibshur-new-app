@@ -111,7 +111,7 @@ export default function HomePage() {
               {isLoadingCategories ? (
                 [...Array(6)].map((_, i) => (
                   <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                    <Skeleton className="w-16 h-16 rounded-xl" />
+                    <Skeleton className="w-20 h-20 rounded-xl" />
                     <Skeleton className="w-12 h-4 rounded-md" />
                   </div>
                 ))
@@ -124,7 +124,10 @@ export default function HomePage() {
                       onClick={() => setSelectedCategoryId(cat.id)}
                       className="flex-shrink-0 flex flex-col items-center gap-2 w-20 group"
                     >
-                       <div className="w-20 h-20 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105">
+                       <div className={cn(
+                          "w-20 h-20 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105",
+                          isActive && "ring-2 ring-primary/80 shadow-[0_0_20px_2px] shadow-primary/40"
+                        )}>
                         <Image
                           src={cat.image}
                           alt={cat.name}
@@ -135,9 +138,6 @@ export default function HomePage() {
                             isActive ? 'scale-110' : ''
                           )}
                         />
-                        {isActive && (
-                            <div className="absolute inset-0 rounded-xl ring-2 ring-primary/80 ring-offset-2 ring-offset-background shadow-[0_0_20px_2px] shadow-primary/40 bg-black/20"></div>
-                        )}
                       </div>
                       <p
                         className={cn(
