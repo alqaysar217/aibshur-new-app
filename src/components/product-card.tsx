@@ -18,6 +18,7 @@ export type Product = {
   imageUrl: string;
   imageHint: string;
   hasVariants: boolean;
+  variants?: { name: string; price: number; imageUrl?: string; }[];
   imageId?: string;
   isFavorite?: boolean;
 };

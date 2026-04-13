@@ -39,6 +39,7 @@ type FirestoreProduct = {
   storeId: string;
   categoryId: string;
   is_active: boolean;
+  variants?: { name: string; price: number; imageUrl?: string }[];
 };
 
 type UserProfile = {
@@ -116,6 +117,7 @@ export default function FavoritesPage() {
             price: p.basePrice || 0,
             rating: p.rating,
             hasVariants: p.hasVariants,
+            variants: p.variants,
             imageUrl: isValidUrl ? p.mainImageUrl! : '/logo.png',
             imageHint: p.name,
             isFavorite: true,

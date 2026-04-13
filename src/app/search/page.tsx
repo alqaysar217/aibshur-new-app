@@ -37,9 +37,7 @@ type FirestoreProduct = {
   rating: number;
   hasVariants: boolean;
   basePrice?: number;
-  storeId: string;
-  categoryId: string;
-  is_active: boolean;
+  variants?: { name: string; price: number; imageUrl?: string }[];
 };
 
 type AppCategory = {
@@ -141,6 +139,7 @@ export default function SearchPage() {
           price: p.basePrice || 0,
           rating: p.rating,
           hasVariants: p.hasVariants,
+          variants: p.variants,
           imageUrl: isValidUrl ? p.mainImageUrl! : '/logo.png',
           imageHint: p.name,
           isFavorite: userProfile?.favoriteProductIds?.includes(p.id) ?? false,

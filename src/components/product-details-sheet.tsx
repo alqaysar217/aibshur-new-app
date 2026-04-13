@@ -22,21 +22,9 @@ type ProductDetailsSheetProps = {
   onToggleFavorite: () => void;
 };
 
-// Mock data for variants
-const variants = [
-    { id: 'v1', name: 'صغير', price: 3000, imageId: 'product-variant-small' },
-    { id: 'v2', name: 'وسط', price: 4000, imageId: 'product-variant-medium' },
-    { id: 'v3', name: 'كبير', price: 5000, imageId: 'product-variant-large' },
-];
-
 export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, onOpenChange, isFavorite, onToggleFavorite }: ProductDetailsSheetProps) {
   const [quantity, setQuantity] = useState(1);
   const [variantQuantities, setVariantQuantities] = useState<Record<string, number>>({});
-
-  const productVariants = variants.map(v => {
-    const imageData = PlaceHolderImages.find(img => img.id === v.imageId);
-    return { ...v, imageUrl: imageData?.imageUrl || '', imageHint: imageData?.imageHint || '' };
-  });
 
   useEffect(() => {
     if (isOpen) {
@@ -52,8 +40,8 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
     onOpenChange(false);
   }
 
-  const handleVariantQuantityChange = (variantId: string, newQuantity: number) => {
-    setVariantQuantities(prev => ({...prev, [variantId]: Math.max(0, newQuantity)}));
+  const handleVariantQuantityChange = (variantName: string, newQuantity: number) => {
+    setVariantQuantities(prev => ({...prev, [variantName]: Math.max(0, newQuantity)}));
   }
 
   const formatPrice = (price: number) => {
@@ -113,20 +101,20 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                         <Layers className="h-5 w-5" />
                         <span>اختر الحجم:</span>
                     </h4>
-                     {productVariants.map(variant => {
-                        const currentQuantity = variantQuantities[variant.id] || 0;
+                     {product.variants?.map(variant => {
+                        const currentQuantity = variantQuantities[variant.name] || 0;
                         return (
-                            <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
+                            <Card key={variant.name} className='p-3 shadow-sm border-border/80'>
                                 <div className='flex justify-between items-start gap-3'>
                                     <div className="flex-shrink-0">
                                         {currentQuantity > 0 ? (
                                             <QuantityCounter 
                                                 value={currentQuantity}
-                                                onIncrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity + 1)}}
-                                                onDecrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity - 1)}}
+                                                onIncrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.name, currentQuantity + 1)}}
+                                                onDecrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.name, currentQuantity - 1)}}
                                             />
                                         ) : (
-                                            <Button size="sm" className="h-9 px-4 text-xs flex-shrink-0 bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={(e) => {e.stopPropagation(); handleVariantQuantityChange(variant.id, 1)}}>
+                                            <Button size="sm" className="h-9 px-4 text-xs flex-shrink-0 bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={(e) => {e.stopPropagation(); handleVariantQuantityChange(variant.name, 1)}}>
                                                 <ShoppingCart className="h-4 w-4 text-primary-foreground"/>
                                                 إضافة
                                             </Button>
@@ -139,7 +127,7 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                                                 <span>{formatPrice(variant.price)}&nbsp;ريال</span>
                                             </div>
                                         </div>
-                                         <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
+                                         <Image src={variant.imageUrl || product.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" />
                                     </div>
                                 </div>
                             </Card>

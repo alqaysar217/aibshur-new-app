@@ -36,6 +36,7 @@ type FirestoreProduct = {
     rating: number;
     hasVariants: boolean;
     basePrice?: number;
+    variants?: { name: string; price: number; imageUrl?: string; }[];
 };
 
 type UserProfile = {
@@ -167,7 +168,7 @@ export default function StoreDetailsPage() {
   
   const isLoading = isLoadingStore || isLoadingProducts || isLoadingCategories || isLoadingProfile;
   const isStoreFavorite = userProfile?.favoriteStoreIds?.includes(params.id as string) ?? false;
-  const isSelectedProductFavorite = selectedProduct ? userProfile?.favoriteProductIds?.includes(selectedProduct.id) ?? false : false;
+  const isSelectedProductFavorite = selectedProduct ? userProfile?.favoriteProductIds?.includes(selectedProduct.id) : false;
 
   if (isLoading || !store) {
       // Return a skeleton loading UI
