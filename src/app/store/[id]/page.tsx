@@ -188,13 +188,15 @@ export default function StoreDetailsPage() {
                             <Heart className="h-5 w-5 text-primary"/>
                         </Button>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <span>{store.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                       <MapPin className="h-4 w-4 text-primary" />
-                       <span>0 كم</span>
+                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 truncate">
+                            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="truncate">{store.address}</span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            <Bike className="h-4 w-4 text-primary" />
+                            <span>0 كم</span>
+                        </div>
                     </div>
                 </div>
             </div>
