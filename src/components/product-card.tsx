@@ -74,11 +74,11 @@ export function ProductCard({ product, onShowDetails, onToggleFavorite }: Produc
           <div className="flex justify-between items-start">
             <h3 className="font-bold text-base leading-tight pr-2 line-clamp-1 text-primary">{product.name}</h3>
             <Button size="icon" variant="ghost" className="h-7 w-7 text-primary flex-shrink-0 -mt-1 -mr-2 hover:bg-primary/10" onClick={handleFavoriteClick}>
-              <Heart className={cn("h-5 w-5", product.isFavorite ? "text-red-500 fill-red-500" : "fill-transparent")} />
+              <Heart className={cn("h-5 w-5 stroke-primary transition-colors", product.isFavorite ? "text-red-500 fill-red-500 stroke-red-500" : "fill-transparent" )} />
             </Button>
           </div>
           {/* Row 2 */}
-          <p className="text-xs text-muted-foreground my-1 line-clamp-2">
+          <p className="text-xs text-muted-foreground my-1 truncate">
             {product.description}
           </p>
           {/* Row 3 */}
