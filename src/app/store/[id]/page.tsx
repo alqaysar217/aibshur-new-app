@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
-import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X, Bike } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X, Bike, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, type Product as ProductCardType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
@@ -170,7 +170,7 @@ export default function StoreDetailsPage() {
 
       <main className="pb-4">
         {/* Store Info */}
-        <div className="p-4 bg-card border-b space-y-4">
+        <div className="p-4 bg-card border-b space-y-3">
             <div className="flex items-start gap-4">
                 <div className="relative w-20 h-20 flex-shrink-0">
                     <Image 
@@ -181,51 +181,52 @@ export default function StoreDetailsPage() {
                         className="object-cover rounded-full border-4 border-background shadow-lg ring-2 ring-primary/30"
                     />
                 </div>
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-2">
+                    {/* Row 1 */}
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2">
                             <Heart className="h-5 w-5 text-primary"/>
                         </Button>
                     </div>
+                    {/* Row 2 */}
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                         <div className="flex items-center gap-2 truncate">
                             <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="truncate">{store.address}</span>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                            <Bike className="h-4 w-4 text-primary" />
+                            <Navigation className="h-4 w-4 text-primary" />
                             <span>0 كم</span>
                         </div>
                     </div>
+                    {/* Row 3 */}
+                    <div className="flex justify-between items-center text-sm">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{categoriesMap[store.categoryId] || ''}</Badge>
+                            <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 text-primary fill-primary" />
+                                <span className="font-semibold text-foreground">{store.rating.toFixed(1)}</span>
+                            </div>
+                        </div>
+                        <Badge variant={todayWorkingHours?.isOpen ? 'default' : 'destructive'} className="px-3 py-1 text-xs font-bold">
+                            {todayWorkingHours?.isOpen ? 'مفتوح' : 'مغلق'}
+                        </Badge>
+                    </div>
                 </div>
             </div>
-
-            <div className="space-y-3 border-t pt-3">
-                 <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="font-semibold">{categoriesMap[store.categoryId] || ''}</Badge>
-                        <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-primary fill-primary" />
-                            <span className="font-bold text-foreground">{store.rating.toFixed(1)}</span>
-                        </div>
-                    </div>
-                    <Badge variant={todayWorkingHours?.isOpen ? 'default' : 'destructive'} className="px-3 py-1 text-xs font-bold">
-                        {todayWorkingHours?.isOpen ? 'مفتوح' : 'مغلق'}
-                    </Badge>
+            {/* Row 4 */}
+            <div className="border-t pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <Bike className="h-4 w-4 text-primary"/>
+                    <span>الطلب يستغرق : {store.deliveryTime}د</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                {todayWorkingHours?.isOpen && workingHoursText && (
                     <div className="flex items-center gap-2">
-                        <Bike className="h-4 w-4 text-primary"/>
-                        <span>الطلب يستغرق : {store.deliveryTime}د</span>
+                        <Clock className="h-4 w-4 text-primary"/>
+                        <span>{workingHoursText}</span>
                     </div>
-                    {todayWorkingHours?.isOpen && workingHoursText && (
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-primary"/>
-                            <span>{workingHoursText}</span>
-                        </div>
-                    )}
-                </div>
+                )}
             </div>
         </div>
 
