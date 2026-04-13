@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash, Edit, Search, Store as StoreIcon, Building, Tag, Clock, CheckCircle, XCircle, ImageIcon, Star } from 'lucide-react';
+import { PlusCircle, Trash, Edit, Search, Store as StoreIcon, Building, Tag, Clock, CheckCircle, XCircle, ImageIcon, Star, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AppProvince } from '../governorates/page';
@@ -46,6 +46,7 @@ const workingHourSchema = z.object({
 
 const storeSchema = z.object({
   name: z.string().min(2, { message: "اسم المتجر مطلوب" }),
+  address: z.string().min(5, "العنوان مطلوب (5 أحرف على الأقل)"),
   imageUrl: z.string().min(1, { message: "رابط شعار المتجر مطلوب" }),
   rating: z.coerce.number().min(0).max(5).default(0),
   deliveryTime: z.string().min(1, { message: "وقت التوصيل المتوقع مطلوب" }),
@@ -90,7 +91,7 @@ export default function StoresPage() {
     const form = useForm<StoreFormValues>({
         resolver: zodResolver(storeSchema),
         defaultValues: {
-            name: '', imageUrl: '', rating: 0, deliveryTime: '25-35',
+            name: '', imageUrl: '', address: '', rating: 0, deliveryTime: '25-35',
             latitude: 14.5424, longitude: 49.1333, is_active: true,
             workingHours: defaultWorkingHours,
         },
@@ -124,7 +125,7 @@ export default function StoresPage() {
         setIsEditing(false);
         setSelectedStore(null);
         form.reset({
-            name: '', imageUrl: '', rating: 0, deliveryTime: '25-35',
+            name: '', imageUrl: '', address: '', rating: 0, deliveryTime: '25-35',
             provinceId: undefined, categoryId: undefined,
             latitude: 14.5424, longitude: 49.1333, is_active: true,
             workingHours: defaultWorkingHours,
@@ -268,6 +269,16 @@ export default function StoresPage() {
                                         <FormField control={form.control} name="name" render={({ field }) => (
                                             <FormItem><FormLabel>اسم المتجر</FormLabel><div className="relative"><StoreIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><FormControl><Input {...field} className="pr-10" /></FormControl></div><FormMessage /></FormItem>
                                         )} />
+                                        <FormField control={form.control} name="address" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>العنوان</FormLabel>
+                                                <div className="relative">
+                                                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                                    <FormControl><Input {...field} className="pr-10" /></FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                         <FormField control={form.control} name="imageUrl" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>رابط شعار المتجر</FormLabel>
@@ -397,5 +408,3 @@ export default function StoresPage() {
         </>
     );
 }
-
-    

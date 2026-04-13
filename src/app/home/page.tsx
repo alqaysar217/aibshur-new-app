@@ -67,7 +67,7 @@ export default function HomePage() {
   
   const allCategories = useMemo(() => {
     if (!categories) return [];
-    return [{ id: 'all', name: 'الكل', image: '/stor-1.png', is_active: true }, ...categories];
+    return [{ id: 'all', name: 'الكل', image: '/filter-1.png', is_active: true }, ...categories];
   }, [categories]);
 
   // Fetch active stores for the selected governorate
