@@ -100,16 +100,19 @@ export default function SearchPage() {
       .filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        price: p.basePrice || 0,
-        rating: p.rating,
-        hasVariants: p.hasVariants,
-        imageUrl: p.mainImageUrl || '/logo.png',
-        imageHint: p.name,
-      }));
+      .map(p => {
+        const isValidUrl = p.mainImageUrl && (p.mainImageUrl.startsWith('http') || p.mainImageUrl.startsWith('/'));
+        return {
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.basePrice || 0,
+          rating: p.rating,
+          hasVariants: p.hasVariants,
+          imageUrl: isValidUrl ? p.mainImageUrl! : '/logo.png',
+          imageHint: p.name,
+        };
+      });
   }, [products, searchTerm]);
 
 
