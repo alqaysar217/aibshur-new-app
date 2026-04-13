@@ -313,6 +313,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "defaultAddressId": {
+          "type": "string",
+          "description": "ID of the default Address document in the /addresses collection."
         }
       },
       "required": [
@@ -1464,6 +1468,21 @@
         "link": { "type": "string", "format": "uri-reference" }
       },
       "required": ["type", "title", "body", "timestamp", "isRead"]
+    },
+    "Address": {
+      "title": "Address",
+      "type": "object",
+      "description": "Represents a user's saved address.",
+      "properties": {
+        "userId": { "type": "string" },
+        "addressType": { "type": "string", "enum": ["home", "work", "other"] },
+        "customName": { "type": "string" },
+        "city": { "type": "string" },
+        "street": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" }
+      },
+      "required": ["userId", "addressType", "city", "street", "latitude", "longitude"]
     }
   },
   "auth": {
@@ -1774,6 +1793,14 @@
           "entityName": "Notification",
           "schema": { "$ref": "#/backend/entities/Notification" },
           "description": "Stores incoming notifications for admins (e.g., new order)."
+        }
+      },
+      {
+        "path": "/addresses/{addressId}",
+        "definition": {
+          "entityName": "Address",
+          "schema": { "$ref": "#/backend/entities/Address" },
+          "description": "Stores user saved addresses. Readable and writable only by the owner."
         }
       }
     ],

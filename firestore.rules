@@ -33,8 +33,8 @@ service cloud.firestore {
     match /vipPackages/{docId} { allow read, write: if isAdmin(); }
     match /vipSubscriptions/{docId} { allow read, write: if isAdmin(); }
     match /loyaltyRules/{docId} { allow read, write: if isAdmin(); }
-    match /point_requests/{docId} { allow read, write: if isAdmin(); }
-    match /loyaltyLogs/{docId} { allow read, write: if isAdmin(); }
+    match /point_requests/{requestId} { allow read, write: if isAdmin(); }
+    match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
     match /notificationTemplates/{docId} { allow read, write: if isAdmin(); }
@@ -96,6 +96,11 @@ service cloud.firestore {
       match /wallet/{walletId} {
         allow read, write: if isAdmin() || isOwner(userId);
       }
+    }
+
+    match /addresses/{addressId} {
+      allow list, create: if isSignedIn();
+      allow get, update, delete: if isOwner(resource.data.userId);
     }
   }
 }
