@@ -205,7 +205,7 @@ export default function RegisterPage() {
                 <FormLabel>{label}</FormLabel>
                 <FormControl>
                     <div className="relative">
-                       <Icon className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                       <Icon className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                        <Input placeholder="https://example.com/image.png" {...field} className="h-12 text-base pr-12 text-left" dir="ltr"/>
                     </div>
                 </FormControl>
@@ -224,10 +224,10 @@ export default function RegisterPage() {
       
       <Tabs defaultValue="user" className="w-full" dir="rtl">
         <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl bg-muted p-1 h-auto">
-          <TabsTrigger value="user" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+          <TabsTrigger value="user" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
             <User />عميل
           </TabsTrigger>
-          <TabsTrigger value="delegate" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+          <TabsTrigger value="delegate" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
             <Bike />مندوب
           </TabsTrigger>
         </TabsList>
@@ -248,7 +248,7 @@ export default function RegisterPage() {
             <Form {...userForm}>
               <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="w-full space-y-4 text-right">
                 <div className="relative">
-                    <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                     <FormField
                       control={userForm.control}
                       name="name"
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                     />
                 </div>
                 <div className="relative">
-                    <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                    <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary pointer-events-none" />
                     <FormField
                     control={userForm.control}
                     name="phone"
@@ -343,7 +343,7 @@ export default function RegisterPage() {
                 <Form {...delegateForm}>
                 <form onSubmit={delegateForm.handleSubmit(onDelegateSubmit)} className="w-full space-y-4 text-right">
                     <div className="relative">
-                        <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <User className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                         <FormField
                             control={delegateForm.control}
                             name="name"
@@ -353,7 +353,7 @@ export default function RegisterPage() {
                         />
                     </div>
                      <div className="relative">
-                        <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                        <Phone className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary pointer-events-none" />
                         <FormField
                         control={delegateForm.control}
                         name="phone"
@@ -383,7 +383,7 @@ export default function RegisterPage() {
                         </DropdownMenu>
                     </div>
                     <div className="relative">
-                        <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                         <FormField
                             control={delegateForm.control}
                             name="email"
@@ -402,7 +402,7 @@ export default function RegisterPage() {
                                 <Select onValueChange={(value) => { field.onChange(value); setIdType(value); }} defaultValue={field.value} dir="rtl">
                                     <FormControl>
                                         <SelectTrigger className="h-12 text-base">
-                                          <div className='flex gap-2 items-center'><BadgeInfo className="h-5 w-5 text-muted-foreground" /><SelectValue placeholder="اختر نوع الهوية" /></div>
+                                          <div className='flex gap-2 items-center'><BadgeInfo className="h-5 w-5 text-primary" /><SelectValue placeholder="اختر نوع الهوية" /></div>
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -416,7 +416,7 @@ export default function RegisterPage() {
                     />
                     
                     <div className="space-y-4 rounded-lg border p-4 text-right">
-                        <h4 className="text-sm font-medium flex items-center gap-2"><Paperclip className="h-4 w-4" />المرفقات المطلوبة (روابط صور)</h4>
+                        <h4 className="text-sm font-medium flex items-center gap-2"><Paperclip className="h-4 w-4 text-primary" />المرفقات المطلوبة (روابط صور)</h4>
                         <ImageURLField name="personalPhotoUrl" label="رابط الصورة الشخصية" icon={User} />
                         <ImageURLField name="idFrontPhotoUrl" label={idType === 'card' ? "رابط صورة البطاقة (الأمام)" : "رابط صورة الجواز"} icon={idType === 'card' ? CreditCard : BookUser} />
                         {idType === 'card' && (
