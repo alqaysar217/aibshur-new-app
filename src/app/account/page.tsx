@@ -10,8 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { BottomNav } from '@/components/bottom-nav';
 import { Separator } from '@/components/ui/separator';
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking, useAuth } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { collection, doc, query, where } from 'firebase/firestore'; // Import query and where
+import { useMemo, useState, useEffect } from 'react'; // Import useState and useEffect
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -47,12 +47,27 @@ export default function AccountPage() {
     const auth = useAuth();
     const router = useRouter();
     const { toast } = useToast();
+    const [userPhone, setUserPhone] = useState<string | null>(null);
 
+    useEffect(() => {
+        // This code runs on the client-side only
+        const phoneFromStorage = localStorage.getItem('userPhone');
+        if (phoneFromStorage) {
+            setUserPhone(phoneFromStorage);
+        }
+    }, []);
+
+    // Create a query that filters clients by phone number
+    const clientsQuery = useMemoFirebase(() => {
+        if (!firestore || !userPhone) return null;
+        return query(collection(firestore, 'clients'), where('phone', '==', userPhone));
+    }, [firestore, userPhone]);
+    
     // Fetching data
-    const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]));
+    const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
     const { data: governorates, isLoading: isLoadingGovernorates } = useCollection<Governorate>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
 
-    // Assuming the first client is the current user for demonstration purposes
+    // Get the specific client profile from the filtered query result
     const clientProfile = useMemo(() => clients?.[0], [clients]);
 
     const governoratesMap = useMemo(() => governorates?.reduce((acc, g) => ({ ...acc, [g.id]: g.province_name }), {} as Record<string, string>) || {}, [governorates]);
@@ -77,6 +92,7 @@ export default function AccountPage() {
         try {
             if (auth) {
                 await signOut(auth);
+                localStorage.removeItem('userPhone'); // Also clear phone from storage
                 router.push('/login');
             }
         } catch (error) {

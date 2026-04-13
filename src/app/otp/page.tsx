@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Loader2, Phone } from 'lucide-react';
 import { useAuth, initiateAnonymousSignIn } from '@/firebase';
 
 const OTP_LENGTH = 6;
@@ -17,6 +18,8 @@ export default function OtpPage() {
   const [otp, setOtp] = useState<string[]>(new Array(OTP_LENGTH).fill(''));
   const [error, setError] = useState<string>('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const phone = searchParams.get('phone');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const otpImage = PlaceHolderImages.find(p => p.id === 'otp-illustration');
   const auth = useAuth();
@@ -49,9 +52,15 @@ export default function OtpPage() {
   const handleSubmit = (finalOtp: string) => {
     if (finalOtp === MOCK_OTP_ADMIN) {
       initiateAnonymousSignIn(auth);
+      if (phone) {
+        localStorage.setItem('userPhone', phone);
+      }
       router.push('/admin/dashboard');
     } else if (finalOtp === MOCK_OTP_USER) {
       initiateAnonymousSignIn(auth);
+      if (phone) {
+        localStorage.setItem('userPhone', phone);
+      }
       router.push('/home');
     } else {
       setError('الرمز غير صحيح. حاول مرة أخرى.');
