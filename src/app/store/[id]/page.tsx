@@ -96,12 +96,14 @@ export default function StoreDetailsPage() {
                 const now = new Date();
                 const currentHour = now.getHours();
     
-                const [morningStartHour] = todayWorkingHours.morning_from.split(':').map(Number);
-                const [morningEndHour] = todayWorkingHours.morning_to.split(':').map(Number);
-    
-                if (currentHour >= morningStartHour && currentHour < morningEndHour) {
-                    setWorkingHoursText(`الدوام : ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to} صباحاً`);
-                    return;
+                if (todayWorkingHours.morning_from && todayWorkingHours.morning_to) {
+                    const [morningStartHour] = todayWorkingHours.morning_from.split(':').map(Number);
+                    const [morningEndHour] = todayWorkingHours.morning_to.split(':').map(Number);
+        
+                    if (currentHour >= morningStartHour && currentHour < morningEndHour) {
+                        setWorkingHoursText(`الدوام : ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to} صباحاً`);
+                        return;
+                    }
                 }
     
                 if (todayWorkingHours.evening_from && todayWorkingHours.evening_to) {
@@ -114,14 +116,20 @@ export default function StoreDetailsPage() {
                     }
                 }
                 
-                // If not in an active period, but the store is open for the day, show the next upcoming period.
-                if (currentHour < morningStartHour) {
-                    setWorkingHoursText(`يفتح صباحاً: ${todayWorkingHours.morning_from}`);
-                } else if (todayWorkingHours.evening_from && currentHour < parseInt(todayWorkingHours.evening_from.split(':')[0], 10)) {
-                    setWorkingHoursText(`يفتح مساءً: ${todayWorkingHours.evening_from}`);
-                } else {
-                    setWorkingHoursText(''); // Closed for the day
+                const morningStart = todayWorkingHours.morning_from ? parseInt(todayWorkingHours.morning_from.split(':')[0], 10) : NaN;
+                if (!isNaN(morningStart) && currentHour < morningStart) {
+                     setWorkingHoursText(`يفتح صباحاً: ${todayWorkingHours.morning_from}`);
+                     return;
                 }
+
+                const eveningStart = todayWorkingHours.evening_from ? parseInt(todayWorkingHours.evening_from.split(':')[0], 10) : NaN;
+                const morningEnd = todayWorkingHours.morning_to ? parseInt(todayWorkingHours.morning_to.split(':')[0], 10) : NaN;
+                if (!isNaN(eveningStart) && (isNaN(morningEnd) || currentHour >= morningEnd) && currentHour < eveningStart) {
+                    setWorkingHoursText(`يفتح مساءً: ${todayWorkingHours.evening_from}`);
+                    return;
+                }
+
+                setWorkingHoursText('');
             } else {
                 setWorkingHoursText('');
             }
@@ -217,8 +225,8 @@ export default function StoreDetailsPage() {
                     {/* Row 1 */}
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2" onClick={handleToggleFavoriteStore}>
-                            <Heart className={cn("h-5 w-5", isStoreFavorite ? "text-red-500 fill-red-500" : "fill-transparent")}/>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 -mr-2" onClick={handleToggleFavoriteStore}>
+                            <Heart className={cn("h-5 w-5", isStoreFavorite ? "text-red-500 fill-red-500" : "text-primary/70 fill-transparent")} />
                         </Button>
                     </div>
                     {/* Row 2 */}
@@ -248,19 +256,17 @@ export default function StoreDetailsPage() {
                 </div>
             </div>
             {/* Row 4 */}
-            <div className="overflow-hidden">
-              <div className="border-t pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground animate-marquee whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                      <Bike className="h-4 w-4 text-primary"/>
-                      <span>الطلب يستغرق : {store.deliveryTime}د</span>
-                  </div>
-                  {todayWorkingHours?.isOpen && workingHoursText && (
-                      <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-primary"/>
-                          <span>{workingHoursText}</span>
-                      </div>
-                  )}
-              </div>
+            <div className="border-t pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <Bike className="h-4 w-4 text-primary"/>
+                    <span>الطلب يستغرق : {store.deliveryTime}د</span>
+                </div>
+                {todayWorkingHours?.isOpen && workingHoursText && (
+                    <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary"/>
+                        <span>{workingHoursText}</span>
+                    </div>
+                )}
             </div>
         </div>
 
