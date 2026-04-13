@@ -98,12 +98,12 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
               </Button>
             </div>
             {/* Row 2 */}
-            <div className="flex justify-between items-center text-sm text-muted-foreground">
+            <div className="flex justify-between items-center text-sm">
                 <div className="flex items-center gap-1.5 truncate">
                     <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="truncate">{address}</span>
+                    <span className="truncate font-medium text-primary">{address}</span>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0 text-muted-foreground">
                     <Navigation className="h-4 w-4 text-primary" />
                     <span>{distance}</span>
                 </div>
@@ -113,13 +113,17 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
                 <div className="flex items-center gap-2">
                     <Badge variant="secondary">{category}</Badge>
                     <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                        <Star className="h-4 w-4 text-primary fill-primary" />
                         <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
                     </div>
                 </div>
                 <Badge
-                    variant={isOpen ? 'default' : 'destructive'}
-                    className="px-2.5 py-1 text-xs font-bold"
+                    className={cn(
+                        "px-2.5 py-1 text-xs font-bold border-transparent",
+                        isOpen 
+                            ? "bg-sidebar-active-gradient text-primary-foreground" 
+                            : "bg-destructive text-destructive-foreground"
+                    )}
                 >
                     {isOpen ? 'مفتوح' : 'مغلق'}
                 </Badge>

@@ -204,11 +204,13 @@ export default function HomePage() {
                         variant={isActive ? 'default' : 'outline'}
                         className={cn(
                             "rounded-full whitespace-nowrap shadow-sm transition-colors",
-                            !isActive && "border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                            isActive
+                                ? "bg-sidebar-active-gradient text-primary-foreground"
+                                : "border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
                         )}
                         onClick={() => setActiveStoreFilter(filter.name)}
                     >
-                        <filter.icon />
+                        <filter.icon className="h-4 w-4" />
                         {filter.name}
                     </Button>
                 )
