@@ -48,8 +48,8 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
 
   return (
     <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group" onClick={handleShowDetails}>
-      <CardContent className="p-3 flex gap-4 items-center">
-         <div className="relative w-24 h-24 flex-shrink-0">
+      <CardContent className="p-2 flex gap-3 items-start">
+         <div className="relative w-20 h-20 flex-shrink-0">
           <Image
             src={product.imageUrl}
             alt={product.name}
@@ -62,8 +62,8 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
         <div className="flex-1 flex flex-col justify-between self-stretch">
           {/* Row 1 */}
           <div className="flex justify-between items-start">
-            <h3 className="font-bold text-base leading-tight pr-2 line-clamp-1">{product.name}</h3>
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground flex-shrink-0 -mt-1 -mr-2 hover:text-primary" onClick={(e) => { e.stopPropagation(); console.log('Favorite clicked'); }}>
+            <h3 className="font-bold text-base leading-tight pr-2 line-clamp-1 text-primary">{product.name}</h3>
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-primary flex-shrink-0 -mt-1 -mr-2" onClick={(e) => { e.stopPropagation(); console.log('Favorite clicked'); }}>
               <Heart className="h-5 w-5" />
             </Button>
           </div>
@@ -75,14 +75,14 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
           <div className="flex justify-between items-center mt-auto">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-primary" strokeWidth={3}/>
+                <Star className="h-4 w-4 text-primary fill-primary" />
                 <span className="font-bold text-sm text-foreground">{product.rating.toFixed(1)}</span>
               </div>
-              <p className="text-base font-bold text-foreground">{product.price.toLocaleString('en-US')}&nbsp;ر.ي</p>
+              <p className="text-base font-bold text-primary">{product.price.toLocaleString('en-US')}&nbsp;ريال</p>
             </div>
             <div className="flex-shrink-0">
                 {product.hasVariants ? (
-                  <Button variant="outline" size="sm" className="h-9 px-3 text-xs" onClick={(e) => {e.stopPropagation(); handleShowDetails();}}>
+                  <Button size="sm" className="h-9 px-3 text-xs bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={(e) => {e.stopPropagation(); handleShowDetails();}}>
                       عرض التفاصيل
                   </Button>
                 ) : quantity > 0 ? (

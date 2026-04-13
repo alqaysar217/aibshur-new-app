@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Star, Layers, ShoppingCart, Store, Tag } from 'lucide-react';
+import { Star, Layers, ShoppingCart, Store, Tag, Heart } from 'lucide-react';
 import type { Product } from './product-card';
 import { QuantityCounter } from './quantity-counter';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -59,8 +59,11 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="p-0 flex flex-col max-h-[90dvh] w-full max-w-sm rounded-2xl gap-0 [&>button]:right-auto [&>button]:left-4 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
+        className="p-0 flex flex-col max-h-[90dvh] w-full max-w-sm rounded-2xl gap-0 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
       >
+        <Button variant="ghost" size="icon" className="absolute right-4 top-3 z-10 h-9 w-9 text-white bg-black/20 hover:bg-black/40">
+            <Heart className="h-5 w-5" />
+        </Button>
         <div className="relative h-48 w-full">
             <Image
                 src={product.imageUrl}
@@ -74,11 +77,11 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
             <DialogHeader className="text-right space-y-2">
                  <div className='flex justify-between items-start'>
                     <div>
-                        <DialogTitle className="text-right text-2xl font-bold text-foreground">{product.name}</DialogTitle>
+                        <DialogTitle className="text-right text-2xl font-bold text-primary">{product.name}</DialogTitle>
                         <DialogDescription className="text-right text-base text-muted-foreground pt-1">{product.description}</DialogDescription>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0 pt-1">
-                        <Star className="h-5 w-5 text-primary" strokeWidth={3} />
+                        <Star className="h-5 w-5 text-primary fill-primary" />
                         <span className="font-bold text-lg text-foreground">{product.rating.toFixed(1)}</span>
                     </div>
                 </div>
@@ -110,7 +113,7 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                         const currentQuantity = variantQuantities[variant.id] || 0;
                         return (
                             <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
-                                <div className='flex justify-between items-center gap-4'>
+                                <div className='flex justify-between items-center gap-3'>
                                     {currentQuantity > 0 ? (
                                         <QuantityCounter 
                                             value={currentQuantity}
@@ -123,13 +126,15 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                                             إضافة
                                         </Button>
                                     )}
-                                    <div className='text-right flex-1'>
-                                        <p className='font-semibold text-base'>{variant.name}</p>
-                                        <div className='flex items-center justify-end gap-1.5 font-bold text-foreground'>
-                                            <span>{formatPrice(variant.price)}&nbsp;ر.ي</span>
+                                    <div className='flex items-center gap-3 text-right flex-1 justify-end'>
+                                        <div className='flex-1'>
+                                            <p className='font-semibold text-base'>{variant.name}</p>
+                                            <div className='flex items-center justify-end gap-1.5 font-bold text-primary'>
+                                                <span>{formatPrice(variant.price)}&nbsp;ريال</span>
+                                            </div>
                                         </div>
+                                        <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                     </div>
-                                    <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                 </div>
                             </Card>
                         )
@@ -142,8 +147,8 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                         onIncrement={() => setQuantity(q => q + 1)} 
                         onDecrement={() => setQuantity(q => (q > 1 ? q - 1 : 1))}
                     />
-                    <div className="flex items-center gap-2 text-2xl font-bold text-foreground">
-                        <span>{formatPrice(product.price * quantity)}&nbsp;ر.ي</span>
+                    <div className="flex items-center gap-2 text-2xl font-bold text-primary">
+                        <span>{formatPrice(product.price * quantity)}&nbsp;ريال</span>
                     </div>
                 </div>
             )}
