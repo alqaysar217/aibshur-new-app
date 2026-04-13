@@ -72,19 +72,20 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
 
   return (
     <Link href={`/store/${id}`} className="block">
-      <Card className="shadow-sm hover:shadow-md transition-shadow bg-card overflow-hidden h-24">
-        <CardContent className="p-0 flex h-full">
-          <div className="relative w-24 h-full flex-shrink-0 group">
+      <Card className="shadow-sm hover:shadow-md transition-shadow bg-card overflow-hidden">
+        <CardContent className="p-1.5 flex h-full items-center gap-3">
+          <div className="relative w-24 h-24 flex-shrink-0 group">
             <Image
               src={imageUrl}
               alt={name}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover rounded-md p-1"
               data-ai-hint={imageHint || ''}
             />
-             <div className="absolute inset-0 bg-sidebar-active-gradient opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+             <div className="absolute inset-0 rounded-lg border-2 border-primary/20 group-hover:shadow-[0_0_12px_2px] group-hover:shadow-primary/40 transition-all duration-300"></div>
           </div>
-          <div className="flex-1 flex flex-col justify-between gap-1 p-2">
+          
+          <div className="flex-1 flex flex-col justify-between self-stretch gap-1">
             {/* Row 1 */}
             <div className="flex justify-between items-start">
               <h3 className="font-bold text-base truncate pr-2">{name}</h3>
