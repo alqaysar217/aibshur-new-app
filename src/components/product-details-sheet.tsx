@@ -61,8 +61,8 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
       <DialogContent 
         className="p-0 flex flex-col max-h-[90dvh] w-full max-w-sm rounded-2xl gap-0 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
       >
-        <Button variant="ghost" size="icon" className="absolute right-4 top-3 z-10 h-9 w-9 text-white bg-black/20 hover:bg-black/40">
-            <Heart className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="absolute left-4 top-3 z-10 h-9 w-9 text-primary bg-white/80 hover:bg-white/90">
+            <Heart className="h-5 w-5 fill-primary" />
         </Button>
         <div className="relative h-48 w-full">
             <Image
@@ -114,26 +114,30 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                         return (
                             <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
                                 <div className='flex justify-between items-center gap-3'>
-                                    {currentQuantity > 0 ? (
-                                        <QuantityCounter 
-                                            value={currentQuantity}
-                                            onIncrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity + 1)}}
-                                            onDecrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity - 1)}}
-                                        />
-                                    ) : (
-                                        <Button size="sm" className="h-9 px-4 text-xs flex-shrink-0" onClick={(e) => {e.stopPropagation(); handleVariantQuantityChange(variant.id, 1)}}>
-                                            <ShoppingCart className="h-4 w-4 text-primary-foreground"/>
-                                            إضافة
-                                        </Button>
-                                    )}
-                                    <div className='flex items-center gap-3 text-right flex-1 justify-end'>
+                                    {/* Right side: Image and Info */}
+                                    <div className='flex items-center gap-3'>
+                                        <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
                                         <div className='flex-1'>
                                             <p className='font-semibold text-base'>{variant.name}</p>
-                                            <div className='flex items-center justify-end gap-1.5 font-bold text-primary'>
+                                            <div className='font-bold text-primary'>
                                                 <span>{formatPrice(variant.price)}&nbsp;ريال</span>
                                             </div>
                                         </div>
-                                        <Image src={variant.imageUrl} alt={variant.name} width={60} height={60} className="rounded-md object-cover" data-ai-hint={variant.imageHint} />
+                                    </div>
+                                    {/* Left side: Add/Counter button */}
+                                    <div className="flex-shrink-0">
+                                        {currentQuantity > 0 ? (
+                                            <QuantityCounter 
+                                                value={currentQuantity}
+                                                onIncrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity + 1)}}
+                                                onDecrement={(e) => { e.stopPropagation(); handleVariantQuantityChange(variant.id, currentQuantity - 1)}}
+                                            />
+                                        ) : (
+                                            <Button size="sm" className="h-9 px-4 text-xs flex-shrink-0 bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={(e) => {e.stopPropagation(); handleVariantQuantityChange(variant.id, 1)}}>
+                                                <ShoppingCart className="h-4 w-4 text-primary-foreground"/>
+                                                إضافة
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             </Card>
