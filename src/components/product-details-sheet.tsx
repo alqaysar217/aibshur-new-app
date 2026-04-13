@@ -63,12 +63,12 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="p-0 flex flex-col max-h-[90dvh] w-full max-w-sm rounded-2xl gap-0 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
+        className="p-0 flex flex-col max-h-[85dvh] w-[95vw] max-w-md rounded-2xl gap-0 [&>button]:top-2 [&>button]:bg-black/20 [&>button]:text-white hover:[&>button]:bg-black/40"
       >
         <Button variant="ghost" size="icon" className="absolute left-4 top-3 z-10 h-9 w-9 bg-white/80 hover:bg-white/90" onClick={onToggleFavorite}>
             <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-red-500" : "text-primary fill-transparent" )} />
         </Button>
-        <div className="relative h-48 w-full">
+        <div className="relative h-48 w-full flex-shrink-0">
             <Image
                 src={product.imageUrl}
                 alt={product.name}
@@ -117,7 +117,7 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
                         const currentQuantity = variantQuantities[variant.id] || 0;
                         return (
                             <Card key={variant.id} className='p-3 shadow-sm border-border/80'>
-                                <div className='flex justify-between items-center gap-3'>
+                                <div className='flex justify-between items-start gap-3'>
                                     <div className="flex-shrink-0">
                                         {currentQuantity > 0 ? (
                                             <QuantityCounter 
@@ -160,7 +160,7 @@ export function ProductDetailsSheet({ product, storeName, categoryName, isOpen, 
             )}
         </div>
         
-        <div className="p-4 border-t sticky bottom-0 bg-background/95">
+        <div className="p-4 border-t bg-background flex-shrink-0">
              <Button className="w-full h-12 text-lg font-semibold" onClick={handleConfirmAddToCart}>
                 <ShoppingCart className="h-5 w-5"/>
                 تأكيد الإضافة للسلة
