@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
-import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X, Bike } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, type Product as ProductCardType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
@@ -18,6 +18,7 @@ import { useParams } from 'next/navigation';
 type Store = {
     id: string;
     name: string;
+    address: string;
     imageUrl: string;
     rating: number;
     deliveryTime: string;
@@ -38,7 +39,7 @@ type FirestoreProduct = {
 };
 
 export default function StoreDetailsPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams();
   const [activeFilter, setActiveFilter] = useState('الكل');
   const [selectedProduct, setSelectedProduct] = useState<ProductCardType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -46,7 +47,7 @@ export default function StoreDetailsPage() {
   const firestore = useFirestore();
 
   // Fetch store details
-  const storeDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'stores', params.id) : null, [firestore, params.id]);
+  const storeDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'stores', params.id as string) : null, [firestore, params.id]);
   const { data: store, isLoading: isLoadingStore } = useDoc<Store>(storeDocRef);
 
   // Fetch products for this store
@@ -101,6 +102,9 @@ export default function StoreDetailsPage() {
       );
   }
 
+  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === todayName);
+
   const productFilters = [
     { name: 'الكل', icon: List },
     { name: 'الأكثر طلباً', icon: TrendingUp },
@@ -143,7 +147,7 @@ export default function StoreDetailsPage() {
                     {/* Row 2 */}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4 text-primary" />
-                        <span>0 كم</span>
+                        <span>{store.address} - 0 كم</span>
                     </div>
                     {/* Row 3 */}
                     <div className="flex items-center gap-4 text-sm">
@@ -153,24 +157,22 @@ export default function StoreDetailsPage() {
                             <span className="font-semibold">{store.rating.toFixed(1)}</span>
                         </div>
                     </div>
-                    {/* Row 4 */}
-                    <div className="flex items-center gap-4 text-sm">
-                         <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Clock className="h-4 w-4 text-primary" />
-                            <span className="font-semibold text-foreground">{store.deliveryTime} دق</span>
-                        </div>
-                         <Badge
-                            variant="outline"
-                            className={cn(
-                                "px-2 py-0.5 text-xs font-semibold",
-                                store.is_active
-                                  ? "border-primary/30 bg-primary/10 text-primary"
-                                  : "border-destructive/30 bg-destructive/10 text-destructive"
-                            )}
-                        >
-                          {store.is_active ? 'مفتوح' : 'مغلق'}
-                        </Badge>
+                    {/* Row 4: Delivery time */}
+                    <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+                        <Bike className="h-4 w-4 text-primary" />
+                        <span>توصيل خلال {store.deliveryTime} دقيقة</span>
                     </div>
+                    {/* Row 5: Working hours */}
+                    {todayWorkingHours && (
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <span>
+                          {todayWorkingHours.isOpen 
+                            ? `اليوم: ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to}${todayWorkingHours.evening_from ? `, ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}` : ''}`
+                            : 'مغلق اليوم'}
+                        </span>
+                      </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -207,7 +209,7 @@ export default function StoreDetailsPage() {
                 const productForCard: ProductCardType = {
                     ...product,
                     price: product.basePrice || 0,
-                    imageUrl: isValidUrl ? product.mainImageUrl : '/logo.png',
+                    imageUrl: isValidUrl ? product.mainImageUrl! : '/logo.png',
                     imageHint: '',
                 };
                 return (

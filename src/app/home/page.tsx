@@ -32,6 +32,7 @@ type Store = {
   id: string;
   name: string;
   imageUrl: string;
+  address: string;
   rating: number;
   deliveryTime: string;
   provinceId: string;
@@ -67,7 +68,7 @@ export default function HomePage() {
   
   const allCategories = useMemo(() => {
     if (!categories) return [];
-    return [{ id: 'all', name: 'الكل', image: '/filter-1.png', is_active: true }, ...categories];
+    return [{ id: 'all', name: 'الكل', image: '/stor-1.png', is_active: true }, ...categories];
   }, [categories]);
 
   // Fetch active stores for the selected governorate
@@ -126,7 +127,7 @@ export default function HomePage() {
                     >
                        <div className={cn(
                           "w-20 h-20 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105",
-                          isActive && "ring-2 ring-primary/80 shadow-[0_0_20px_2px] shadow-primary/40"
+                           isActive && "ring-2 ring-primary/80 shadow-[0_0_20px_2px] shadow-primary/40"
                         )}>
                         <Image
                           src={cat.image}
@@ -193,7 +194,7 @@ export default function HomePage() {
         {/* Store Cards */}
         <div className="grid grid-cols-1 gap-4">
           {showStoreLoading ? (
-            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-[104px] w-full rounded-lg" />)
+            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-[120px] w-full rounded-lg" />)
           ) : filteredStores && filteredStores.length > 0 ? (
             filteredStores.map(store => {
               const isValidUrl = store.imageUrl && (store.imageUrl.startsWith('http') || store.imageUrl.startsWith('/'));
@@ -202,6 +203,7 @@ export default function HomePage() {
                 key={store.id} 
                 id={store.id}
                 name={store.name}
+                address={store.address}
                 imageUrl={isValidUrl ? store.imageUrl : '/logo.png'}
                 deliveryTime={store.deliveryTime}
                 distance="0 كم"
