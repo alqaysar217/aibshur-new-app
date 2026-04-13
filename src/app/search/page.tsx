@@ -10,8 +10,8 @@ import { StoreCard } from '@/components/store-card';
 import { ProductCard, type Product as ProductType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
 import { BottomNav } from '@/components/bottom-nav';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { collection, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +47,11 @@ type AppCategory = {
   image: string;
 };
 
+type UserProfile = {
+  favoriteStoreIds?: string[];
+  favoriteProductIds?: string[];
+};
+
 const storeFilters = [
     { name: 'الكل', icon: List },
     { name: 'الأقرب', icon: MapPin },
@@ -69,6 +74,14 @@ export default function SearchPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const firestore = useFirestore();
+  const { user } = useUser();
+
+  // Fetch user profile to get favorite IDs
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid, 'profile', 'main');
+  }, [firestore, user]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Data Fetching
   const storesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'stores'), where('is_active', '==', true)) : null, [firestore]);
@@ -86,6 +99,23 @@ export default function SearchPage() {
   }, [categories]);
   
   const isLoading = isLoadingStores || isLoadingProducts || isLoadingCategories;
+
+  // Handlers
+  const handleToggleFavoriteStore = async (storeId: string) => {
+    if (!userProfileRef) return;
+    const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
+    await updateDoc(userProfileRef, {
+      favoriteStoreIds: isCurrentlyFavorite ? arrayRemove(storeId) : arrayUnion(storeId),
+    });
+  };
+
+  const handleToggleFavoriteProduct = async (productId: string) => {
+    if (!userProfileRef) return;
+    const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
+    await updateDoc(userProfileRef, {
+      favoriteProductIds: isCurrentlyFavorite ? arrayRemove(productId) : arrayUnion(productId),
+    });
+  };
 
   // Filtering Logic
   const filteredStores = useMemo(() => {
@@ -112,9 +142,10 @@ export default function SearchPage() {
           hasVariants: p.hasVariants,
           imageUrl: isValidUrl ? p.mainImageUrl! : '/logo.png',
           imageHint: p.name,
+          isFavorite: userProfile?.favoriteProductIds?.includes(p.id) ?? false,
         };
       });
-  }, [products, searchTerm]);
+  }, [products, searchTerm, userProfile]);
 
 
   const handleShowDetails = (product: ProductType) => {
@@ -129,6 +160,8 @@ export default function SearchPage() {
   const renderProductSkeletons = () => (
     [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
   );
+
+  const isSelectedProductFavorite = selectedProduct ? userProfile?.favoriteProductIds?.includes(selectedProduct.id) : false;
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-16">
@@ -200,20 +233,25 @@ export default function SearchPage() {
             {/* Store Results */}
             <div className="grid grid-cols-1 gap-4">
               {isLoadingStores ? renderStoreSkeletons() : filteredStores.length > 0 ? (
-                filteredStores.map(store => (
-                    <StoreCard 
-                        key={store.id} 
-                        id={store.id}
-                        name={store.name}
-                        address={store.address}
-                        imageUrl={store.imageUrl || '/logo.png'}
-                        deliveryTime={store.deliveryTime}
-                        distance="0 كم" // Placeholder
-                        category={categoriesMap[store.categoryId] || 'غير محدد'}
-                        rating={store.rating}
-                        isActive={store.is_active}
-                    />
-                ))
+                filteredStores.map(store => {
+                    const isFavorite = userProfile?.favoriteStoreIds?.includes(store.id) ?? false;
+                    return (
+                        <StoreCard 
+                            key={store.id} 
+                            id={store.id}
+                            name={store.name}
+                            address={store.address}
+                            imageUrl={store.imageUrl || '/logo.png'}
+                            deliveryTime={store.deliveryTime}
+                            distance="0 كم" // Placeholder
+                            category={categoriesMap[store.categoryId] || 'غير محدد'}
+                            rating={store.rating}
+                            isActive={store.is_active}
+                            isFavorite={isFavorite}
+                            onToggleFavorite={handleToggleFavoriteStore}
+                        />
+                    )
+                })
               ) : (
                 <div className="text-center py-16 text-muted-foreground">
                     <p>لا توجد متاجر تطابق بحثك.</p>
@@ -246,7 +284,7 @@ export default function SearchPage() {
             {/* Product Results */}
             <div className="grid grid-cols-1 gap-3">
               {isLoadingProducts ? renderProductSkeletons() : filteredProducts.length > 0 ? (
-                filteredProducts.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />)
+                filteredProducts.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} onToggleFavorite={handleToggleFavoriteProduct} />)
               ) : (
                 <div className="text-center py-16 text-muted-foreground">
                     <p>لا توجد منتجات تطابق بحثك.</p>
@@ -261,6 +299,8 @@ export default function SearchPage() {
         product={selectedProduct}
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        isFavorite={isSelectedProductFavorite}
+        onToggleFavorite={() => selectedProduct && handleToggleFavoriteProduct(selectedProduct.id)}
       />
       <BottomNav />
     </div>

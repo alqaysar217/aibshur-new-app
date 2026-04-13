@@ -19,16 +19,24 @@ export type StoreCardProps = {
   category: string;
   rating: number;
   isActive: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: (storeId: string) => void;
 };
 
-export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime, distance, category, rating, isActive }: StoreCardProps) {
+export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime, distance, category, rating, isActive, isFavorite, onToggleFavorite }: StoreCardProps) {
   const isOpen = isActive;
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFavorite(id);
+  };
 
   return (
     <Link href={`/store/${id}`} className="block group">
       <Card className="shadow-md hover:shadow-lg transition-shadow bg-card">
-        <CardContent className="p-2 flex gap-3">
-          <div className="relative w-20 h-20 flex-shrink-0">
+        <CardContent className="p-3 flex gap-3">
+          <div className="relative w-[70px] h-[70px] flex-shrink-0">
             <Image
               src={imageUrl}
               alt={name}
@@ -46,9 +54,9 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 flex-shrink-0 text-primary/60 hover:text-primary active:scale-95 -mt-1 -mr-2"
-                onClick={(e) => {e.preventDefault(); console.log("Favorite clicked");}}
+                onClick={handleFavoriteClick}
               >
-                <Heart className="h-5 w-5" />
+                <Heart className={cn("h-5 w-5", isFavorite && 'text-primary fill-primary')} />
               </Button>
             </div>
             {/* Row 2 */}

@@ -1,7 +1,7 @@
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { collection, query, where, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HomeHeader } from '@/components/home-header';
 import { BottomNav } from '@/components/bottom-nav';
@@ -40,6 +40,11 @@ type Store = {
   is_active: boolean;
 };
 
+type UserProfile = {
+  favoriteStoreIds?: string[];
+  favoriteProductIds?: string[];
+};
+
 const filters = [
     { name: 'الكل', icon: List },
     { name: 'الأقرب', icon: MapPin },
@@ -52,12 +57,20 @@ export default function HomePage() {
   const [selectedGovernorateId, setSelectedGovernorateId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [activeStoreFilter, setActiveStoreFilter] = useState('الكل');
+  const { user } = useUser();
 
   // Get selected governorate from localStorage on client-side
   useEffect(() => {
     const storedId = localStorage.getItem('selectedGovernorateId');
     setSelectedGovernorateId(storedId);
   }, []);
+
+  // Fetch user profile to get favorite IDs
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid, 'profile', 'main');
+  }, [firestore, user]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Fetch active categories
   const categoriesQuery = useMemoFirebase(() => {
@@ -100,6 +113,16 @@ export default function HomePage() {
   const adBanners = PlaceHolderImages.filter(p => p.id.startsWith('ad-banner'));
   
   const showStoreLoading = isLoadingStores || !selectedGovernorateId;
+
+  const handleToggleFavoriteStore = async (storeId: string) => {
+    if (!userProfileRef) return;
+    const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
+    await updateDoc(userProfileRef, {
+      favoriteStoreIds: isCurrentlyFavorite
+        ? arrayRemove(storeId)
+        : arrayUnion(storeId),
+    });
+  };
 
   return (
     <div className="bg-background min-h-screen pb-20">
@@ -194,10 +217,11 @@ export default function HomePage() {
         {/* Store Cards */}
         <div className="grid grid-cols-1 gap-4">
           {showStoreLoading ? (
-            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-[120px] w-full rounded-lg" />)
+            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-[108px] w-full rounded-lg" />)
           ) : filteredStores && filteredStores.length > 0 ? (
             filteredStores.map(store => {
               const isValidUrl = store.imageUrl && (store.imageUrl.startsWith('http') || store.imageUrl.startsWith('/'));
+              const isFavorite = userProfile?.favoriteStoreIds?.includes(store.id) ?? false;
               return (
               <StoreCard 
                 key={store.id} 
@@ -210,6 +234,8 @@ export default function HomePage() {
                 category={categoriesMap[store.categoryId] || 'فئة غير معروفة'}
                 rating={store.rating}
                 isActive={store.is_active}
+                isFavorite={isFavorite}
+                onToggleFavorite={handleToggleFavoriteStore}
               />
             )})
           ) : (

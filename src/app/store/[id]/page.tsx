@@ -3,8 +3,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, query, where, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ArrowRight, ShoppingCart, Star, MapPin, Clock, Heart, List, TrendingUp, X, Bike, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard, type Product as ProductCardType } from '@/components/product-card';
@@ -38,6 +38,11 @@ type FirestoreProduct = {
     basePrice?: number;
 };
 
+type UserProfile = {
+  favoriteStoreIds?: string[];
+  favoriteProductIds?: string[];
+};
+
 export default function StoreDetailsPage() {
   const params = useParams();
   const [activeFilter, setActiveFilter] = useState('الكل');
@@ -46,6 +51,14 @@ export default function StoreDetailsPage() {
   const [workingHoursText, setWorkingHoursText] = useState('');
   
   const firestore = useFirestore();
+  const { user } = useUser();
+
+  // Fetch user profile
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid, 'profile', 'main');
+  }, [firestore, user]);
+  const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Fetch store details
   const storeDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'stores', params.id as string) : null, [firestore, params.id]);
@@ -120,7 +133,25 @@ export default function StoreDetailsPage() {
     setIsSheetOpen(true);
   };
   
-  const isLoading = isLoadingStore || isLoadingProducts || isLoadingCategories;
+  const handleToggleFavoriteStore = async () => {
+    if (!userProfileRef || !store) return;
+    const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(store.id);
+    await updateDoc(userProfileRef, {
+      favoriteStoreIds: isCurrentlyFavorite ? arrayRemove(store.id) : arrayUnion(store.id),
+    });
+  };
+
+  const handleToggleFavoriteProduct = async (productId: string) => {
+    if (!userProfileRef) return;
+    const isCurrentlyFavorite = userProfile?.favoriteProductIds?.includes(productId);
+    await updateDoc(userProfileRef, {
+      favoriteProductIds: isCurrentlyFavorite ? arrayRemove(productId) : arrayUnion(productId),
+    });
+  };
+  
+  const isLoading = isLoadingStore || isLoadingProducts || isLoadingCategories || isLoadingProfile;
+  const isStoreFavorite = userProfile?.favoriteStoreIds?.includes(params.id as string) ?? false;
+  const isSelectedProductFavorite = selectedProduct ? userProfile?.favoriteProductIds?.includes(selectedProduct.id) ?? false : false;
 
   if (isLoading || !store) {
       // Return a skeleton loading UI
@@ -146,8 +177,7 @@ export default function StoreDetailsPage() {
   }
 
   const categoryName = categoriesMap[store.categoryId] || '';
-  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-  const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === todayName);
+  const todayWorkingHours = store.workingHours?.find((wh: any) => wh.day === new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
 
   const productFilters = [
     { name: 'الكل', icon: List },
@@ -187,8 +217,8 @@ export default function StoreDetailsPage() {
                     {/* Row 1 */}
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2">
-                            <Heart className="h-5 w-5 text-primary"/>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2" onClick={handleToggleFavoriteStore}>
+                            <Heart className={cn("h-5 w-5", isStoreFavorite && "text-primary fill-primary")}/>
                         </Button>
                     </div>
                     {/* Row 2 */}
@@ -218,17 +248,19 @@ export default function StoreDetailsPage() {
                 </div>
             </div>
             {/* Row 4 */}
-            <div className="border-t pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <Bike className="h-4 w-4 text-primary"/>
-                    <span>الطلب يستغرق : {store.deliveryTime}د</span>
-                </div>
-                {todayWorkingHours?.isOpen && workingHoursText && (
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary"/>
-                        <span>{workingHoursText}</span>
-                    </div>
-                )}
+            <div className="overflow-hidden">
+              <div className="border-t pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground animate-marquee whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                      <Bike className="h-4 w-4 text-primary"/>
+                      <span>الطلب يستغرق : {store.deliveryTime}د</span>
+                  </div>
+                  {todayWorkingHours?.isOpen && workingHoursText && (
+                      <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary"/>
+                          <span>{workingHoursText}</span>
+                      </div>
+                  )}
+              </div>
             </div>
         </div>
 
@@ -261,17 +293,20 @@ export default function StoreDetailsPage() {
           ) : products && products.length > 0 ? (
             products.map(product => {
                 const isValidUrl = product.mainImageUrl && (product.mainImageUrl.startsWith('http') || product.mainImageUrl.startsWith('/'));
+                const isFavorite = userProfile?.favoriteProductIds?.includes(product.id) ?? false;
                 const productForCard: ProductCardType = {
                     ...product,
                     price: product.basePrice || 0,
                     imageUrl: isValidUrl ? product.mainImageUrl! : '/logo.png',
                     imageHint: '',
+                    isFavorite: isFavorite,
                 };
                 return (
                     <ProductCard 
                         key={product.id} 
                         product={productForCard} 
-                        onShowDetails={handleShowDetails} 
+                        onShowDetails={handleShowDetails}
+                        onToggleFavorite={handleToggleFavoriteProduct} 
                     />
                 );
             })
@@ -289,6 +324,8 @@ export default function StoreDetailsPage() {
         categoryName={categoryName}
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
+        isFavorite={isSelectedProductFavorite}
+        onToggleFavorite={() => selectedProduct && handleToggleFavoriteProduct(selectedProduct.id)}
       />
     </div>
   );

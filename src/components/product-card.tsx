@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, Star, ShoppingCart } from 'lucide-react';
 import { QuantityCounter } from './quantity-counter';
+import { cn } from '@/lib/utils';
+
 
 export type Product = {
   id: string;
@@ -17,15 +19,23 @@ export type Product = {
   imageHint: string;
   hasVariants: boolean;
   imageId?: string;
+  isFavorite?: boolean;
 };
 
 type ProductCardProps = {
   product: Product;
   onShowDetails: (product: Product) => void;
+  onToggleFavorite: (productId: string) => void;
 };
 
-export function ProductCard({ product, onShowDetails }: ProductCardProps) {
+export function ProductCard({ product, onShowDetails, onToggleFavorite }: ProductCardProps) {
   const [quantity, setQuantity] = useState(0);
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFavorite(product.id);
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,8 +73,8 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
           {/* Row 1 */}
           <div className="flex justify-between items-start">
             <h3 className="font-bold text-base leading-tight pr-2 line-clamp-1 text-primary">{product.name}</h3>
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-primary flex-shrink-0 -mt-1 -mr-2" onClick={(e) => { e.stopPropagation(); console.log('Favorite clicked'); }}>
-              <Heart className="h-5 w-5" />
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-primary flex-shrink-0 -mt-1 -mr-2" onClick={handleFavoriteClick}>
+              <Heart className={cn("h-5 w-5", product.isFavorite && "text-primary fill-primary")} />
             </Button>
           </div>
           {/* Row 2 */}
@@ -92,7 +102,7 @@ export function ProductCard({ product, onShowDetails }: ProductCardProps) {
                         onDecrement={handleDecrement} 
                     />
                 ) : (
-                  <Button size="sm" className="h-9 px-3 text-xs" onClick={handleAddToCart}>
+                  <Button size="sm" className="h-9 px-3 text-xs bg-sidebar-active-gradient text-sidebar-primary-foreground" onClick={handleAddToCart}>
                     <ShoppingCart className="h-4 w-4 text-primary-foreground" />
                     إضافة
                   </Button>
