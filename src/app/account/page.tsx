@@ -81,6 +81,8 @@ export default function AccountPage() {
         
         const clientDocRef = doc(firestore, 'clients', clientProfile.id);
         updateDocumentNonBlocking(clientDocRef, { governorateId });
+
+        localStorage.setItem('selectedGovernorateId', governorateId);
         
         toast({
             title: "تم تغيير المحافظة",
@@ -93,6 +95,7 @@ export default function AccountPage() {
             if (auth) {
                 await signOut(auth);
                 localStorage.removeItem('userPhone'); // Also clear phone from storage
+                localStorage.removeItem('selectedGovernorateId'); // Clear governorate
                 router.push('/login');
             }
         } catch (error) {
@@ -146,16 +149,16 @@ export default function AccountPage() {
                             <h2 className="text-2xl font-bold mt-4">{clientProfile.name}</h2>
                             <div className="text-muted-foreground text-sm mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                                 <div className="flex items-center gap-1.5">
-                                    <Phone className="h-4 w-4" />
-                                    <span dir="ltr">{clientProfile.phone}</span>
+                                    <Phone className="h-4 w-4 text-primary" />
+                                    <span className="text-foreground" dir="ltr">{clientProfile.phone}</span>
                                 </div>
                                 <div className="hidden sm:block">•</div>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-primary">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>{currentGovernorateName}</span>
-                                            <Edit className="h-3 w-3" />
+                                        <div className="flex items-center gap-1.5 cursor-pointer hover:bg-accent p-2 rounded-lg transition-colors">
+                                            <MapPin className="h-4 w-4 text-primary" />
+                                            <span className="text-foreground font-medium">{currentGovernorateName}</span>
+                                            <Edit className="h-3 w-3 text-muted-foreground" />
                                         </div>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
