@@ -87,7 +87,7 @@ export default function StoreDetailsPage() {
                 const [morningEndHour] = todayWorkingHours.morning_to.split(':').map(Number);
     
                 if (currentHour >= morningStartHour && currentHour < morningEndHour) {
-                    setWorkingHoursText(`الفترة الحالية: ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to}`);
+                    setWorkingHoursText(`الدوام: ${todayWorkingHours.morning_from} - ${todayWorkingHours.morning_to}`);
                     return;
                 }
     
@@ -96,7 +96,7 @@ export default function StoreDetailsPage() {
                     const [eveningEndHour] = todayWorkingHours.evening_to.split(':').map(Number);
     
                     if (currentHour >= eveningStartHour && currentHour < eveningEndHour) {
-                        setWorkingHoursText(`الفترة الحالية: ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}`);
+                        setWorkingHoursText(`الدوام: ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}`);
                         return;
                     }
                 }
@@ -170,7 +170,7 @@ export default function StoreDetailsPage() {
 
       <main className="pb-4">
         {/* Store Info */}
-        <div className="p-4 bg-card border-b space-y-3">
+        <div className="p-4 bg-card border-b space-y-4">
             <div className="flex items-start gap-4">
                 <div className="relative w-20 h-20 flex-shrink-0">
                     <Image 
@@ -182,15 +182,13 @@ export default function StoreDetailsPage() {
                     />
                 </div>
                 <div className="flex-1 space-y-2">
-                    {/* Row 1 */}
                     <div className="flex justify-between items-center">
                         <h1 className="text-xl font-bold">{store.name}</h1>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2">
                             <Heart className="h-5 w-5 text-primary"/>
                         </Button>
                     </div>
-                    {/* Row 2 */}
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2 truncate">
                             <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                             <span className="truncate">{store.address}</span>
@@ -200,8 +198,7 @@ export default function StoreDetailsPage() {
                             <span>0 كم</span>
                         </div>
                     </div>
-                    {/* Row 3 */}
-                    <div className="flex justify-between items-center text-sm">
+                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2">
                             <Badge variant="secondary">{categoriesMap[store.categoryId] || ''}</Badge>
                             <div className="flex items-center gap-1">
@@ -215,18 +212,19 @@ export default function StoreDetailsPage() {
                     </div>
                 </div>
             </div>
-            {/* Row 4 */}
-            <div className="border-t pt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <Bike className="h-4 w-4 text-primary"/>
-                    <span>الطلب يستغرق : {store.deliveryTime}د</span>
+            <div className="w-full overflow-hidden border-t">
+                <div className="animate-marquee whitespace-nowrap py-2">
+                    <span className="mx-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                        <Bike className="h-4 w-4 text-primary"/>
+                        <span>الطلب يستغرق : {store.deliveryTime}د</span>
+                    </span>
+                    {todayWorkingHours?.isOpen && workingHoursText && (
+                        <span className="mx-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4 text-primary"/>
+                            <span>{workingHoursText}</span>
+                        </span>
+                    )}
                 </div>
-                {todayWorkingHours?.isOpen && workingHoursText && (
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary"/>
-                        <span>{workingHoursText}</span>
-                    </div>
-                )}
             </div>
         </div>
 
