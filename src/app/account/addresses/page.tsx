@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Plus, Map } from 'lucide-react';
+import { ArrowRight, Plus, Map, Bell, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddressCard } from '@/components/address-card';
 import { AddAddressDialog } from '@/components/add-address-dialog';
@@ -65,7 +65,7 @@ export default function AddressesPage() {
                  <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-sm border-b">
                     <div className="flex items-center justify-between h-16 px-2">
                         <Button variant="ghost" size="icon" asChild><Link href="/account"><ArrowRight className="h-5 w-5" /></Link></Button>
-                        <h1 className="font-bold text-lg">عناوين التوصيل</h1>
+                        <h1 className="font-bold text-lg">عنوان التوصيل</h1>
                         <div className="w-9 h-9" />
                     </div>
                 </header>
@@ -85,8 +85,15 @@ export default function AddressesPage() {
                     <Button variant="ghost" size="icon" asChild>
                         <Link href="/account"><ArrowRight className="h-5 w-5" /></Link>
                     </Button>
-                    <h1 className="font-bold text-lg">عناوين التوصيل</h1>
-                    <div className="w-9 h-9" /> {/* Placeholder for alignment */}
+                    <h1 className="font-bold text-lg">عنوان التوصيل</h1>
+                    <div className="flex items-center">
+                        <Button variant="ghost" size="icon" asChild>
+                            <Link href="/notifications"><Bell className="h-5 w-5" /></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" asChild>
+                            <Link href="/cart"><ShoppingCart className="h-5 w-5" /></Link>
+                        </Button>
+                    </div>
                 </div>
             </header>
 

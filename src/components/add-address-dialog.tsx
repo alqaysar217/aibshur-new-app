@@ -78,22 +78,27 @@ export function AddAddressDialog({ isOpen, onOpenChange, userId }: AddAddressDia
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent dir="rtl">
-                <DialogHeader className='text-right'>
+            <DialogContent dir="rtl" className="w-[95vw] max-w-lg flex flex-col max-h-[90vh] p-0 rounded-2xl [&>button]:right-auto [&>button]:left-4">
+                <DialogHeader className='text-right p-6 pb-4 border-b'>
                     <DialogTitle>إضافة عنوان جديد</DialogTitle>
                     <DialogDescription>أدخل تفاصيل العنوان الجديد للتوصيل.</DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <Button type="button" variant="outline" className="w-full" onClick={handleLocate}><LocateFixed className="ml-2" /> تحديد موقعي الآن</Button>
-                        <MapPicker initialPosition={{ lat: form.watch('latitude'), lng: form.watch('longitude') }} onPositionChange={({ lat, lng }) => { form.setValue('latitude', lat, {shouldValidate: true}); form.setValue('longitude', lng, {shouldValidate: true}); }}/>
-                        <FormField name="addressType" control={form.control} render={({ field }) => ( <FormItem> <FormLabel>تسمية العنوان</FormLabel> <Select onValueChange={field.onChange} value={field.value} dir="rtl"> <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="home"><Home className="inline-block ml-2"/>المنزل</SelectItem> <SelectItem value="work"><Briefcase className="inline-block ml-2"/>العمل</SelectItem> <SelectItem value="other"><Edit className="inline-block ml-2"/>تسمية مخصصة</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                        {addressType === 'other' && <FormField name="customName" control={form.control} render={({ field }) => (<FormItem><FormLabel>اسم العنوان المخصص</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />}
-                        <FormField name="city" control={form.control} render={({ field }) => (<FormItem><FormLabel>المدينة / الحي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField name="street" control={form.control} render={({ field }) => (<FormItem><FormLabel>تفاصيل الشارع / العمارة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <DialogFooter><DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose><Button type="submit">حفظ العنوان</Button></DialogFooter>
-                    </form>
-                </Form>
+                <div className='flex-1 overflow-y-auto px-6'>
+                    <Form {...form}>
+                        <form id="add-address-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+                            <Button type="button" variant="outline" className="w-full" onClick={handleLocate}><LocateFixed className="ml-2" /> تحديد موقعي الآن</Button>
+                            <MapPicker initialPosition={{ lat: form.watch('latitude'), lng: form.watch('longitude') }} onPositionChange={({ lat, lng }) => { form.setValue('latitude', lat, {shouldValidate: true}); form.setValue('longitude', lng, {shouldValidate: true}); }}/>
+                            <FormField name="addressType" control={form.control} render={({ field }) => ( <FormItem> <FormLabel>تسمية العنوان</FormLabel> <Select onValueChange={field.onChange} value={field.value} dir="rtl"> <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="home"><Home className="inline-block ml-2"/>المنزل</SelectItem> <SelectItem value="work"><Briefcase className="inline-block ml-2"/>العمل</SelectItem> <SelectItem value="other"><Edit className="inline-block ml-2"/>تسمية مخصصة</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                            {addressType === 'other' && <FormField name="customName" control={form.control} render={({ field }) => (<FormItem><FormLabel>اسم العنوان المخصص</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />}
+                            <FormField name="city" control={form.control} render={({ field }) => (<FormItem><FormLabel>المدينة / الحي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField name="street" control={form.control} render={({ field }) => (<FormItem><FormLabel>تفاصيل الشارع / العمارة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        </form>
+                    </Form>
+                </div>
+                <DialogFooter className="p-6 pt-4 border-t bg-background flex-row-reverse sm:justify-start">
+                    <Button type="submit" form="add-address-form">حفظ العنوان</Button>
+                    <DialogClose asChild><Button type="button" variant="outline">إلغاء</Button></DialogClose>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
