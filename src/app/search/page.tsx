@@ -1,46 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Bell, Heart, List, MapPin, Search as SearchIcon, ShoppingCart, Star, TrendingUp, Store, ShoppingBasket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StoreCard } from '@/components/store-card';
-import { ProductCard, type Product } from '@/components/product-card';
+import { ProductCard, type Product as ProductType } from '@/components/product-card';
 import { ProductDetailsSheet } from '@/components/product-details-sheet';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { BottomNav } from '@/components/bottom-nav';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// MOCK DATA (reusing from other pages)
-const storesData = [
-  { id: '1', name: 'مطعم البيت الصنعاني', imageId: 'store-yemeni-food', address: 'شارع حدة، صنعاء', distance: '1.2 كم', category: 'مطعم', rating: 4.5, status: 'مفتوح' },
-  { id: '2', name: 'سوبر ماركت العالمية', imageId: 'store-supermarket', address: 'شارع الزبيري، صنعاء', distance: '0.8 كم', category: 'ماركت', rating: 4.8, status: 'مفتوح' },
-  { id: '3', name: 'صيدلية الشفاء', imageId: 'store-pharmacy', address: 'الدائري، صنعاء', distance: '2.5 كم', category: 'صيدلية', rating: 4.2, status: 'مغلق' },
-  { id: '4', name: 'كافيتيريا مزاج', imageId: 'store-cafe', address: 'شارع الجزائر، صنعاء', distance: '1.5 كم', category: 'كافيه', rating: 4.9, status: 'مفتوح' },
-];
+// Types from Firestore
+type StoreType = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  address: string;
+  rating: number;
+  deliveryTime: string;
+  provinceId: string;
+  categoryId: string;
+  is_active: boolean;
+};
 
-const productsData: Omit<Product, 'imageUrl' | 'imageHint'>[] = [
-  { id: 'p1', name: 'مندي دجاج', description: 'قطعة دجاج طرية مع أرز مندي مبهر ومزين بالزبيب والصنوبر.', price: 2500, rating: 4.8, hasVariants: false, imageId: 'product-mandi-chicken' },
-  { id: 'p2', name: 'عقدة لحم', description: 'قطع لحم طازجة مطبوخة مع الخضروات والبهارات اليمنية الأصيلة.', price: 3000, rating: 4.9, hasVariants: true, imageId: 'product-ogda-meat' },
-  { id: 'p3', name: 'فحسة', description: 'طبق يمني تقليدي من اللحم المفروم والمرق، يقدم في وعاء حجري ساخن.', price: 2800, rating: 4.7, hasVariants: false, imageId: 'product-fahsa' },
-  { id: 'p4', name: 'بيبسي', description: 'مشروب غازي منعش.', price: 300, rating: 4.5, hasVariants: false, imageId: 'product-pepsi' },
-];
+type FirestoreProduct = {
+  id: string;
+  name: string;
+  description: string;
+  mainImageUrl?: string;
+  rating: number;
+  hasVariants: boolean;
+  basePrice?: number;
+  storeId: string;
+  categoryId: string;
+  is_active: boolean;
+};
 
-
-const stores = storesData.map(store => {
-    const imageData = PlaceHolderImages.find(p => p.id === store.imageId);
-    return {
-        ...store,
-        imageUrl: imageData?.imageUrl || '',
-        imageHint: imageData?.imageHint || '',
-    }
-});
-
-const products: Product[] = productsData.map(p => {
-    const imageData = PlaceHolderImages.find(img => img.id === (p as any).imageId);
-    return { ...p, imageUrl: imageData?.imageUrl || '', imageHint: imageData?.imageHint || '' };
-});
+type AppCategory = {
+  id: string;
+  name: string;
+  image: string;
+};
 
 const storeFilters = [
     { name: 'الكل', icon: List },
@@ -59,13 +63,68 @@ export default function SearchPage() {
   const [activeTab, setActiveTab] = useState('stores');
   const [activeStoreFilter, setActiveStoreFilter] = useState('الكل');
   const [activeProductFilter, setActiveProductFilter] = useState('الكل');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const handleShowDetails = (product: Product) => {
+  const firestore = useFirestore();
+
+  // Data Fetching
+  const storesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'stores'), where('is_active', '==', true)) : null, [firestore]);
+  const { data: stores, isLoading: isLoadingStores } = useCollection<StoreType>(storesQuery);
+
+  const productsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'products'), where('is_active', '==', true)) : null, [firestore]);
+  const { data: products, isLoading: isLoadingProducts } = useCollection<FirestoreProduct>(productsQuery);
+  
+  const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'app_categories') : null, [firestore]);
+  const { data: categories, isLoading: isLoadingCategories } = useCollection<AppCategory>(categoriesQuery);
+
+  const categoriesMap = useMemo(() => {
+    if (!categories) return {};
+    return categories.reduce((acc, cat) => ({ ...acc, [cat.id]: cat.name }), {} as Record<string, string>);
+  }, [categories]);
+  
+  const isLoading = isLoadingStores || isLoadingProducts || isLoadingCategories;
+
+  // Filtering Logic
+  const filteredStores = useMemo(() => {
+    if (!stores) return [];
+    return stores.filter(store =>
+      store.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [stores, searchTerm]);
+
+  const filteredProducts: ProductType[] = useMemo(() => {
+    if (!products) return [];
+    return (products)
+      .filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.basePrice || 0,
+        rating: p.rating,
+        hasVariants: p.hasVariants,
+        imageUrl: p.mainImageUrl || '/logo.png',
+        imageHint: p.name,
+      }));
+  }, [products, searchTerm]);
+
+
+  const handleShowDetails = (product: ProductType) => {
     setSelectedProduct(product);
     setIsSheetOpen(true);
   };
+
+  const renderStoreSkeletons = () => (
+    [...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)
+  );
+  
+  const renderProductSkeletons = () => (
+    [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-16">
@@ -95,6 +154,8 @@ export default function SearchPage() {
             type="search"
             placeholder="ابحث عن متجر أو منتج..."
             className="w-full pr-10 pl-4 h-12 text-base bg-card text-right"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
@@ -128,7 +189,26 @@ export default function SearchPage() {
             </div>
             {/* Store Results */}
             <div className="grid grid-cols-1 gap-4">
-              {stores.map(store => <StoreCard key={store.id} {...store} />)}
+              {isLoadingStores ? renderStoreSkeletons() : filteredStores.length > 0 ? (
+                filteredStores.map(store => (
+                    <StoreCard 
+                        key={store.id} 
+                        id={store.id}
+                        name={store.name}
+                        address={store.address}
+                        imageUrl={store.imageUrl || '/logo.png'}
+                        deliveryTime={store.deliveryTime}
+                        distance="0 كم" // Placeholder
+                        category={categoriesMap[store.categoryId] || 'غير محدد'}
+                        rating={store.rating}
+                        isActive={store.is_active}
+                    />
+                ))
+              ) : (
+                <div className="text-center py-16 text-muted-foreground">
+                    <p>لا توجد متاجر تطابق بحثك.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -149,7 +229,13 @@ export default function SearchPage() {
             </div>
             {/* Product Results */}
             <div className="grid grid-cols-1 gap-3">
-              {products.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />)}
+              {isLoadingProducts ? renderProductSkeletons() : filteredProducts.length > 0 ? (
+                filteredProducts.map(product => <ProductCard key={product.id} product={product} onShowDetails={handleShowDetails} />)
+              ) : (
+                <div className="text-center py-16 text-muted-foreground">
+                    <p>لا توجد منتجات تطابق بحثك.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
