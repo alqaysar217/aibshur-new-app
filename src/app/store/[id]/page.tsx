@@ -127,67 +127,70 @@ export default function StoreDetailsPage() {
 
       <main className="pb-4">
         {/* Store Info */}
-        <div className="p-4 bg-card border-b space-y-4">
-            <div className="flex items-center gap-4">
-                <Image 
-                    src={store.imageUrl} 
-                    alt={store.name} 
-                    width={80} 
-                    height={80}
-                    className="w-20 h-20 object-cover rounded-full border-4 border-background shadow-md"
-                />
-                <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                        <h1 className="text-2xl font-bold">{store.name}</h1>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive active:text-destructive active:scale-95 -mr-2">
-                            <Heart className="h-5 w-5"/>
+        <div className="p-4 bg-card border-b">
+            <div className="flex items-start gap-4">
+                <div className="relative w-20 h-20 flex-shrink-0">
+                    <Image 
+                        src={store.imageUrl} 
+                        alt={store.name} 
+                        width={80} 
+                        height={80}
+                        className="object-cover rounded-full border-4 border-background shadow-lg ring-2 ring-primary/30"
+                    />
+                </div>
+                <div className="flex-1 space-y-2">
+                    {/* Row 1: Store Name & Favorite Button */}
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-xl font-bold">{store.name}</h1>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 -mr-2">
+                            <Heart className="h-5 w-5 text-primary"/>
                         </Button>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        <span>{store.address}</span>
-                    </div>
-                     <div className="flex items-center gap-4 text-sm mt-2">
-                        <Badge variant="outline">{categoriesMap[store.categoryId] || ''}</Badge>
+                    {/* Row 2: Address & Distance */}
+                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <span>{store.address}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <MapPin className="h-4 w-4 text-primary" />
+                            <span>0 كم</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center pt-4 border-t">
-                <div>
-                    <div className="flex items-center justify-center gap-1 font-bold text-lg">
-                        <Star className="h-5 w-5 text-amber-400 fill-amber-400"/>
-                        <span>{store.rating.toFixed(1)}</span>
+            <div className="space-y-3 border-t pt-3 mt-3">
+                {/* Row 3: Category/Rating & Status */}
+                <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="font-semibold">{categoriesMap[store.categoryId] || ''}</Badge>
+                        <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-primary fill-primary" />
+                            <span className="font-bold text-foreground">{store.rating.toFixed(1)}</span>
+                        </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">التقييم</p>
+                    <Badge variant={todayWorkingHours?.isOpen ? 'default' : 'destructive'} className="px-3 py-1 text-xs font-bold">
+                        {todayWorkingHours?.isOpen ? 'مفتوح' : 'مغلق'}
+                    </Badge>
                 </div>
-                <div>
-                     <div className="flex items-center justify-center gap-1 font-bold text-lg">
-                        <Bike className="h-5 w-5 text-primary"/>
-                        <span>{store.deliveryTime}</span>
+
+                {/* Row 4: Delivery & Hours */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <Bike className="h-4 w-4 text-primary"/>
+                        <span>توصيل خلال {store.deliveryTime} دقيقة</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">دقيقة</p>
-                </div>
-                <div>
-                    <div className="font-bold text-lg">
-                        {todayWorkingHours?.isOpen ? (
-                            <span className="text-green-600">مفتوح</span>
-                        ) : (
-                            <span className="text-red-600">مغلق</span>
-                        )}
-                    </div>
-                     <p className="text-xs text-muted-foreground">الحالة الآن</p>
+                    {todayWorkingHours?.isOpen && (
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-primary"/>
+                            <span>
+                                اليوم: {todayWorkingHours.morning_from} - {todayWorkingHours.morning_to}{todayWorkingHours.evening_from ? `, ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}` : ''}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
-            
-            {todayWorkingHours?.isOpen && (
-              <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground pt-2 border-t">
-                <Clock className="h-4 w-4 text-primary" />
-                <span>
-                  أوقات العمل اليوم: {todayWorkingHours.morning_from} - {todayWorkingHours.morning_to}{todayWorkingHours.evening_from ? `, ${todayWorkingHours.evening_from} - ${todayWorkingHours.evening_to}` : ''}
-                </span>
-              </div>
-            )}
         </div>
 
         {/* Product Filters */}
