@@ -105,12 +105,12 @@ export default function HomePage() {
       
       <main className="p-4 space-y-6">
         {/* Store Categories */}
-        <div className="overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
+        <div className="overflow-x-auto pb-2 -mx-4 px-2 no-scrollbar">
             <div className="flex gap-3">
               {isLoadingCategories ? (
                 [...Array(6)].map((_, i) => (
                   <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 w-20">
-                    <Skeleton className="w-16 h-16 rounded-2xl" />
+                    <Skeleton className="w-20 h-20 rounded-2xl" />
                     <Skeleton className="w-12 h-4 rounded-md" />
                   </div>
                 ))
@@ -127,20 +127,20 @@ export default function HomePage() {
                       )}
                     >
                       <div className={cn(
-                          "w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm border transition-all duration-300 transform-gpu",
+                          "w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm border transition-all duration-300 transform-gpu",
                           isActive
-                              ? 'bg-primary/10 border-primary/30 shadow-[0_0_15px_-3px_hsl(var(--primary)/0.4)] scale-105'
+                              ? 'bg-primary/10 border-primary/30 shadow-lg shadow-primary/30 scale-105'
                               : 'bg-card border-border group-hover:border-primary/50 group-hover:bg-primary/5'
                       )}>
-                          <div className="w-14 h-14 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden relative flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
                               {cat.id === 'all' ? (
-                                  <List className={cn("h-7 w-7 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}/>
+                                  <List className={cn("h-8 w-8 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}/>
                               ) : (
                                   <Image
                                       src={cat.image}
                                       alt={cat.name}
-                                      width={56}
-                                      height={56}
+                                      width={64}
+                                      height={64}
                                       className="object-cover w-full h-full"
                                   />
                               )}
