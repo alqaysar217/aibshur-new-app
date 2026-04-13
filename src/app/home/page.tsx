@@ -1,7 +1,7 @@
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, query, where, doc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc, setDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HomeHeader } from '@/components/home-header';
 import { BottomNav } from '@/components/bottom-nav';
@@ -38,6 +38,7 @@ type Store = {
   provinceId: string;
   categoryId: string;
   is_active: boolean;
+  workingHours: any[];
 };
 
 type UserProfile = {
@@ -117,8 +118,8 @@ export default function HomePage() {
   const handleToggleFavoriteStore = async (storeId: string) => {
     if (!userProfileRef) return;
     const isCurrentlyFavorite = userProfile?.favoriteStoreIds?.includes(storeId);
-    await setDoc(userProfileRef, {
-      favoriteStoreIds: isCurrentlyFavorite
+    setDocumentNonBlocking(userProfileRef, {
+        favoriteStoreIds: isCurrentlyFavorite
         ? arrayRemove(storeId)
         : arrayUnion(storeId),
     }, { merge: true });
@@ -233,7 +234,7 @@ export default function HomePage() {
                 distance="0 كم"
                 category={categoriesMap[store.categoryId] || 'فئة غير معروفة'}
                 rating={store.rating}
-                isActive={store.is_active}
+                workingHours={store.workingHours}
                 isFavorite={isFavorite}
                 onToggleFavorite={handleToggleFavoriteStore}
               />

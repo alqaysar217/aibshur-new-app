@@ -25,6 +25,7 @@ type StoreType = {
   provinceId: string;
   categoryId: string;
   is_active: boolean;
+  workingHours: any[];
 };
 
 type FirestoreProduct = {
@@ -188,7 +189,7 @@ export default function FavoritesPage() {
                             distance="0 كم" // Placeholder
                             category={categoriesMap[store.categoryId] || 'غير محدد'}
                             rating={store.rating}
-                            isActive={store.is_active}
+                            workingHours={store.workingHours}
                             isFavorite={isFavorite}
                             onToggleFavorite={handleToggleFavoriteStore}
                           />

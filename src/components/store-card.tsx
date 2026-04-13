@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,13 +19,50 @@ export type StoreCardProps = {
   distance: string;
   category: string;
   rating: number;
-  isActive: boolean;
+  workingHours: any[];
   isFavorite: boolean;
   onToggleFavorite: (storeId: string) => void;
 };
 
-export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime, distance, category, rating, isActive, isFavorite, onToggleFavorite }: StoreCardProps) {
-  const isOpen = isActive;
+export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime, distance, category, rating, workingHours, isFavorite, onToggleFavorite }: StoreCardProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!workingHours) {
+      setIsOpen(false);
+      return;
+    }
+
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayName = dayNames[new Date().getDay()];
+    const todayWorkingHours = workingHours.find((wh: any) => wh.day === todayName);
+
+    if (!todayWorkingHours || !todayWorkingHours.isOpen) {
+      setIsOpen(false);
+      return;
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() + now.getMinutes() / 60;
+
+    const parseTime = (timeStr: string | undefined): number => {
+      if (!timeStr || !timeStr.includes(':')) return NaN;
+      const [hour, minute] = timeStr.split(':').map(Number);
+      return isNaN(hour) || isNaN(minute) ? NaN : hour + minute / 60;
+    };
+
+    const morningStart = parseTime(todayWorkingHours.morning_from);
+    const morningEnd = parseTime(todayWorkingHours.morning_to);
+    const eveningStart = parseTime(todayWorkingHours.evening_from);
+    const eveningEnd = parseTime(todayWorkingHours.evening_to);
+
+    const isCurrentlyInMorning = !isNaN(morningStart) && !isNaN(morningEnd) && currentTime >= morningStart && currentTime < morningEnd;
+    const isCurrentlyInEvening = !isNaN(eveningStart) && !isNaN(eveningEnd) && currentTime >= eveningStart && currentTime < eveningEnd;
+    
+    setIsOpen(isCurrentlyInMorning || isCurrentlyInEvening);
+
+  }, [workingHours]);
+
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -56,7 +94,7 @@ export function StoreCard({ id, name, imageUrl, imageHint, address, deliveryTime
                 className="h-8 w-8 flex-shrink-0 text-primary/60 hover:text-primary active:scale-95 -mt-1 -mr-2"
                 onClick={handleFavoriteClick}
               >
-                <Heart className={cn("h-5 w-5", isFavorite ? "text-red-500 fill-red-500" : "fill-transparent" )} />
+                <Heart className={cn("h-5 w-5 stroke-primary transition-colors", isFavorite ? "text-red-500 fill-red-500 stroke-red-500" : "fill-transparent" )} />
               </Button>
             </div>
             {/* Row 2 */}
