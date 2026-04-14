@@ -186,37 +186,35 @@ export default function AccountPage() {
                 </div>
 
                 {/* Wallet & Points Summary */}
-                <div className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3 p-4">
                     <Link href="#" className="block">
-                        <Card className="p-4 flex items-center justify-between shadow-sm bg-sidebar-active-gradient text-primary-foreground rounded-lg transition-transform active:scale-[0.98]">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-white/20 rounded-lg">
-                                    <Wallet className="h-7 w-7 text-white" />
+                        <Card className="p-3 shadow-sm rounded-lg transition-transform active:scale-[0.98] h-full">
+                            <div className="flex flex-col justify-between h-full space-y-2">
+                                <div className="flex items-start justify-between">
+                                    <p className="font-bold text-base text-foreground">رصيد المحفظة</p>
+                                    <div className="p-2 bg-sidebar-active-gradient rounded-lg shadow">
+                                        <Wallet className="h-5 w-5 text-primary-foreground" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-base font-semibold">الرصيد في المحفظة</p>
-                                    <p className="font-black text-2xl">
-                                        {isLoading ? <Skeleton className="h-8 w-32 bg-white/30" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
-                                    </p>
-                                </div>
+                                <p className="font-black text-2xl">
+                                    {isLoading ? <Skeleton className="h-8 w-24" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
+                                </p>
                             </div>
-                            <ChevronLeft className="h-6 w-6 opacity-70" />
                         </Card>
                     </Link>
                     <Link href="#" className="block">
-                        <Card className="p-4 flex items-center justify-between shadow-sm bg-amber-100 rounded-lg transition-transform active:scale-[0.98]">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-amber-500/20 rounded-lg">
-                                    <Star className="h-7 w-7 text-amber-600 fill-amber-500" />
+                        <Card className="p-3 shadow-sm rounded-lg transition-transform active:scale-[0.98] h-full">
+                            <div className="flex flex-col justify-between h-full space-y-2">
+                                <div className="flex items-start justify-between">
+                                    <p className="font-bold text-base text-foreground">نقاط الولاء</p>
+                                    <div className="p-2 bg-sidebar-active-gradient rounded-lg shadow">
+                                        <Star className="h-5 w-5 text-primary-foreground" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-base font-semibold text-amber-900">نقاط الولاء</p>
-                                    <p className="font-black text-2xl text-amber-900">
-                                        {isLoading ? <Skeleton className="h-8 w-24" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
-                                    </p>
-                                </div>
+                                <p className="font-black text-2xl">
+                                    {isLoading ? <Skeleton className="h-8 w-16" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
+                                </p>
                             </div>
-                            <ChevronLeft className="h-6 w-6 text-amber-800 opacity-70" />
                         </Card>
                     </Link>
                 </div>
