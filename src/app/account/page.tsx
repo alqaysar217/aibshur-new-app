@@ -35,7 +35,7 @@ const accountLinks = [
   { href: '/account/addresses', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: Home },
   { href: '/select-governorate?redirect=/account', label: 'تغيير المحافظة', description: 'تغيير موقعك لعرض متاجر مختلفة', icon: MapPin },
   { href: '/vip', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
-  { href: '#', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
+  { href: '/donations', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
   { href: '#', label: 'الخصوصية والامان', description: 'سياسة حماية بيانات', icon: Shield },
   { href: '/terms', label: 'شروط الاحكام', description: 'حقوقك والتزاماتك القانونية', icon: FileText },
   { href: '#', label: 'مركز المساعدة', description: 'الاسئلة الشائعة والدعم الفني', icon: HelpCircle },
