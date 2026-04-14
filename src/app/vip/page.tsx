@@ -24,7 +24,7 @@ type VipPackage = {
     type: "bronze" | "silver" | "gold";
     price: number;
     duration: "monthly" | "quarterly" | "yearly";
-    features: string[];
+    features: { value: string }[];
     imageUrl?: string;
     isActive: boolean;
 };
@@ -150,7 +150,7 @@ export default function VipPage() {
                                             {pkg.features.map((feature, i) => (
                                                 <li key={i} className="flex items-center gap-2">
                                                     <CheckCircle className="h-5 w-5 text-white/90" />
-                                                    <span className="font-medium">{feature}</span>
+                                                    <span className="font-medium">{feature.value}</span>
                                                 </li>
                                             ))}
                                         </ul>
