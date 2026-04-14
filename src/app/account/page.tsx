@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, HandHeart, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone, Home } from 'lucide-react';
+import { ArrowRight, Bell, ShoppingCart, MapPin, Gem, HandHeart, Shield, FileText, HelpCircle, LogOut, ChevronLeft, User, Phone, Home, Wallet, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { BottomNav } from '@/components/bottom-nav';
 import { Separator } from '@/components/ui/separator';
-import { useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useAuth, useUser, useDoc } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,14 @@ type Governorate = {
   province_name: string;
 };
 
+type UserWallet = {
+    pointsBalance: number;
+    cashBalance: number;
+};
+
 const accountLinks = [
+  { href: '#', label: 'محفظتي', description: 'إدارة رصيدك المالي والمعاملات', icon: Wallet },
+  { href: '#', label: 'نقاط الولاء', description: 'عرض واستبدال نقاط الولاء الخاصة بك', icon: Star },
   { href: '/account/addresses', label: 'عنوان التوصيل', description: 'ادارة موقع استلام طلباتك', icon: Home },
   { href: '/select-governorate?redirect=/account', label: 'تغيير المحافظة', description: 'تغيير موقعك لعرض متاجر مختلفة', icon: MapPin },
   { href: '/vip', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
@@ -45,6 +52,7 @@ export default function AccountPage() {
     const firestore = useFirestore();
     const auth = useAuth();
     const router = useRouter();
+    const { user, isUserLoading } = useUser();
     const [userPhone, setUserPhone] = useState<string | null>(null);
 
     // This effect now also handles listening for storage changes to update the page
@@ -76,6 +84,9 @@ export default function AccountPage() {
     // Fetching data
     const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
     const { data: governorates, isLoading: isLoadingGovernorates } = useCollection<Governorate>(useMemoFirebase(() => firestore ? collection(firestore, 'app_provinces') : null, [firestore]));
+    
+    const walletRef = useMemoFirebase(() => (firestore && user?.uid) ? doc(firestore, 'users', user.uid, 'wallet', 'main') : null, [firestore, user]);
+    const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(walletRef);
 
     // Get the specific client profile from the filtered query result
     const clientProfile = useMemo(() => clients?.[0], [clients]);
@@ -98,7 +109,7 @@ export default function AccountPage() {
     }, [clientProfile, governoratesMap, isLoadingClients, isLoadingGovernorates]);
 
 
-    const isLoading = isLoadingClients || isLoadingGovernorates;
+    const isLoading = isLoadingClients || isLoadingGovernorates || isUserLoading || isLoadingWallet;
 
     const handleLogout = async () => {
         try {
@@ -134,8 +145,32 @@ export default function AccountPage() {
             </header>
 
             <main className="flex flex-col">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-card">
+                    <Card className="p-4 flex items-center gap-3 shadow-sm">
+                        <div className="p-2.5 bg-primary/10 rounded-lg">
+                            <Wallet className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">الرصيد</p>
+                            <p className="font-bold text-lg">
+                                {isLoading ? <Skeleton className="h-6 w-24" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
+                            </p>
+                        </div>
+                    </Card>
+                    <Card className="p-4 flex items-center gap-3 shadow-sm">
+                        <div className="p-2.5 bg-amber-400/10 rounded-lg">
+                            <Star className="h-6 w-6 text-amber-500 fill-amber-400" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">النقاط</p>
+                            <p className="font-bold text-lg">
+                                {isLoading ? <Skeleton className="h-6 w-16" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
+                            </p>
+                        </div>
+                    </Card>
+                </div>
                 {/* Profile Info */}
-                <div className="flex flex-col items-center p-6 bg-card border-b">
+                <div className="flex flex-col items-center p-6 bg-card border-y">
                     <div className="relative">
                         <Image
                             src="/profile.png"
