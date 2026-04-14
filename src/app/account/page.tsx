@@ -145,30 +145,6 @@ export default function AccountPage() {
             </header>
 
             <main className="flex flex-col">
-                <div className="grid grid-cols-2 gap-4 p-4 bg-card">
-                    <Card className="p-4 flex items-center gap-3 shadow-sm">
-                        <div className="p-2.5 bg-primary/10 rounded-lg">
-                            <Wallet className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">الرصيد</p>
-                            <p className="font-bold text-lg">
-                                {isLoading ? <Skeleton className="h-6 w-24" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
-                            </p>
-                        </div>
-                    </Card>
-                    <Card className="p-4 flex items-center gap-3 shadow-sm">
-                        <div className="p-2.5 bg-amber-400/10 rounded-lg">
-                            <Star className="h-6 w-6 text-amber-500 fill-amber-400" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">النقاط</p>
-                            <p className="font-bold text-lg">
-                                {isLoading ? <Skeleton className="h-6 w-16" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
-                            </p>
-                        </div>
-                    </Card>
-                </div>
                 {/* Profile Info */}
                 <div className="flex flex-col items-center p-6 bg-card border-y">
                     <div className="relative">
@@ -208,6 +184,43 @@ export default function AccountPage() {
                          <p className="mt-4 text-muted-foreground">لم يتم العثور على بيانات المستخدم.</p>
                     )}
                 </div>
+
+                {/* Wallet & Points Summary */}
+                <div className="p-4 space-y-3">
+                    <Link href="#" className="block">
+                        <Card className="p-4 flex items-center justify-between shadow-sm bg-sidebar-active-gradient text-primary-foreground rounded-lg transition-transform active:scale-[0.98]">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white/20 rounded-lg">
+                                    <Wallet className="h-7 w-7 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-semibold">الرصيد في المحفظة</p>
+                                    <p className="font-black text-2xl">
+                                        {isLoading ? <Skeleton className="h-8 w-32 bg-white/30" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
+                                    </p>
+                                </div>
+                            </div>
+                            <ChevronLeft className="h-6 w-6 opacity-70" />
+                        </Card>
+                    </Link>
+                    <Link href="#" className="block">
+                        <Card className="p-4 flex items-center justify-between shadow-sm bg-amber-100 rounded-lg transition-transform active:scale-[0.98]">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-amber-500/20 rounded-lg">
+                                    <Star className="h-7 w-7 text-amber-600 fill-amber-500" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-semibold text-amber-900">نقاط الولاء</p>
+                                    <p className="font-black text-2xl text-amber-900">
+                                        {isLoading ? <Skeleton className="h-8 w-24" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
+                                    </p>
+                                </div>
+                            </div>
+                            <ChevronLeft className="h-6 w-6 text-amber-800 opacity-70" />
+                        </Card>
+                    </Link>
+                </div>
+
 
                 {/* Account Links */}
                 <div className="p-4 space-y-2">
