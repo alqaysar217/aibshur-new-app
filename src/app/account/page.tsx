@@ -188,8 +188,8 @@ export default function AccountPage() {
                 {/* Wallet & Points Summary */}
                 <div className="grid grid-cols-2 gap-3 p-4">
                     <Link href="#" className="block">
-                        <Card className="p-3 shadow-sm rounded-lg transition-transform active:scale-[0.98] h-full">
-                            <div className="flex flex-col justify-between h-full space-y-2">
+                        <Card className="p-3 shadow-sm rounded-lg transition-transform active:scale-[0.98]">
+                            <div className="flex flex-col justify-between space-y-2">
                                 <div className="flex items-start justify-between">
                                     <p className="font-bold text-base text-foreground">رصيد المحفظة</p>
                                     <div className="p-2 bg-sidebar-active-gradient rounded-lg shadow">
@@ -203,8 +203,8 @@ export default function AccountPage() {
                         </Card>
                     </Link>
                     <Link href="#" className="block">
-                        <Card className="p-3 shadow-sm rounded-lg transition-transform active:scale-[0.98] h-full">
-                            <div className="flex flex-col justify-between h-full space-y-2">
+                        <Card className="p-3 shadow-sm rounded-lg transition-transform active:scale-[0.98]">
+                            <div className="flex flex-col justify-between space-y-2">
                                 <div className="flex items-start justify-between">
                                     <p className="font-bold text-base text-foreground">نقاط الولاء</p>
                                     <div className="p-2 bg-sidebar-active-gradient rounded-lg shadow">
