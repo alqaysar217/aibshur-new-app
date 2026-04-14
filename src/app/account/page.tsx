@@ -196,9 +196,9 @@ export default function AccountPage() {
                                         <Wallet className="h-5 w-5 text-primary-foreground" />
                                     </div>
                                 </div>
-                                <p className="font-black text-2xl">
+                                <div className="font-black text-2xl">
                                     {isLoading ? <Skeleton className="h-8 w-24" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
-                                </p>
+                                </div>
                             </div>
                         </Card>
                     </Link>
@@ -211,9 +211,9 @@ export default function AccountPage() {
                                         <Star className="h-5 w-5 text-primary-foreground" />
                                     </div>
                                 </div>
-                                <p className="font-black text-2xl">
+                                <div className="font-black text-2xl">
                                     {isLoading ? <Skeleton className="h-8 w-16" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
-                                </p>
+                                </div>
                             </div>
                         </Card>
                     </Link>
