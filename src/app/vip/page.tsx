@@ -35,9 +35,9 @@ type AppProvince = {
 };
 
 const typeInfo = {
-    bronze: { label: 'برونزية', icon: Shield, gradient: 'bg-gradient-to-br from-orange-400 to-orange-600' },
-    silver: { label: 'فضية', icon: Shield, gradient: 'bg-gradient-to-br from-slate-400 to-gray-500' },
-    gold: { label: 'ذهبية', icon: Crown, gradient: 'bg-gradient-to-br from-amber-400 to-yellow-500' },
+    bronze: { label: 'برونزية', icon: Shield, gradient: 'bg-gradient-to-br from-orange-400 via-amber-600 to-orange-700' },
+    silver: { label: 'فضية', icon: Shield, gradient: 'bg-gradient-to-br from-slate-300 via-gray-400 to-slate-500' },
+    gold: { label: 'ذهبية', icon: Crown, gradient: 'bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500' },
 };
 
 const durationInfo = {
@@ -64,7 +64,7 @@ export default function VipPage() {
 
     const filteredPackages = useMemo(() => {
         if (!packages) return [];
-        return packages.filter(p => p.isActive && p.duration === billingPeriod);
+        return packages.filter(p => p.isActive && (p.duration === billingPeriod || (billingPeriod === 'yearly' && p.duration === 'quarterly')));
     }, [packages, billingPeriod]);
 
     const handleActivateClick = (pkg: VipPackage) => {
@@ -109,23 +109,32 @@ export default function VipPage() {
 
                 <main className="flex-1 p-4 space-y-6">
                     {/* Billing Toggle */}
-                    <div className="flex justify-center p-1 bg-muted rounded-lg">
+                    <div className="flex justify-center p-1 bg-sidebar-active-gradient rounded-lg shadow-inner">
                         <Button
                             onClick={() => setBillingPeriod('monthly')}
-                            variant={billingPeriod === 'monthly' ? 'default' : 'ghost'}
-                            className="flex-1 rounded-[6px]"
+                            className={cn(
+                                "flex-1 rounded-[6px] transition-all text-lg",
+                                billingPeriod === 'monthly'
+                                    ? 'bg-white text-primary shadow font-bold'
+                                    : 'bg-transparent text-white hover:bg-white/20 font-medium'
+                            )}
                         >
                             دفع شهري
                         </Button>
                         <Button
                             onClick={() => setBillingPeriod('yearly')}
-                            variant={billingPeriod === 'yearly' ? 'default' : 'ghost'}
-                            className="flex-1 relative rounded-[6px]"
+                            className={cn(
+                                "flex-1 relative rounded-[6px] transition-all text-lg",
+                                 billingPeriod === 'yearly'
+                                    ? 'bg-white text-primary shadow font-bold'
+                                    : 'bg-transparent text-white hover:bg-white/20 font-medium'
+                            )}
                         >
                             دفع سنوي
                              <Badge className="absolute -top-2 -right-2 text-xs bg-destructive">خصم 20%</Badge>
                         </Button>
                     </div>
+
 
                     {/* Packages */}
                     <div className="space-y-6">
