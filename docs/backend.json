@@ -1474,15 +1474,50 @@
       "type": "object",
       "description": "Represents a user's saved address.",
       "properties": {
-        "userId": { "type": "string" },
-        "addressType": { "type": "string", "enum": ["home", "work", "other"] },
-        "customName": { "type": "string" },
-        "city": { "type": "string" },
-        "street": { "type": "string" },
-        "latitude": { "type": "number" },
-        "longitude": { "type": "number" }
+        "userId": {
+          "type": "string"
+        },
+        "addressType": {
+          "type": "string",
+          "enum": [
+            "home",
+            "work",
+            "other"
+          ]
+        },
+        "customName": {
+          "type": "string",
+          "description": "A custom name for the address, used when addressType is 'other'."
+        },
+        "city": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "receiverName": {
+          "type": "string",
+          "description": "The name of the person to receive the delivery, used when addressType is 'other'."
+        },
+        "receiverPhone": {
+          "type": "string",
+          "description": "The phone number of the person to receive the delivery, used when addressType is 'other'."
+        }
       },
-      "required": ["userId", "addressType", "city", "street", "latitude", "longitude"]
+      "required": [
+        "userId",
+        "addressType",
+        "city",
+        "street",
+        "latitude",
+        "longitude"
+      ]
     }
   },
   "auth": {
