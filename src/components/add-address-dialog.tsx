@@ -97,16 +97,16 @@ export function AddAddressDialog({ isOpen, onOpenChange, userId }: AddAddressDia
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent dir="rtl" className="w-[95vw] max-w-lg flex flex-col max-h-[90vh] p-0 rounded-2xl [&>button]:right-auto [&>button]:left-4">
-                <DialogHeader className='text-left p-6 pb-4 border-b'>
-                    <DialogTitle>إضافة عنوان جديد</DialogTitle>
-                    <DialogDescription>أدخل تفاصيل العنوان الجديد للتوصيل.</DialogDescription>
+                <DialogHeader className="text-right p-6 pb-4 border-b">
+                    <DialogTitle className='text-right'>إضافة عنوان جديد</DialogTitle>
+                    <DialogDescription className='text-right'>أدخل تفاصيل العنوان الجديد للتوصيل.</DialogDescription>
                 </DialogHeader>
                 <div className='flex-1 overflow-y-auto px-6'>
                     <Form {...form}>
                         <form id="add-address-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
                             <Button type="button" variant="outline" className="w-full" onClick={handleLocate}><LocateFixed className="ml-2" /> تحديد موقعي الآن</Button>
                             <MapPicker initialPosition={{ lat: form.watch('latitude'), lng: form.watch('longitude') }} onPositionChange={({ lat, lng }) => { form.setValue('latitude', lat, {shouldValidate: true}); form.setValue('longitude', lng, {shouldValidate: true}); }}/>
-                            <FormField name="addressType" control={form.control} render={({ field }) => ( <FormItem> <FormLabel className="flex items-center gap-2"><Tag className="text-primary"/>تسمية العنوان</FormLabel> <Select onValueChange={field.onChange} value={field.value} dir="rtl"> <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="home"><Home className="inline-block ml-2"/>المنزل</SelectItem> <SelectItem value="work"><Briefcase className="inline-block ml-2"/>العمل</SelectItem> <SelectItem value="other"><Edit className="inline-block ml-2"/>تسمية مخصصة</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                            <FormField name="addressType" control={form.control} render={({ field }) => ( <FormItem> <FormLabel className="flex items-center gap-2"><Tag className="text-primary"/>تسمية العنوان</FormLabel> <Select onValueChange={field.onChange} value={field.value} dir="rtl"> <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="home"><Home className="inline-block ml-2 text-primary"/>المنزل</SelectItem> <SelectItem value="work"><Briefcase className="inline-block ml-2 text-primary"/>العمل</SelectItem> <SelectItem value="other"><Edit className="inline-block ml-2 text-primary"/>تسمية مخصصة</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
                             
                             {addressType === 'other' && (
                                 <div className="space-y-4 border rounded-lg p-4 bg-muted/50">
