@@ -37,7 +37,7 @@ const packageSchema = z.object({
   type: z.enum(["bronze", "silver", "gold"], { required_error: "نوع الباقة مطلوب" }),
   price: z.coerce.number().min(0, "السعر لا يمكن أن يكون سالبًا"),
   duration: z.enum(["monthly", "quarterly", "yearly"], { required_error: "يجب تحديد مدة الباقة" }),
-  features: z.array(featureSchema).min(1, "يجب إضافة ميزة واحدة على الأقل"),
+  features: z.array(z.string()).min(1, "يجب إضافة ميزة واحدة على الأقل"),
   imageUrl: z.string().optional(),
   isActive: z.boolean().default(true),
 });
@@ -112,7 +112,7 @@ export default function VipPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const packageForm = useForm<z.infer<typeof packageSchema>>({ resolver: zodResolver(packageSchema), defaultValues: { name: '', type: 'bronze', price: 0, duration: 'monthly', features: [{ value: '' }], imageUrl: '', isActive: true } });
+    const packageForm = useForm<z.infer<typeof packageSchema>>({ resolver: zodResolver(packageSchema), defaultValues: { name: '', type: 'bronze', price: 0, duration: 'monthly', features: [''], imageUrl: '', isActive: true } });
     const { fields, append, remove } = useFieldArray({ control: packageForm.control, name: "features" });
     const subscriptionForm = useForm<z.infer<typeof subscriptionSchema>>({ 
         resolver: zodResolver(subscriptionSchema), 
@@ -160,7 +160,7 @@ export default function VipPage() {
     // Handlers
     const handleModalOpen = (type: ModalType, data: VipPackage | VipSubscription | null = null) => {
         if (type === 'addPackage') {
-            packageForm.reset({ name: '', type: 'bronze', price: 0, duration: 'monthly', features: [{ value: '' }], imageUrl: '', isActive: true });
+            packageForm.reset({ name: '', type: 'bronze', price: 0, duration: 'monthly', features: [''], imageUrl: '', isActive: true });
         } else if (type === 'editPackage' && data) {
             packageForm.reset({ ...(data as VipPackage), isActive: (data as VipPackage).isActive ?? true });
         } else if (type === 'editSub' && data) {
@@ -316,10 +316,22 @@ export default function VipPage() {
                                 <Card key={pkg.id} className={cn("flex flex-col shadow-sm", !pkg.isActive && "bg-muted/50")}>
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
-                                            <Badge className={cn("text-white gap-1.5", typeInfo[pkg.type].color)}><PkgIcon className="h-3.5 w-3.5"/>{typeInfo[pkg.type].label}</Badge>
+                                            <div className="flex items-center gap-3">
+                                                {pkg.imageUrl && (
+                                                    <Image
+                                                        src={pkg.imageUrl}
+                                                        alt={pkg.name}
+                                                        width={40}
+                                                        height={40}
+                                                        className="rounded-full object-cover border-2 border-primary/20"
+                                                    />
+                                                )}
+                                                <CardTitle className="pt-1">
+                                                    {pkg.name}
+                                                </CardTitle>
+                                            </div>
                                             <Badge variant={pkg.isActive ? 'default' : 'secondary'}>{pkg.isActive ? 'فعالة' : 'معطلة'}</Badge>
                                         </div>
-                                        <CardTitle className="pt-2">{pkg.name}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex-grow space-y-4">
                                         <div className="text-3xl font-bold">{pkg.price.toLocaleString('en-US')} <span className="text-sm text-muted-foreground">ر.ي / {durationInfo[pkg.duration].replace('كل ','')}</span></div>
@@ -327,7 +339,7 @@ export default function VipPage() {
                                             {pkg.features.map((feat, i) => (
                                                 <li key={i} className="flex items-center gap-2">
                                                     <CheckCircle className="h-4 w-4 text-primary"/>
-                                                    <span>{feat.value}</span>
+                                                    <span>{feat}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -539,7 +551,7 @@ export default function VipPage() {
                             <div className="space-y-2 pt-2">
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="flex gap-2 items-center">
-                                        <FormField control={packageForm.control} name={`features.${index}.value`} render={({ field: itemField }) => (
+                                        <FormField control={packageForm.control} name={`features.${index}`} render={({ field: itemField }) => (
                                             <FormItem className="flex-grow">
                                                 <FormControl>
                                                     <div className="relative">
@@ -553,7 +565,7 @@ export default function VipPage() {
                                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:text-destructive shrink-0"><Trash/></Button>
                                     </div>
                                 ))}
-                                <Button type="button" variant="outline" className="w-full" onClick={() => append({ value: '' })}>إضافة ميزة</Button>
+                                <Button type="button" variant="outline" className="w-full" onClick={() => append('')}>إضافة ميزة</Button>
                                 <FormMessage>{packageForm.formState.errors.features?.message || packageForm.formState.errors.features?.root?.message}</FormMessage>
                             </div>
                         </div>

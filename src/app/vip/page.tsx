@@ -24,7 +24,7 @@ type VipPackage = {
     type: "bronze" | "silver" | "gold";
     price: number;
     duration: "monthly" | "quarterly" | "yearly";
-    features: { value: string }[];
+    features: string[];
     imageUrl?: string;
     isActive: boolean;
 };
@@ -145,11 +145,21 @@ export default function VipPage() {
                             return (
                                 <Card key={pkg.id} className={cn("overflow-hidden text-white shadow-lg border-none rounded-[10px]", gradient)}>
                                     <CardHeader>
-                                        <div className="flex justify-between items-center">
-                                            <CardTitle className="flex items-center gap-2 text-2xl">
-                                                <PkgIcon className="h-6 w-6" />
-                                                {pkg.name}
-                                            </CardTitle>
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                {pkg.imageUrl && (
+                                                    <Image
+                                                        src={pkg.imageUrl}
+                                                        alt={pkg.name}
+                                                        width={40}
+                                                        height={40}
+                                                        className="rounded-full object-cover border-2 border-white/50"
+                                                    />
+                                                )}
+                                                <CardTitle className="text-2xl pt-1">
+                                                    {pkg.name}
+                                                </CardTitle>
+                                            </div>
                                             <Badge variant="secondary" className="rounded-[6px]">{typeInfo[pkg.type].label}</Badge>
                                         </div>
                                     </CardHeader>
@@ -159,7 +169,7 @@ export default function VipPage() {
                                             {pkg.features.map((feature, i) => (
                                                 <li key={i} className="flex items-center gap-2">
                                                     <CheckCircle className="h-5 w-5 text-white/90" />
-                                                    <span className="font-medium">{feature.value}</span>
+                                                    <span className="font-medium">{feature}</span>
                                                 </li>
                                             ))}
                                         </ul>
