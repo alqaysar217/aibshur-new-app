@@ -7,7 +7,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -145,7 +145,7 @@ export default function VipPage() {
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <div className="text-4xl font-bold">{pkg.price.toLocaleString('en-US')} <span className="text-lg font-normal text-white/80">ر.ي</span></div>
+                                        <div className="text-4xl font-bold">{pkg.price.toLocaleString('en-US')} <span className="text-lg font-normal text-white/80">ر.ي / {durationInfo[pkg.duration].replace('كل ','')}</span></div>
                                         <ul className="space-y-2">
                                             {pkg.features.map((feature, i) => (
                                                 <li key={i} className="flex items-center gap-2">
