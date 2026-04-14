@@ -30,12 +30,12 @@ const addressSchema = z.object({
         if (!data.customName?.trim()) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["customName"], message: "اسم العنوان مطلوب" });
         }
-        if (!data.receiverName?.trim()) {
+        if (data.receiverName && !data.receiverName.trim()) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["receiverName"], message: "اسم المستلم مطلوب" });
         }
-        if (!data.receiverPhone?.trim()) {
+        if (data.receiverPhone && !data.receiverPhone.trim()) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["receiverPhone"], message: "رقم هاتف المستلم مطلوب" });
-        } else if (!/^7[0-9]{8}$/.test(data.receiverPhone.trim())) {
+        } else if (data.receiverPhone && !/^7[0-9]{8}$/.test(data.receiverPhone.trim())) {
              ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["receiverPhone"], message: "صيغة الرقم غير صحيحة (مثال: 771234567)" });
         }
     }
@@ -97,7 +97,7 @@ export function AddAddressDialog({ isOpen, onOpenChange, userId }: AddAddressDia
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent dir="rtl" className="w-[95vw] max-w-lg flex flex-col max-h-[90vh] p-0 rounded-2xl [&>button]:right-auto [&>button]:left-4">
-                <DialogHeader className='text-right p-6 pb-4 border-b'>
+                <DialogHeader className='text-left p-6 pb-4 border-b'>
                     <DialogTitle>إضافة عنوان جديد</DialogTitle>
                     <DialogDescription>أدخل تفاصيل العنوان الجديد للتوصيل.</DialogDescription>
                 </DialogHeader>
