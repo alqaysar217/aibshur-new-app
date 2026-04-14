@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
@@ -37,7 +38,7 @@ const packageSchema = z.object({
   type: z.enum(["bronze", "silver", "gold"], { required_error: "نوع الباقة مطلوب" }),
   price: z.coerce.number().min(0, "السعر لا يمكن أن يكون سالبًا"),
   duration: z.enum(["monthly", "quarterly", "yearly"], { required_error: "يجب تحديد مدة الباقة" }),
-  features: z.array(z.string()).min(1, "يجب إضافة ميزة واحدة على الأقل"),
+  features: z.array(featureSchema).min(1, "يجب إضافة ميزة واحدة على الأقل"),
   imageUrl: z.string().optional(),
   isActive: z.boolean().default(true),
 });
@@ -112,7 +113,7 @@ export default function VipPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const packageForm = useForm<z.infer<typeof packageSchema>>({ resolver: zodResolver(packageSchema), defaultValues: { name: '', type: 'bronze', price: 0, duration: 'monthly', features: [''], imageUrl: '', isActive: true } });
+    const packageForm = useForm<z.infer<typeof packageSchema>>({ resolver: zodResolver(packageSchema), defaultValues: { name: '', type: 'bronze', price: 0, duration: 'monthly', features: [{value: ''}], imageUrl: '', isActive: true } });
     const { fields, append, remove } = useFieldArray({ control: packageForm.control, name: "features" });
     const subscriptionForm = useForm<z.infer<typeof subscriptionSchema>>({ 
         resolver: zodResolver(subscriptionSchema), 
@@ -160,7 +161,7 @@ export default function VipPage() {
     // Handlers
     const handleModalOpen = (type: ModalType, data: VipPackage | VipSubscription | null = null) => {
         if (type === 'addPackage') {
-            packageForm.reset({ name: '', type: 'bronze', price: 0, duration: 'monthly', features: [''], imageUrl: '', isActive: true });
+            packageForm.reset({ name: '', type: 'bronze', price: 0, duration: 'monthly', features: [{value: ''}], imageUrl: '', isActive: true });
         } else if (type === 'editPackage' && data) {
             packageForm.reset({ ...(data as VipPackage), isActive: (data as VipPackage).isActive ?? true });
         } else if (type === 'editSub' && data) {
@@ -339,7 +340,7 @@ export default function VipPage() {
                                             {pkg.features.map((feat, i) => (
                                                 <li key={i} className="flex items-center gap-2">
                                                     <CheckCircle className="h-4 w-4 text-primary"/>
-                                                    <span>{feat}</span>
+                                                    <span>{feat.value}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -551,7 +552,7 @@ export default function VipPage() {
                             <div className="space-y-2 pt-2">
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="flex gap-2 items-center">
-                                        <FormField control={packageForm.control} name={`features.${index}`} render={({ field: itemField }) => (
+                                        <FormField control={packageForm.control} name={`features.${index}.value`} render={({ field: itemField }) => (
                                             <FormItem className="flex-grow">
                                                 <FormControl>
                                                     <div className="relative">
@@ -565,8 +566,8 @@ export default function VipPage() {
                                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:text-destructive shrink-0"><Trash/></Button>
                                     </div>
                                 ))}
-                                <Button type="button" variant="outline" className="w-full" onClick={() => append('')}>إضافة ميزة</Button>
-                                <FormMessage>{packageForm.formState.errors.features?.message || packageForm.formState.errors.features?.root?.message}</FormMessage>
+                                <Button type="button" variant="outline" className="w-full" onClick={() => append({ value: '' })}>إضافة ميزة</Button>
+                                <FormMessage>{packageForm.formState.errors.features?.message || (packageForm.formState.errors.features as any)?.root?.message}</FormMessage>
                             </div>
                         </div>
                         
@@ -730,3 +731,5 @@ export default function VipPage() {
         </>
     );
 }
+
+    
