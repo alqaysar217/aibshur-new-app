@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import SupportLoading from './loading';
 import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, Timestamp, arrayUnion } from 'firebase/firestore';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 type TicketStatus = 'open' | 'in_progress' | 'closed';
