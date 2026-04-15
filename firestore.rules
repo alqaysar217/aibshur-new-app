@@ -21,10 +21,10 @@ service cloud.firestore {
     }
 
     // --- Admin-Managed Collections ---
-    match /clients/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /drivers_v2/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /storeOwners/{docId} { allow read: if true; allow write: if isAdmin(); }
-    match /admins/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /clients/{docId} { allow read, write: if isAdmin(); }
+    match /drivers_v2/{docId} { allow read, write: if isAdmin(); }
+    match /storeOwners/{docId} { allow read, write: if isAdmin(); }
+    match /admins/{docId} { allow read, write: if isAdmin(); }
     match /bankAccounts/{docId} { 
       allow get, list: if isSignedIn();
       allow write: if isAdmin();
@@ -38,6 +38,7 @@ service cloud.firestore {
     match /loyaltyRules/{docId} { allow read, write: if isAdmin(); }
     match /point_requests/{requestId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
+    match /walletTransactions/{transactionId} { allow read, write: if isAdmin(); }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
     match /notificationTemplates/{docId} { allow read, write: if isAdmin(); }
@@ -107,3 +108,5 @@ service cloud.firestore {
     }
   }
 }
+
+  

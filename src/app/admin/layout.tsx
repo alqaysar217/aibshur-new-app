@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, Banknote, Map, LayoutGrid, Store, ShoppingBasket, ClipboardList, 
   Calendar, UsersRound, Bike, Diamond, Star, Megaphone, TicketPercent, HandHeart, 
-  BarChart3, TrendingUp, Settings, LifeBuoy, LogOut, Bell, PanelRightClose, PanelRightOpen, Loader2
+  BarChart3, TrendingUp, Settings, LifeBuoy, LogOut, Bell, PanelRightClose, PanelRightOpen, Loader2, Wallet
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ const sidebarNavItems = [
     { label: 'إدارة أنواع التبرعات', href: '/admin/donation-types', icon: HandHeart },
     { label: 'باقات VIP', href: '/admin/vip', icon: Diamond },
     { label: 'نقاط الولاء', href: '/admin/loyalty', icon: Star },
+    { label: 'إدارة المحافظ', href: '/admin/wallets', icon: Wallet },
     { label: 'إدارة المحافظات', href: '/admin/governorates', icon: Map },
     { label: 'الحسابات البنكية', href: '/admin/bank-accounts', icon: Banknote },
     { label: 'أداء الموظفين', href: '/admin/performance', icon: TrendingUp },
@@ -206,3 +207,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
     );
 }
+
+  

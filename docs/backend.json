@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Client": {
@@ -1110,6 +1109,29 @@
         "cashBalance"
       ]
     },
+    "WalletTransaction": {
+      "title": "Wallet Transaction",
+      "type": "object",
+      "description": "Represents a single transaction in a user's cash wallet.",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["deposit", "withdrawal", "payment", "refund", "adjustment"] },
+        "amount": { "type": "number", "description": "Positive for deposits, negative for withdrawals/payments." },
+        "newBalance": { "type": "number" },
+        "notes": { "type": "string" },
+        "relatedOrderId": { "type": "string" },
+        "bankDetails": {
+          "type": "object",
+          "properties": {
+            "bankName": { "type": "string" },
+            "referenceNumber": { "type": "string" },
+            "receiptImageUrl": { "type": "string", "format": "uri" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "amount", "newBalance", "createdAt"]
+    },
     "PointRequest": {
       "title": "Point Request",
       "type": "object",
@@ -1757,7 +1779,7 @@
           "schema": {
             "$ref": "#/backend/entities/UserWallet"
           },
-          "description": "Stores a user's loyalty points and cash balance. Write access is restricted to server-side functions triggered by user actions or admin intervention."
+          "description": "Stores a user's loyalty points and cash balance. Write access is restricted to server-side functions or admin intervention."
         }
       },
       {
@@ -1778,6 +1800,14 @@
             "$ref": "#/backend/entities/LoyaltyLog"
           },
           "description": "Audit log for all point transactions. Readable by the relevant user, admin-managed."
+        }
+      },
+       {
+        "path": "/walletTransactions/{transactionId}",
+        "definition": {
+          "entityName": "WalletTransaction",
+          "schema": { "$ref": "#/backend/entities/WalletTransaction" },
+          "description": "Log of all user wallet cash transactions. Admin managed."
         }
       },
       {
@@ -1854,3 +1884,5 @@
     "reasoning": "The Firestore structure is designed following the core principles of Authorization Independence, Structural Segregation, and Access Modeling to ensure security, scalability, and debuggability. All entities are placed in top-level collections or user-specific subcollections to simplify security rules and avoid complex hierarchical dependencies.\n\n**Authorization Independence:**\n*   For global, publicly accessible data such as `Governorate`, `StoreCategory`, `AdBanner`, `Store`, `Product`, `DonationType`, and `DonationCampaign`, documents are stored in top-level collections. Their authorization rules will be simple, typically `allow read: if true;` for public access, and `allow write: if request.auth.uid in get(/roles_admin/$(request.auth.uid));` for administrative actions. This completely avoids the need for `get()` calls within rules for authorization checks on these documents themselves.\n*   For private user-owned data like `UserProfile`, the document is placed in a user-specific path: `/users/{userId}/profile`. The `id` field within the `UserProfile` document will explicitly match the `{userId}` wildcard in the path, ensuring that `request.auth.uid == userId` is the sole and sufficient authorization check. This also removes any need for `get()` calls to other documents for `UserProfile` authorization, thereby enabling atomic operations.\n*   For sensitive admin-only data like `BankAccount`, `AppProvince`, `AppCategory`, `StoreFilter`, `Donation`, `Coupon`, documents are stored in top-level collections. Access will be strictly controlled via security rules, likely based on a custom claim or a separate `admins` collection, ensuring only authorized administrators can read or write this data.\n\n**Querying and Authorization Postures (QAPs - Rules are not Filters):**\n*   `Governorates`, `StoreCategories`, `AdBanners`, `Stores`, `Products`, `DonationTypes`, and `DonationCampaigns` are designed as globally readable collections. This means `list` operations on these collections can be broadly allowed (e.g., `allow list: if true;` or `allow list: if request.auth != null;`). The application's UI filtering requirements will be handled client-side using appropriate queries and filtering logic, rather than relying on Firestore security rules to filter results. This adheres to the QAP principle, preventing rules from acting as data filters, which would be inefficient and difficult to debug.\n*   For `UserProfile`, `list` operations are not applicable given its single-document-per-user structure within a subcollection. Access is restricted to `get` operations for the authenticated user, which does not violate QAP.\n*   For `BankAccount`, `AppProvince`, `AppCategory`, `StoreFilter`, `Donation`, `Coupon`, `VipPackage`, and `VipSubscription`, `list` operations will be restricted to admin users, which is a valid QAP as the rule itself doesn't filter based on the *content* of the documents, but rather on the *identity* of the user making the request.\n\nThis design prioritizes explicit ownership, minimal rule complexity, and efficient data retrieval, aligning with the mandated design principles."
   }
 }
+
+  
