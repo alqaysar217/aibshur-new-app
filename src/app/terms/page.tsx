@@ -139,28 +139,28 @@ export default function TermsPage() {
                         <h2 className="text-3xl font-black mt-4">اتفاقية الاستخدام</h2>
                     </div>
 
-                    {/* Main Content Card */}
-                    <Card className="rounded-[30px] p-2">
-                        <CardContent className="p-4 space-y-6">
-                            {termsSections.map((section, index) => {
-                                const Icon = section.icon;
-                                return (
-                                    <div key={index} className="flex items-start gap-4">
-                                        <div className="p-2 bg-muted rounded-[10px] mt-1">
-                                            <Icon className="h-5 w-5 text-primary" />
+                    {/* Main Content */}
+                    <div className="space-y-4">
+                        {termsSections.map((section, index) => {
+                            const Icon = section.icon;
+                            return (
+                                <Card key={index} className="rounded-[30px] overflow-hidden shadow-sm border-gray-200/80">
+                                    <div className="flex items-center gap-4 p-4 bg-muted/40">
+                                        <div className="p-3 rounded-[10px] bg-sidebar-active-gradient text-primary-foreground flex-shrink-0 shadow-md">
+                                            <Icon className="h-6 w-6" />
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-black text-lg">{section.title}</h3>
-                                            <p className="font-bold text-gray-700 mt-1 leading-relaxed">{section.content}</p>
-                                        </div>
+                                        <h3 className="font-black text-lg flex-1">{section.title}</h3>
                                     </div>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
+                                    <CardContent className="p-4 text-left">
+                                        <p className="font-bold text-gray-700 leading-relaxed">{section.content}</p>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
 
                      {/* Footer Box */}
-                    <div className="mt-8 p-6 bg-primary rounded-[30px] text-center text-primary-foreground">
+                    <div className="mt-8 p-6 bg-sidebar-active-gradient rounded-[30px] text-center text-primary-foreground">
                         <p className="font-bold">نحن في "أبشر" نثق في أن استخدامك سيكون مبنياً على الاحترام والمسؤولية المتبادلة.</p>
                     </div>
 
