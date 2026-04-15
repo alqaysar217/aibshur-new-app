@@ -233,7 +233,28 @@ export default function WalletsPage() {
                         <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                           <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                          <FormField name="bankName" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>البنك</FormLabel> <Select onValueChange={field.onChange} value={field.value} dir="rtl"> <FormControl> <SelectTrigger className="h-10 rounded-[10px]"> <SelectValue placeholder="اختر البنك..." /> </SelectTrigger> </FormControl> <SelectContent> <SelectItem value="الكريمي">الكريمي</SelectItem> <SelectItem value="العمقي">العمقي</SelectItem> <SelectItem value="بن دول">بن دول</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                          <FormField
+                                name="bankName"
+                                control={depositForm.control}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>البنك</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
+                                            <FormControl>
+                                                <SelectTrigger className="h-10 rounded-[10px]">
+                                                    <SelectValue placeholder="اختر البنك..." />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="الكريمي">الكريمي</SelectItem>
+                                                <SelectItem value="العمقي">العمقي</SelectItem>
+                                                <SelectItem value="بن دول">بن دول</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                           <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
                           <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <FormMessage /> </FormItem> )} />
                         </CardContent>
@@ -314,5 +335,3 @@ export default function WalletsPage() {
       </div>
     );
 }
-
-  
