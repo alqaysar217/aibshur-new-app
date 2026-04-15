@@ -1,13 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 import { ArrowRight, Headset, Search, ShoppingCart, CreditCard, User, Gem, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BottomNav } from '@/components/bottom-nav';
+import { Skeleton } from '@/components/ui/skeleton';
+import HelpCenterLoading from './loading';
+
+
+type Faq = {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  isActive: boolean;
+};
 
 const helpCategories = [
   { name: 'الطلبات', icon: ShoppingCart, color: 'bg-blue-100', iconColor: 'text-blue-600' },
@@ -16,37 +29,29 @@ const helpCategories = [
   { name: 'العضوية', icon: Gem, color: 'bg-purple-100', iconColor: 'text-purple-600' },
 ];
 
-const faqs = [
-  {
-    id: 'faq1',
-    question: 'كيف يمكنني تتبع حالة طلبي؟',
-    answer: 'يمكنك تتبع طلبك مباشرة من قسم "طلباتي" في التطبيق. ستظهر لك خريطة توضح موقع المندوب وحالة الطلب الحالية، سواء كان قيد التحضير أو في الطريق إليك.',
-  },
-  {
-    id: 'faq2',
-    question: 'ما هي طرق الدفع التي تقبلونها؟',
-    answer: 'نقبل الدفع نقدًا عند الاستلام، والدفع عبر المحفظة الإلكترونية داخل التطبيق، بالإضافة إلى التحويلات البنكية المباشرة لحساباتنا المعتمدة.',
-  },
-  {
-    id: 'faq3',
-    question: 'هل يمكنني إلغاء الطلب بعد تأكيده؟',
-    answer: 'نعم، يمكنك إلغاء الطلب طالما لم يتم إرساله مع المندوب. لإلغاء الطلب، اذهب إلى صفحة "تفاصيل الطلب" واضغط على زر "إلغاء الطلب".',
-  },
-  {
-    id: 'faq4',
-    question: 'كيف أستفيد من نقاط الولاء؟',
-    answer: 'تحصل على نقاط ولاء مع كل طلب تقوم به. يمكنك استبدال هذه النقاط برصيد في محفظتك أو الحصول على خصومات خاصة على طلباتك القادمة من قسم "نقاط الولاء" في حسابك.',
-  },
-];
-
 export default function HelpCenterPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const firestore = useFirestore();
 
-  const filteredFaqs = faqs.filter(
-    (faq) =>
-      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const faqsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'faqs'), where('isActive', '==', true));
+  }, [firestore]);
+
+  const { data: faqs, isLoading } = useCollection<Faq>(faqsQuery);
+
+  const filteredFaqs = useMemo(() => {
+    if (!faqs) return [];
+    return faqs.filter(
+      (faq) =>
+        faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [faqs, searchTerm]);
+
+  if (isLoading && !faqs) {
+    return <HelpCenterLoading />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 pb-16">
@@ -97,7 +102,13 @@ export default function HelpCenterPage() {
         {/* FAQs */}
         <div>
           <h2 className="text-xl font-black text-right mb-4">الأسئلة الشائعة</h2>
-          {filteredFaqs.length > 0 ? (
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          ) : filteredFaqs.length > 0 ? (
             <Accordion type="single" collapsible className="w-full bg-card rounded-[10px] p-2 shadow-sm">
               {filteredFaqs.map((faq) => (
                 <AccordionItem key={faq.id} value={faq.id} className="border-b-2 border-gray-50/50 last:border-b-0">
@@ -120,14 +131,14 @@ export default function HelpCenterPage() {
         </div>
 
         {/* Emergency Contact */}
-        <Card className="bg-gray-900 text-white" style={{ borderRadius: '25px' }}>
+        <Card className="bg-sidebar-active-gradient text-primary-foreground" style={{ borderRadius: '25px' }}>
           <CardContent className="p-6 text-center space-y-4">
             <h3 className="text-xl font-bold">هل تحتاج إلى مساعدة فورية؟</h3>
-            <p className="text-gray-300">تواصل مع فريق الدعم مباشرة عبر واتساب أو الاتصال.</p>
+            <p className="text-white/80">تواصل مع فريق الدعم مباشرة عبر واتساب أو الاتصال.</p>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <Button
                 variant="default"
-                className="h-14 text-lg font-bold bg-white text-gray-900 hover:bg-gray-200"
+                className="h-14 text-lg font-bold bg-white text-primary hover:bg-gray-200"
                 style={{ borderRadius: '10px' }}
               >
                 <MessageSquare className="ml-2" />
@@ -135,7 +146,7 @@ export default function HelpCenterPage() {
               </Button>
                <Button
                 variant="default"
-                className="h-14 text-lg font-bold bg-primary text-primary-foreground"
+                className="h-14 text-lg font-bold bg-white/20 text-white hover:bg-white/30"
                 style={{ borderRadius: '10px' }}
               >
                 <Phone className="ml-2" />
