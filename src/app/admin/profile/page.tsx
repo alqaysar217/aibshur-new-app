@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
-import { useUser, useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase'; 
+import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc } from '@/firebase'; 
 import { doc, collection } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -32,17 +32,13 @@ export default function ProfilePage() {
     const { toast } = useToast();
     const [isFirstTime, setIsFirstTime] = useState(false);
 
-    // Fetch the entire 'admins' collection
-    const adminsCollectionRef = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'admins');
-    }, [firestore]);
+    const adminDocRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'admins', user.uid);
+    }, [firestore, user]);
     
-    const { data: allAdmins, isLoading: isLoadingProfile } = useCollection<Admin>(adminsCollectionRef);
+    const { data: adminProfile, isLoading: isLoadingProfile } = useDoc<Admin>(adminDocRef);
 
-    // For simplicity, we'll assume the first admin in the collection is our current user.
-    // This is a workaround for the unlinked anonymous auth.
-    const adminProfile = useMemo(() => allAdmins?.[0], [allAdmins]);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -72,8 +68,7 @@ export default function ProfilePage() {
     const onSubmit = (values: ProfileFormValues) => {
         if (!firestore) return;
 
-        // If a profile was loaded, use its ID. If not (first time), use the current auth user's ID to create a new doc.
-        const docId = adminProfile ? adminProfile.id : user?.uid;
+        const docId = user?.uid;
         if (!docId) {
              toast({
                 variant: "destructive",
@@ -85,7 +80,17 @@ export default function ProfilePage() {
 
         const docToUpdateRef = doc(firestore, 'admins', docId);
 
-        setDocumentNonBlocking(docToUpdateRef, values, { merge: true });
+        // For a new admin, we also need to set the permissions
+        const dataToSave = isFirstTime 
+            ? { 
+                ...values,
+                permissions: { canUseCustomerApp: true, canUseDriverApp: true, canUseDashboard: true },
+                dashboardAccess: dashboardPages.map(p => p.id), // Give all permissions by default to first admin
+                is_active: true,
+              }
+            : values;
+
+        setDocumentNonBlocking(docToUpdateRef, dataToSave, { merge: true });
         toast({
             title: isFirstTime ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
             description: "تم حفظ بياناتك بنجاح.",
@@ -99,6 +104,32 @@ export default function ProfilePage() {
     }
 
     const photoUrl = form.watch('personalPhotoUrl');
+
+    const dashboardPages = [
+        { id: 'dashboard', label: 'الرئيسية' },
+        { id: 'sales-reports', label: 'تقارير المبيعات' },
+        { id: 'orders', label: 'إدارة الطلبات' },
+        { id: 'appointments', label: 'إدارة المواعيد' },
+        { id: 'stores', label: 'إدارة المتاجر' },
+        { id: 'products', label: 'إدارة المنتجات' },
+        { id: 'categories', label: 'إدارة الفئات' },
+        { id: 'users', label: 'إدارة المستخدمين' },
+        { id: 'delegates', label: 'طلبات المناديب' },
+        { id: 'ads', label: 'إدارة الإعلانات' },
+        { id: 'coupons', label: 'إدارة الكوبونات' },
+        { id: 'notifications', label: 'إدارة الإشعارات' },
+        { id: 'donations', label: 'إدارة التبرعات' },
+        { id: 'donation-types', label: 'إدارة أنواع التبرعات' },
+        { id: 'vip', label: 'باقات VIP' },
+        { id: 'loyalty', label: 'نقاط الولاء' },
+        { id: 'wallets', label: 'إدارة المحافظ' },
+        { id: 'governorates', label: 'إدارة المحافظات' },
+        { id: 'bank-accounts', label: 'الحسابات البنكية' },
+        { id: 'performance', label: 'أداء الموظفين' },
+        { id: 'settings', label: 'إعدادات النظام' },
+        { id: 'support', label: 'الدعم الفني' },
+    ];
+
 
     return (
         <div className="space-y-6">
@@ -114,7 +145,7 @@ export default function ProfilePage() {
                         <div>
                             <CardTitle className="text-blue-900">مرحباً بك! قم بإنشاء ملفك الشخصي كمسؤول.</CardTitle>
                             <CardDescription className="text-blue-800">
-                                يبدو أنه لا يوجد أي مسؤول في النظام. يرجى إكمال بياناتك لإنشاء أول حساب مسؤول.
+                                يبدو أنه لا يوجد أي مسؤول في النظام. يرجى إكمال بياناتك لإنشاء أول حساب مسؤول. سيتم منحك جميع الصلاحيات تلقائياً.
                             </CardDescription>
                         </div>
                     </CardHeader>

@@ -104,12 +104,28 @@ type UserType = 'clients' | 'drivers_v2' | 'storeOwners' | 'admins';
 
 // Constants
 const dashboardPages = [
-    { id: 'dashboard', label: 'الرئيسية' }, { id: 'bank-accounts', label: 'الحسابات البنكية' },
-    { id: 'governorates', label: 'المحافظات' }, { id: 'categories', label: 'الفئات' },
-    { id: 'stores', label: 'المتاجر' }, { id: 'products', label: 'المنتجات' },
-    { id: 'orders', label: 'الطلبات' }, { id: 'users', label: 'المستخدمين' },
-    { id: 'ads', label: 'الإعلانات' }, { id: 'coupons', label: 'الكوبونات' },
-    { id: 'donations', label: 'التبرعات' },
+    { id: 'dashboard', label: 'الرئيسية' },
+    { id: 'sales-reports', label: 'تقارير المبيعات' },
+    { id: 'orders', label: 'إدارة الطلبات' },
+    { id: 'appointments', label: 'إدارة المواعيد' },
+    { id: 'stores', label: 'إدارة المتاجر' },
+    { id: 'products', label: 'إدارة المنتجات' },
+    { id: 'categories', label: 'إدارة الفئات' },
+    { id: 'users', label: 'إدارة المستخدمين' },
+    { id: 'delegates', label: 'طلبات المناديب' },
+    { id: 'ads', label: 'إدارة الإعلانات' },
+    { id: 'coupons', label: 'إدارة الكوبونات' },
+    { id: 'notifications', label: 'إدارة الإشعارات' },
+    { id: 'donations', label: 'إدارة التبرعات' },
+    { id: 'donation-types', label: 'إدارة أنواع التبرعات' },
+    { id: 'vip', label: 'باقات VIP' },
+    { id: 'loyalty', label: 'نقاط الولاء' },
+    { id: 'wallets', label: 'إدارة المحافظ' },
+    { id: 'governorates', label: 'إدارة المحافظات' },
+    { id: 'bank-accounts', label: 'الحسابات البنكية' },
+    { id: 'performance', label: 'أداء الموظفين' },
+    { id: 'settings', label: 'إعدادات النظام' },
+    { id: 'support', label: 'الدعم الفني' },
 ];
 
 const MapPicker = dynamic(() => import('@/components/map-picker').then(mod => mod.MapPicker), { ssr: false, loading: () => <div className="h-[250px] w-full bg-muted rounded-lg flex items-center justify-center"><p>جارٍ تحميل الخريطة...</p></div> });

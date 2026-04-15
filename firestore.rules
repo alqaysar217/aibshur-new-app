@@ -11,8 +11,14 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // For prototyping, any signed-in user is considered an admin for the dashboard.
-      return isSignedIn();
+      // An admin is a signed-in user with an active admin document and dashboard permissions.
+      if (!isSignedIn()) {
+        return false;
+      }
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+          && adminDoc.data.is_active == true
+          && adminDoc.data.permissions.canUseDashboard == true;
     }
 
     // --- NEW NOTIFICATIONS RULE ---
