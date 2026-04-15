@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { ArrowRight, Headset, Search, ShoppingCart, CreditCard, User, Gem, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,21 +35,31 @@ export default function HelpCenterPage() {
 
   const faqsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'faqs'), where('isActive', '==', true));
+    // Fetch all FAQs, we will filter by isActive on the client
+    return collection(firestore, 'faqs');
   }, [firestore]);
 
-  const { data: faqs, isLoading } = useCollection<Faq>(faqsQuery);
+  const { data: allFaqs, isLoading } = useCollection<Faq>(faqsQuery);
+
+  // Filter for active FAQs on the client side
+  const activeFaqs = useMemo(() => {
+    if (!allFaqs) return [];
+    // A document is considered active if `isActive` is not explicitly false.
+    // This handles cases where the field is missing (undefined) or true.
+    return allFaqs.filter(faq => faq.isActive !== false);
+  }, [allFaqs]);
+
 
   const filteredFaqs = useMemo(() => {
-    if (!faqs) return [];
-    return faqs.filter(
+    if (!activeFaqs) return [];
+    return activeFaqs.filter(
       (faq) =>
         faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
         faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [faqs, searchTerm]);
+  }, [activeFaqs, searchTerm]);
 
-  if (isLoading && !faqs) {
+  if (isLoading && !allFaqs) {
     return <HelpCenterLoading />;
   }
 
@@ -125,7 +135,11 @@ export default function HelpCenterPage() {
             </Accordion>
           ) : (
             <div className="text-center py-10 text-muted-foreground bg-card rounded-[10px]">
-              <p>لا توجد نتائج تطابق بحثك.</p>
+              {searchTerm ? (
+                <p>لا توجد نتائج تطابق بحثك.</p>
+              ) : (
+                <p>لا توجد أسئلة شائعة متاحة حالياً.</p>
+              )}
             </div>
           )}
         </div>
