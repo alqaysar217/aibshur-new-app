@@ -45,7 +45,7 @@ const accountLinks = [
   { href: '/donations', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
   { href: '#', label: 'الخصوصية والامان', description: 'سياسة حماية بيانات', icon: Shield },
   { href: '/terms', label: 'شروط الاحكام', description: 'حقوقك والتزاماتك القانونية', icon: FileText },
-  { href: '#', label: 'مركز المساعدة', description: 'الاسئلة الشائعة والدعم الفني', icon: HelpCircle },
+  { href: '/help-center', label: 'مركز المساعدة', description: 'الاسئلة الشائعة والدعم الفني', icon: HelpCircle },
 ];
 
 export default function AccountPage() {
