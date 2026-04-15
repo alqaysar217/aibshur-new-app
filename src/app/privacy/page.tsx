@@ -101,7 +101,7 @@ export default function PrivacyPage() {
             <ScrollArea className="flex-1">
                 <main className="p-4">
                     <div className="flex flex-col items-center text-center py-6">
-                        <div className="inline-block p-5 bg-primary/10 rounded-[35px] -rotate-3 transition-transform hover:rotate-0 duration-300">
+                        <div className="inline-block p-5 bg-primary/10 rounded-[35px] rotate-3 transition-transform hover:rotate-0 duration-300">
                             <ShieldCheck className="h-16 w-16 text-primary animate-pulse"/>
                         </div>
                         <h2 className="text-3xl font-black mt-4">سياسة الخصوصية</h2>
