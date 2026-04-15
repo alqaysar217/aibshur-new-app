@@ -43,7 +43,7 @@ const accountLinks = [
   { href: '/select-governorate?redirect=/account', label: 'تغيير المحافظة', description: 'تغيير موقعك لعرض متاجر مختلفة', icon: MapPin },
   { href: '/vip', label: 'عضوية ابشر VIP', description: 'مزايا توصيل مجاني', icon: Gem },
   { href: '/donations', label: 'بوابة التبرعات', description: 'شارك في اعمال الخير', icon: HandHeart },
-  { href: '#', label: 'الخصوصية والامان', description: 'سياسة حماية بيانات', icon: Shield },
+  { href: '/privacy', label: 'الخصوصية والامان', description: 'سياسة حماية بيانات', icon: Shield },
   { href: '/terms', label: 'شروط الاحكام', description: 'حقوقك والتزاماتك القانونية', icon: FileText },
   { href: '/help-center', label: 'مركز المساعدة', description: 'الاسئلة الشائعة والدعم الفني', icon: HelpCircle },
 ];
@@ -197,7 +197,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
                                 <div className="font-black text-2xl">
-                                    {isLoading ? <div className="animate-pulse rounded-md bg-muted h-8 w-24"></div> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
+                                    {isLoading ? <Skeleton className="h-8 w-24" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
                                 </div>
                             </div>
                         </Card>
@@ -212,7 +212,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
                                 <div className="font-black text-2xl">
-                                    {isLoading ? <div className="animate-pulse rounded-md bg-muted h-8 w-16"></div> : userWallet?.pointsBalance?.toLocaleString() || 0}
+                                    {isLoading ? <Skeleton className="h-8 w-16" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
                                 </div>
                             </div>
                         </Card>
