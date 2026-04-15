@@ -197,7 +197,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
                                 <div className="font-black text-2xl">
-                                    {isLoading ? <Skeleton className="h-8 w-24" /> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
+                                    {isLoading ? <div className="animate-pulse rounded-md bg-muted h-8 w-24"></div> : `${userWallet?.cashBalance?.toLocaleString() || 0} ر.ي`}
                                 </div>
                             </div>
                         </Card>
@@ -212,7 +212,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
                                 <div className="font-black text-2xl">
-                                    {isLoading ? <Skeleton className="h-8 w-16" /> : userWallet?.pointsBalance?.toLocaleString() || 0}
+                                    {isLoading ? <div className="animate-pulse rounded-md bg-muted h-8 w-16"></div> : userWallet?.pointsBalance?.toLocaleString() || 0}
                                 </div>
                             </div>
                         </Card>
