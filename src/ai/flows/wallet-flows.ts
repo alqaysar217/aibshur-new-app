@@ -2,7 +2,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getFirestore, doc, collection, serverTimestamp, setDoc, getDoc, updateDoc, query, where, getDocs, orderBy, runTransaction } from 'firebase/firestore';
+import { getFirestore, doc, collection, serverTimestamp, setDoc, getDoc, updateDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase/init'; 
 
 // --- Deposit Flow ---
@@ -35,33 +35,31 @@ const depositWalletFlow = ai.defineFlow(
     const db = getFirestore(initializeFirebase().firebaseApp);
     
     try {
-        await runTransaction(db, async (transaction) => {
-            const walletRef = doc(db, 'users', input.clientId, 'wallet', 'main');
-            const walletDoc = await transaction.get(walletRef);
-            
-            const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
-            const newBalance = currentBalance + input.amount;
+        const walletRef = doc(db, 'users', input.clientId, 'wallet', 'main');
+        const walletDoc = await getDoc(walletRef);
+        
+        const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
+        const newBalance = currentBalance + input.amount;
 
-            if (walletDoc.exists()) {
-                transaction.update(walletRef, { cashBalance: newBalance });
-            } else {
-                transaction.set(walletRef, { userId: input.clientId, cashBalance: newBalance, pointsBalance: 0 });
-            }
-            
-            const logRef = doc(collection(db, 'walletTransactions'));
-            transaction.set(logRef, {
-                userId: input.clientId,
-                type: 'deposit',
-                amount: input.amount,
-                newBalance: newBalance,
-                notes: `إيداع عبر ${input.bankName}`,
-                bankDetails: {
-                    bankName: input.bankName,
-                    referenceNumber: input.referenceNumber,
-                    receiptImageUrl: input.receiptImageUrl || '',
-                },
-                createdAt: serverTimestamp(),
-            });
+        if (walletDoc.exists()) {
+            await updateDoc(walletRef, { cashBalance: newBalance });
+        } else {
+            await setDoc(walletRef, { userId: input.clientId, cashBalance: newBalance, pointsBalance: 0 });
+        }
+        
+        const logRef = doc(collection(db, 'walletTransactions'));
+        await setDoc(logRef, {
+            userId: input.clientId,
+            type: 'deposit',
+            amount: input.amount,
+            newBalance: newBalance,
+            notes: `إيداع عبر ${input.bankName}`,
+            bankDetails: {
+                bankName: input.bankName,
+                referenceNumber: input.referenceNumber,
+                receiptImageUrl: input.receiptImageUrl || '',
+            },
+            createdAt: serverTimestamp(),
         });
       
         return { success: true, message: "تم الإيداع بنجاح" };
@@ -101,32 +99,30 @@ const refundWalletFlow = ai.defineFlow(
     const db = getFirestore(initializeFirebase().firebaseApp);
 
     try {
-        await runTransaction(db, async (transaction) => {
-            const walletRef = doc(db, 'users', input.clientId, 'wallet', 'main');
-            const walletDoc = await transaction.get(walletRef);
+        const walletRef = doc(db, 'users', input.clientId, 'wallet', 'main');
+        const walletDoc = await getDoc(walletRef);
 
-            if (!walletDoc.exists()) {
-                throw new Error("لم يتم العثور على محفظة العميل.");
-            }
-            
-            const currentBalance = walletDoc.data().cashBalance;
-            if (currentBalance < input.amount) {
-                throw new Error("رصيد العميل غير كافٍ لعملية الاسترجاع.");
-            }
+        if (!walletDoc.exists()) {
+            throw new Error("لم يتم العثور على محفظة العميل.");
+        }
+        
+        const currentBalance = walletDoc.data().cashBalance;
+        if (currentBalance < input.amount) {
+            throw new Error("رصيد العميل غير كافٍ لعملية الاسترجاع.");
+        }
 
-            const newBalance = currentBalance - input.amount;
+        const newBalance = currentBalance - input.amount;
 
-            transaction.update(walletRef, { cashBalance: newBalance });
+        await updateDoc(walletRef, { cashBalance: newBalance });
 
-            const logRef = doc(collection(db, 'walletTransactions'));
-            transaction.set(logRef, {
-                userId: input.clientId,
-                type: 'refund',
-                amount: -input.amount,
-                newBalance: newBalance,
-                notes: `استرجاع رصيد: ${input.reason}`,
-                createdAt: serverTimestamp(),
-            });
+        const logRef = doc(collection(db, 'walletTransactions'));
+        await setDoc(logRef, {
+            userId: input.clientId,
+            type: 'refund',
+            amount: -input.amount,
+            newBalance: newBalance,
+            notes: `استرجاع رصيد: ${input.reason}`,
+            createdAt: serverTimestamp(),
         });
         
         return { success: true, message: "تم الاسترجاع بنجاح" };
@@ -173,7 +169,7 @@ const getWalletTransactionsFlow = ai.defineFlow(
       return transactions;
     } catch (e: any) {
       console.error("Get transactions flow failed: ", e);
-      return [];
+      throw e; // Re-throw the error to be caught by the client
     }
   }
 );
