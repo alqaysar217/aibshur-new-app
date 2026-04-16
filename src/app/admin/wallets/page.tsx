@@ -89,7 +89,7 @@ export default function WalletsPage() {
     const { data: userWallet, isLoading: isLoadingWallet, error: walletError } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
     const { data: bankAccounts, isLoading: isLoadingBanks } = useCollection<BankAccount>(useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]));
     
-    const transactionsQuery = useMemoFirebase(() => (firestore && foundClient) ? query(collection(firestore, 'walletTransactions'), where('userId', '==', foundClient.id), orderBy('createdAt', 'desc')) : null, [firestore, foundClient]);
+    const transactionsQuery = useMemoFirebase(() => (firestore && foundClient) ? query(collection(firestore, 'users', foundClient.id, 'walletTransactions'), orderBy('createdAt', 'desc')) : null, [firestore, foundClient]);
     const { data: transactions, isLoading: isLoadingTransactions } = useCollection<WalletTransaction>(transactionsQuery);
 
     
@@ -127,7 +127,7 @@ export default function WalletsPage() {
         setIsSubmitting(true);
 
         const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-        const transactionCollectionRef = collection(firestore, 'walletTransactions');
+        const transactionCollectionRef = collection(firestore, 'users', foundClient.id, 'walletTransactions');
 
         try {
             await runTransaction(firestore, async (transaction) => {
@@ -175,7 +175,7 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return false;
         setIsSubmitting(true);
         const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-        const transactionCollectionRef = collection(firestore, 'walletTransactions');
+        const transactionCollectionRef = collection(firestore, 'users', foundClient.id, 'walletTransactions');
 
         try {
             await runTransaction(firestore, async (transaction) => {
@@ -372,3 +372,5 @@ export default function WalletsPage() {
       </div>
     );
 }
+
+    

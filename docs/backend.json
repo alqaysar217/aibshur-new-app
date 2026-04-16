@@ -1802,12 +1802,12 @@
           "description": "Audit log for all point transactions. Readable by the relevant user, admin-managed."
         }
       },
-       {
-        "path": "/walletTransactions/{transactionId}",
+      {
+        "path": "/users/{userId}/walletTransactions/{transactionId}",
         "definition": {
           "entityName": "WalletTransaction",
           "schema": { "$ref": "#/backend/entities/WalletTransaction" },
-          "description": "Log of all user wallet cash transactions. Admin managed."
+          "description": "Log of a user's wallet cash transactions. Readable by owner or admin. Writable only by admin."
         }
       },
       {
@@ -1885,4 +1885,4 @@
   }
 }
 
-  
+    

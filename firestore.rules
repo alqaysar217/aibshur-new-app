@@ -44,11 +44,6 @@ service cloud.firestore {
     match /point_requests/{requestId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
     
-    // Wallet Transactions: Only admins can create/read.
-    match /walletTransactions/{transactionId} {
-      allow read, create: if isAdmin();
-    }
-
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
     match /notificationTemplates/{docId} { allow read, write: if isAdmin(); }
@@ -112,6 +107,13 @@ service cloud.firestore {
         allow get: if isOwner(userId) || isAdmin();
         allow list, write: if isAdmin();
       }
+      // Wallet Transactions: Readable by owner or admin, writable by admin.
+      match /walletTransactions/{transactionId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isAdmin();
+        // Transactions should be immutable
+        allow update, delete: if false;
+      }
     }
 
     match /addresses/{addressId} {
@@ -120,3 +122,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
