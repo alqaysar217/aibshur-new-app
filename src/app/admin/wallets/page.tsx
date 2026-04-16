@@ -306,9 +306,9 @@ export default function WalletsPage() {
             </Card>
             
             <Tabs defaultValue="actions" dir="rtl">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="actions" className="gap-2"><Wallet/>إجراءات المحفظة</TabsTrigger>
-                    <TabsTrigger value="log" className="gap-2"><History/>سجل العمليات</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 gap-2 rounded-xl bg-muted p-1 h-auto">
+                    <TabsTrigger value="actions" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><Wallet/>إجراءات المحفظة</TabsTrigger>
+                    <TabsTrigger value="log" className="gap-2 h-12 text-base rounded-lg data-[state=active]:bg-sidebar-active-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><History/>سجل العمليات</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="actions" className="mt-4">
@@ -319,10 +319,10 @@ export default function WalletsPage() {
                                     <Card>
                                         <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
                                         <CardContent className="space-y-4">
-                                            <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                                            <FormField name="bankName" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>البنك</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"> <FormControl><SelectTrigger className="h-10 rounded-[10px]"> <SelectValue placeholder="اختر البنك..." /> </SelectTrigger></FormControl> <SelectContent> {(bankAccounts || []).map(bank => ( <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem> ))} </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
-                                            <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                                            <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <ImagePreview url={field.value} /> <FormMessage /> </FormItem> )} />
+                                            <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel className="flex items-center gap-2"><CircleDollarSign/>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                            <FormField name="bankName" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel className="flex items-center gap-2"><Banknote/>البنك</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"> <FormControl><SelectTrigger className="h-10 rounded-[10px]"> <SelectValue placeholder="اختر البنك..." /> </SelectTrigger></FormControl> <SelectContent> {(bankAccounts || []).map(bank => ( <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem> ))} </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+                                            <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel className="flex items-center gap-2"><Hash/>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                            <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel className="flex items-center gap-2"><Paperclip/>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <ImagePreview url={field.value} /> <FormMessage /> </FormItem> )} />
                                         </CardContent>
                                         <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
                                     </Card>
@@ -344,7 +344,7 @@ export default function WalletsPage() {
                                             <h4 className="font-semibold">تجميد الحساب</h4>
                                             <p className="text-xs text-muted-foreground">منع العميل من استخدام رصيده.</p>
                                         </div>
-                                        <Switch dir="ltr" checked={!foundClient.is_active} onCheckedChange={handleToggleActive} />
+                                        <Switch checked={!foundClient.is_active} onCheckedChange={handleToggleActive} />
                                     </div>
                                     <Dialog>
                                         <DialogTrigger asChild><Button variant="destructive" className="w-full"><BadgeCent/>استرجاع رصيد</Button></DialogTrigger>
