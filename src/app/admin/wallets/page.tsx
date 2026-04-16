@@ -273,116 +273,126 @@ export default function WalletsPage() {
         )}
 
         {foundClient && (
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-6">
-                 <Tabs defaultValue="actions">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="actions"><Wallet/>إجراءات المحفظة</TabsTrigger>
-                        <TabsTrigger value="log"><History/>سجل العمليات</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="actions" className="mt-4">
-                        <Form {...depositForm}>
-                            <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
-                                <Card>
-                                <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                                    <FormField name="bankName" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>البنك</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"> <FormControl><SelectTrigger className="h-10 rounded-[10px]"> <SelectValue placeholder="اختر البنك..." /> </SelectTrigger></FormControl> <SelectContent> {(bankAccounts || []).map(bank => ( <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem> ))} </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
-                                    <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                                    <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <ImagePreview url={field.value} /> <FormMessage /> </FormItem> )} />
-                                </CardContent>
-                                <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
-                                </Card>
-                            </form>
-                        </Form>
-                    </TabsContent>
-                    <TabsContent value="log" className="mt-4">
-                        <Card>
-                            <CardHeader><CardTitle>سجل العمليات لـ {foundClient.name}</CardTitle></CardHeader>
-                            <CardContent>
-                                <div className="border rounded-lg max-h-96 overflow-y-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="text-right">التاريخ</TableHead>
-                                            <TableHead className="text-center">النوع</TableHead>
-                                            <TableHead className="text-center">المبلغ</TableHead>
-                                            <TableHead className="text-center">الرصيد الجديد</TableHead>
-                                            <TableHead className="text-center">ملاحظات</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {isLoadingTransactions ? (
-                                            <TableRow><TableCell colSpan={5} className="text-center"><Loader2 className="animate-spin mx-auto"/></TableCell></TableRow>
-                                        ) : transactions && transactions.length > 0 ? (
-                                            transactions.map(tx => (
-                                                <TableRow key={tx.id}>
-                                                    <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar}) : '...'}</TableCell>
-                                                    <TableCell className="text-center"><Badge variant={tx.type === 'deposit' ? 'default' : 'secondary'}>{tx.type}</Badge></TableCell>
-                                                    <TableCell className={cn("text-center font-mono", tx.amount > 0 ? 'text-green-600' : 'text-red-600')}>
-                                                        {tx.amount > 0 ? `+${tx.amount.toLocaleString()}` : tx.amount.toLocaleString()}
-                                                    </TableCell>
-                                                    <TableCell className="text-center font-mono">{tx.newBalance.toLocaleString()}</TableCell>
-                                                    <TableCell className="text-center text-xs">{tx.notes}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">لا توجد عمليات لهذه المحفظة.</TableCell></TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-            </div>
-
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><User/>بيانات العميل</CardTitle></CardHeader>
-                    <CardContent className="space-y-2 text-sm">
+          <>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><User/>بيانات العميل</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-between items-center">
+                    <div>
                         <p><strong>الاسم:</strong> {foundClient.name}</p>
                         <p><strong>الهاتف:</strong> {foundClient.phone}</p>
-                        <div className="flex items-center gap-2"><strong>الحالة:</strong><Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge></div>
-                    </CardContent>
-                </Card>
-                <Card className="shadow-md">
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Wallet/>الرصيد الحالي</CardTitle></CardHeader>
-                    <CardContent>
-                        {isLoadingWallet ? <Loader2 className="animate-spin"/> : <p className="text-4xl font-extrabold">{userWallet?.cashBalance?.toLocaleString() || 0} <span className="text-base font-normal text-muted-foreground">ر.ي</span></p>}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><CardTitle>إجراءات التحكم</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between rounded-lg border p-3">
-                            <div>
-                                <h4 className="font-semibold">تجميد الحساب</h4>
-                                <p className="text-xs text-muted-foreground">منع العميل من استخدام رصيده.</p>
-                            </div>
-                            <Switch checked={!foundClient.is_active} onCheckedChange={handleToggleActive} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant={foundClient.is_active ? 'default' : 'destructive'}>{foundClient.is_active ? 'نشط' : 'محظور'}</Badge>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <Tabs defaultValue="actions" dir="rtl">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="actions" className="gap-2"><Wallet/>إجراءات المحفظة</TabsTrigger>
+                    <TabsTrigger value="log" className="gap-2"><History/>سجل العمليات</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="actions" className="mt-4">
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2">
+                             <Form {...depositForm}>
+                                <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
+                                    <Card>
+                                        <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                            <FormField name="bankName" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>البنك</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"> <FormControl><SelectTrigger className="h-10 rounded-[10px]"> <SelectValue placeholder="اختر البنك..." /> </SelectTrigger></FormControl> <SelectContent> {(bankAccounts || []).map(bank => ( <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem> ))} </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+                                            <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                            <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <ImagePreview url={field.value} /> <FormMessage /> </FormItem> )} />
+                                        </CardContent>
+                                        <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
+                                    </Card>
+                                </form>
+                            </Form>
                         </div>
-                        <Dialog>
-                            <DialogTrigger asChild><Button variant="destructive" className="w-full"><BadgeCent/>استرجاع رصيد</Button></DialogTrigger>
-                            <DialogContent dir="rtl">
-                                <DialogHeader><DialogTitle>استرجاع رصيد من المحفظة</DialogTitle><DialogDescription>سيتم خصم المبلغ من رصيد العميل وتسجيل العملية كسجل استرجاع.</DialogDescription></DialogHeader>
-                                <Form {...refundForm}>
-                                    <form onSubmit={refundForm.handleSubmit(async (values) => { const success = await onRefundSubmit(values); if(success) { (document.querySelector('[data-radix-dialog-close-refund]') as HTMLElement)?.click() } })} className="space-y-4">
-                                        <FormField name="amount" control={refundForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ المراد استرجاعه</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                                        <FormField name="reason" control={refundForm.control} render={({ field }) => ( <FormItem> <FormLabel>سبب الاسترجاع</FormLabel> <FormControl><Textarea {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                                        <DialogFooter className="gap-2 flex-row-reverse sm:justify-start">
-                                            <Button type="submit" variant="destructive" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الاسترجاع'}</Button>
-                                            <DialogClose asChild><button type="button" data-radix-dialog-close-refund style={{display:'none'}}>close</button></DialogClose>
-                                        </DialogFooter>
-                                    </form>
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
-                    </CardContent>
-                </Card>
-            </div>
-          </div>
+                        <div className="space-y-6">
+                           <Card className="shadow-md">
+                                <CardHeader><CardTitle className="flex items-center gap-2"><Wallet/>الرصيد الحالي</CardTitle></CardHeader>
+                                <CardContent>
+                                    {isLoadingWallet ? <Loader2 className="animate-spin"/> : <p className="text-4xl font-extrabold">{userWallet?.cashBalance?.toLocaleString('en-US') || 0} <span className="text-base font-normal text-muted-foreground">ر.ي</span></p>}
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle>إجراءات التحكم</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                        <div>
+                                            <h4 className="font-semibold">تجميد الحساب</h4>
+                                            <p className="text-xs text-muted-foreground">منع العميل من استخدام رصيده.</p>
+                                        </div>
+                                        <Switch checked={!foundClient.is_active} onCheckedChange={handleToggleActive} />
+                                    </div>
+                                    <Dialog>
+                                        <DialogTrigger asChild><Button variant="destructive" className="w-full"><BadgeCent/>استرجاع رصيد</Button></DialogTrigger>
+                                        <DialogContent dir="rtl">
+                                            <DialogHeader><DialogTitle>استرجاع رصيد من المحفظة</DialogTitle><DialogDescription>سيتم خصم المبلغ من رصيد العميل وتسجيل العملية كسجل استرجاع.</DialogDescription></DialogHeader>
+                                            <Form {...refundForm}>
+                                                <form onSubmit={refundForm.handleSubmit(async (values) => { const success = await onRefundSubmit(values); if(success) { (document.querySelector('[data-radix-dialog-close-refund]') as HTMLElement)?.click() } })} className="space-y-4">
+                                                    <FormField name="amount" control={refundForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ المراد استرجاعه</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                                                    <FormField name="reason" control={refundForm.control} render={({ field }) => ( <FormItem> <FormLabel>سبب الاسترجاع</FormLabel> <FormControl><Textarea {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                                                    <DialogFooter className="gap-2 flex-row-reverse sm:justify-start">
+                                                        <Button type="submit" variant="destructive" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الاسترجاع'}</Button>
+                                                        <DialogClose asChild><button type="button" data-radix-dialog-close-refund style={{display:'none'}}>close</button></DialogClose>
+                                                    </DialogFooter>
+                                                </form>
+                                            </Form>
+                                        </DialogContent>
+                                    </Dialog>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="log" className="mt-4">
+                     <Card>
+                        <CardHeader><CardTitle>سجل العمليات لـ {foundClient.name}</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="border rounded-lg max-h-96 overflow-y-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="text-right">التاريخ</TableHead>
+                                        <TableHead className="text-center">النوع</TableHead>
+                                        <TableHead className="text-center">المبلغ</TableHead>
+                                        <TableHead className="text-center">الرصيد الجديد</TableHead>
+                                        <TableHead className="text-center">ملاحظات</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {isLoadingTransactions ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center"><Loader2 className="animate-spin mx-auto"/></TableCell></TableRow>
+                                    ) : transactions && transactions.length > 0 ? (
+                                        transactions.map(tx => (
+                                            <TableRow key={tx.id}>
+                                                <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar}) : '...'}</TableCell>
+                                                <TableCell className="text-center"><Badge variant={tx.type === 'deposit' ? 'default' : 'secondary'}>{tx.type}</Badge></TableCell>
+                                                <TableCell className={cn("text-center font-mono", tx.amount > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                    {tx.amount > 0 ? `+${tx.amount.toLocaleString('en-US')}` : tx.amount.toLocaleString('en-US')}
+                                                </TableCell>
+                                                <TableCell className="text-center font-mono">{tx.newBalance.toLocaleString('en-US')}</TableCell>
+                                                <TableCell className="text-center text-xs">{tx.notes}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">لا توجد عمليات لهذه المحفظة.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+          </>
         )}
       </div>
     );
