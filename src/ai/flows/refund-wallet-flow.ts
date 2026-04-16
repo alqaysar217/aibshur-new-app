@@ -3,7 +3,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getFirestore, runTransaction, doc, collection, serverTimestamp } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeFirebase } from '@/firebase/init';
 
 const refundWalletInputSchema = z.object({
   clientId: z.string(),
