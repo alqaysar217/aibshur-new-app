@@ -115,10 +115,10 @@ service cloud.firestore {
 
       // Wallet Transactions: Owners can list/read their own. Admin read is granted above.
       match /walletTransactions {
-          allow list: if isOwner(userId);
+          allow list: if isOwner(userId) || isAdmin();
       }
       match /walletTransactions/{transactionId} {
-        allow get: if isOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
         allow create: if isAdmin();
         allow update, delete: if false;
       }
