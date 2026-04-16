@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp, getDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import WalletsLoading from './loading';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,6 @@ import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import type { BankAccount } from '../bank-accounts/page';
-import { depositToWallet } from '@/ai/flows/deposit-wallet-flow';
-import { refundFromWallet } from '@/ai/flows/refund-wallet-flow';
 
 
 // Types
@@ -114,20 +112,40 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return;
         setIsSubmitting(true);
         try {
-            const result = await depositToWallet({
-                clientId: foundClient.id,
+            const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
+            const logRef = doc(collection(firestore, 'walletTransactions'));
+            
+            const batch = writeBatch(firestore);
+
+            const walletDoc = await getDoc(walletRef);
+            const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
+            const newBalance = currentBalance + values.amount;
+
+            if (walletDoc.exists()) {
+                batch.update(walletRef, { cashBalance: newBalance });
+            } else {
+                batch.set(walletRef, { userId: foundClient.id, cashBalance: newBalance, pointsBalance: 0 });
+            }
+
+            batch.set(logRef, {
+                userId: foundClient.id,
+                type: 'deposit',
                 amount: values.amount,
-                bankName: values.bankName,
-                referenceNumber: values.referenceNumber,
-                receiptImageUrl: values.receiptImageUrl,
+                newBalance: newBalance,
+                notes: `إيداع عبر ${values.bankName}`,
+                bankDetails: {
+                    bankName: values.bankName,
+                    referenceNumber: values.referenceNumber,
+                    receiptImageUrl: values.receiptImageUrl || '',
+                },
+                createdAt: serverTimestamp(),
             });
 
-            if (result.success) {
-                toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
-                depositForm.reset();
-            } else {
-                throw new Error(result.message);
-            }
+            await batch.commit();
+
+            toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
+            depositForm.reset();
+
         } catch (e: any) {
             console.error(e);
             toast({ variant: 'destructive', title: "خطأ", description: e.message || "فشلت عملية الإيداع." });
@@ -140,23 +158,42 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return false;
         setIsSubmitting(true);
         try {
-            const result = await refundFromWallet({
-                clientId: foundClient.id,
-                amount: values.amount,
-                reason: values.reason,
+            const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
+            const walletDoc = await getDoc(walletRef);
+
+            if (!walletDoc.exists()) {
+                throw new Error("لم يتم العثور على محفظة العميل.");
+            }
+
+            const currentBalance = walletDoc.data().cashBalance;
+            if (currentBalance < values.amount) {
+                throw new Error("رصيد العميل غير كافٍ لعملية الاسترجاع.");
+            }
+            
+            const newBalance = currentBalance - values.amount;
+
+            const batch = writeBatch(firestore);
+            batch.update(walletRef, { cashBalance: newBalance });
+
+            const logRef = doc(collection(firestore, 'walletTransactions'));
+            batch.set(logRef, {
+                userId: foundClient.id,
+                type: 'refund',
+                amount: -values.amount,
+                newBalance: newBalance,
+                notes: `استرجاع رصيد: ${values.reason}`,
+                createdAt: serverTimestamp(),
             });
 
-            if (result.success) {
-                toast({ title: "تم الاسترجاع بنجاح" });
-                refundForm.reset();
-                return true; // To close dialog
-            } else {
-                throw new Error(result.message);
-            }
+            await batch.commit();
+            
+            toast({ title: "تم الاسترجاع بنجاح" });
+            refundForm.reset();
+            return true; // To close dialog
         } catch (e: any) {
             console.error(e);
             toast({ variant: 'destructive', title: "خطأ", description: e.message });
-            return false; // To keep dialog open
+            return false;
         } finally {
             setIsSubmitting(false);
         }
