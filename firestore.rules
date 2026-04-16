@@ -45,8 +45,8 @@ service cloud.firestore {
     match /point_requests/{requestId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
     match /walletTransactions/{transactionId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
