@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { updateDoc } from 'firebase/firestore';
+import { getWalletTransactions } from '@/ai/flows/wallet-flows';
 
 
 // Types
@@ -89,8 +90,35 @@ export default function WalletsPage() {
     const { data: userWallet, isLoading: isLoadingWallet, error: walletError } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
     const { data: bankAccounts, isLoading: isLoadingBanks } = useCollection<BankAccount>(useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]));
     
-    const transactionsQuery = useMemoFirebase(() => (firestore && foundClient) ? query(collection(firestore, 'users', foundClient.id, 'walletTransactions'), orderBy('createdAt', 'desc')) : null, [firestore, foundClient]);
-    const { data: transactions, isLoading: isLoadingTransactions } = useCollection<WalletTransaction>(transactionsQuery);
+    const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+    const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+
+    useEffect(() => {
+        if (foundClient) {
+            setIsLoadingTransactions(true);
+            getWalletTransactions({ clientId: foundClient.id })
+                .then(data => {
+                    const formattedData = data.map(tx => ({
+                        ...tx,
+                        createdAt: tx.createdAt ? Timestamp.fromDate(new Date(tx.createdAt)) : Timestamp.now(),
+                    }));
+                    setTransactions(formattedData as WalletTransaction[]);
+                })
+                .catch(err => {
+                    console.error("Failed to get wallet transactions:", err);
+                    toast({
+                        variant: 'destructive',
+                        title: 'خطأ',
+                        description: 'فشل في تحميل سجل العمليات.',
+                    });
+                })
+                .finally(() => {
+                    setIsLoadingTransactions(false);
+                });
+        } else {
+            setTransactions([]); // Clear transactions if no client is found
+        }
+    }, [foundClient, toast]);
 
     
     // Forms
@@ -372,5 +400,3 @@ export default function WalletsPage() {
       </div>
     );
 }
-
-    

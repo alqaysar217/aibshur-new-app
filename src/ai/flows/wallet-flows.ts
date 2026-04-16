@@ -2,7 +2,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getFirestore, doc, collection, serverTimestamp, setDoc, getDoc, updateDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase/init'; 
 
 
@@ -28,19 +28,30 @@ const getWalletTransactionsFlow = ai.defineFlow(
     const db = getFirestore(initializeFirebase().firebaseApp);
     
     try {
-      const transactionsRef = collection(db, 'walletTransactions');
-      const q = query(transactionsRef, where('userId', '==', input.clientId), orderBy('createdAt', 'desc'));
+      const transactionsRef = collection(db, 'users', input.clientId, 'walletTransactions');
+      const q = query(transactionsRef, orderBy('createdAt', 'desc'));
       
       const querySnapshot = await getDocs(q);
       const transactions: any[] = [];
       querySnapshot.forEach((doc) => {
-        transactions.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        // Firestore timestamps need to be converted to a serializable format (e.g., ISO string)
+        const serializableData: { [key: string]: any } = {};
+        for (const key in data) {
+            if (data[key] instanceof Timestamp) {
+                serializableData[key] = data[key].toDate().toISOString();
+            } else {
+                serializableData[key] = data[key];
+            }
+        }
+        transactions.push({ id: doc.id, ...serializableData });
       });
       
       return transactions;
     } catch (e: any) {
       console.error("Get transactions flow failed: ", e);
-      throw e; // Re-throw the error to be caught by the client
+      // Return an empty array on failure to avoid breaking the client
+      return [];
     }
   }
 );
