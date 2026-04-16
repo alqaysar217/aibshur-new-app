@@ -3,29 +3,25 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, doc, query, where, Timestamp, runTransaction, getDocs, serverTimestamp, increment } from 'firebase/firestore';
-import { useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
-
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import WalletsLoading from './loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Search, User, Phone, CheckCircle, XCircle, Banknote, Upload, History, FileText, BadgeCent, Ban, BadgeDollarSign, Loader2 } from 'lucide-react';
+import { Wallet, Search, User, Phone, BadgeCent, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import type { BankAccount } from '../bank-accounts/page';
+import { depositToWallet } from '@/ai/flows/deposit-wallet-flow';
+import { refundFromWallet } from '@/ai/flows/refund-wallet-flow';
 
 
 // Types
@@ -118,40 +114,23 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return;
         setIsSubmitting(true);
         try {
-            const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-            const logRef = doc(collection(firestore, 'walletTransactions'));
-            
-            await runTransaction(firestore, async (transaction) => {
-                const walletDoc = await transaction.get(walletRef);
-                const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
-                const newBalance = currentBalance + values.amount;
-
-                if (walletDoc.exists()) {
-                    transaction.update(walletRef, { cashBalance: newBalance });
-                } else {
-                    transaction.set(walletRef, { userId: foundClient.id, cashBalance: newBalance, pointsBalance: 0 });
-                }
-
-                transaction.set(logRef, {
-                    userId: foundClient.id,
-                    type: 'deposit',
-                    amount: values.amount,
-                    newBalance: newBalance,
-                    notes: `إيداع عبر ${values.bankName}`,
-                    bankDetails: {
-                        bankName: values.bankName,
-                        referenceNumber: values.referenceNumber,
-                        receiptImageUrl: values.receiptImageUrl || '',
-                    },
-                    createdAt: serverTimestamp(),
-                });
+            const result = await depositToWallet({
+                clientId: foundClient.id,
+                amount: values.amount,
+                bankName: values.bankName,
+                referenceNumber: values.referenceNumber,
+                receiptImageUrl: values.receiptImageUrl,
             });
 
-            toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
-            depositForm.reset();
-        } catch (e) {
+            if (result.success) {
+                toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
+                depositForm.reset();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (e: any) {
             console.error(e);
-            toast({ variant: 'destructive', title: "خطأ", description: "فشلت عملية الإيداع." });
+            toast({ variant: 'destructive', title: "خطأ", description: e.message || "فشلت عملية الإيداع." });
         } finally {
             setIsSubmitting(false);
         }
@@ -161,32 +140,19 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return false;
         setIsSubmitting(true);
         try {
-            const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-            const logRef = doc(collection(firestore, 'walletTransactions'));
-
-            await runTransaction(firestore, async (transaction) => {
-                const walletDoc = await transaction.get(walletRef);
-                if (!walletDoc.exists()) throw new Error("المحفظة غير موجودة!");
-                
-                const currentBalance = walletDoc.data().cashBalance;
-                if (currentBalance < values.amount) throw new Error("الرصيد غير كافي لعملية الاسترجاع!");
-                
-                const newBalance = currentBalance - values.amount;
-                transaction.update(walletRef, { cashBalance: newBalance });
-
-                transaction.set(logRef, {
-                    userId: foundClient.id,
-                    type: 'refund',
-                    amount: -values.amount,
-                    newBalance: newBalance,
-                    notes: `استرجاع رصيد: ${values.reason}`,
-                    createdAt: serverTimestamp(),
-                });
+            const result = await refundFromWallet({
+                clientId: foundClient.id,
+                amount: values.amount,
+                reason: values.reason,
             });
 
-            toast({ title: "تم الاسترجاع بنجاح" });
-            refundForm.reset();
-            return true; // To close dialog
+            if (result.success) {
+                toast({ title: "تم الاسترجاع بنجاح" });
+                refundForm.reset();
+                return true; // To close dialog
+            } else {
+                throw new Error(result.message);
+            }
         } catch (e: any) {
             console.error(e);
             toast({ variant: 'destructive', title: "خطأ", description: e.message });
