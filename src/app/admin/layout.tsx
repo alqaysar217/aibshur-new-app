@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import type { Notification } from '@/lib/notifications';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import type { Admin } from '../users/page';
 
 const sidebarNavItems = [
