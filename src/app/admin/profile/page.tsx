@@ -21,7 +21,7 @@ const profileSchema = z.object({
   name: z.string().min(2, "الاسم مطلوب (حرفين على الأقل)"),
   phone: z.string().min(9, "رقم الهاتف غير صالح"),
   address: z.string().min(5, "العنوان مطلوب (5 أحرف على الأقل)"),
-  personalPhotoUrl: z.string().url({ message: "الرجاء إدخال رابط صورة صالح" }).or(z.literal('')).optional(),
+  personalPhotoUrl: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
