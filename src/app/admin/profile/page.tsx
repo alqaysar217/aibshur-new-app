@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
-import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, useCollection } from '@/firebase'; 
-import { doc, collection, query, where } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc } from '@/firebase'; 
+import { doc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -30,23 +30,17 @@ export default function ProfilePage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
-    const [isNewUser, setIsNewUser] = useState(false);
-    const [phone, setPhone] = useState<string | null>(null);
 
-    // Get phone from localStorage
-    useEffect(() => {
-        setPhone(localStorage.getItem('userPhone'));
-    }, []);
+    // Direct query for admin profile doc using UID
+    const adminDocRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'admins', user.uid);
+    }, [firestore, user]);
+    const { data: adminProfile, isLoading: isLoadingProfile } = useDoc<Admin>(adminDocRef);
 
-    // Fetch profile using the phone number
-    const adminQuery = useMemoFirebase(() => {
-        if (!firestore || !phone) return null;
-        return query(collection(firestore, 'admins'), where('phone', '==', phone));
-    }, [firestore, phone]);
+    // Determine if it's a new user based on the profile data after loading
+    const isNewUser = !isLoadingProfile && !adminProfile;
     
-    const { data: adminProfiles, isLoading: isLoadingProfile } = useCollection<Admin>(adminQuery);
-    const adminProfile = useMemo(() => adminProfiles?.[0], [adminProfiles]);
-
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
         defaultValues: {
@@ -57,61 +51,27 @@ export default function ProfilePage() {
         },
     });
 
-    // This useEffect populates the form once the profile is loaded
+    // This useEffect populates the form once the profile is loaded or if it's a new user
     useEffect(() => {
-        if (isLoadingProfile) return; // Wait until loading is done
-
-        const phoneFromStorage = localStorage.getItem('userPhone');
-
         if (adminProfile) {
             // Profile exists, populate the form
-            setIsNewUser(false);
             form.reset({
                 name: adminProfile.name,
-                phone: adminProfile.phone, // Use data from DB
+                phone: adminProfile.phone,
                 address: adminProfile.address,
                 personalPhotoUrl: adminProfile.personalPhotoUrl || '',
             });
-        } else if(phoneFromStorage) {
-            // No profile exists, prepare for creation
-            setIsNewUser(true);
+        } else if (user) {
+            // No profile, pre-fill phone from auth if available (email is phone@example.com)
+            const phoneFromEmail = user.email?.split('@')[0] || '';
             form.reset({
                 name: '',
-                phone: phoneFromStorage, // Pre-fill phone from storage
+                phone: phoneFromEmail,
                 address: '',
                 personalPhotoUrl: '',
-            })
+            });
         }
-    }, [adminProfile, isLoadingProfile, form]);
-
-    const onSubmit = (values: ProfileFormValues) => {
-        if (!firestore) return;
-
-        if (adminProfile?.id) { // If profile exists, update it
-            const docRef = doc(firestore, 'admins', adminProfile.id);
-            // Use simple update, no need for complex setDoc with merge for this case
-            updateDocumentNonBlocking(docRef, values);
-            toast({ title: "تم تحديث الملف الشخصي", description: "تم حفظ بياناتك بنجاح." });
-
-        } else { // Profile doesn't exist, create it
-            const dataToSave = { 
-                ...values,
-                permissions: { canUseCustomerApp: true, canUseDriverApp: true, canUseDashboard: true },
-                dashboardAccess: dashboardPages.map(p => p.id),
-                is_active: true,
-            };
-            addDocumentNonBlocking(collection(firestore, 'admins'), dataToSave);
-            toast({ title: "تم إنشاء الملف الشخصي", description: "تم حفظ بياناتك بنجاح." });
-            setIsNewUser(false); // After creation, it's no longer a "new user" for this session
-        }
-    };
-
-    const isLoading = isUserLoading || isLoadingProfile;
-    if (isLoading) {
-        return <ProfileLoading />;
-    }
-
-    const photoUrl = form.watch('personalPhotoUrl');
+    }, [adminProfile, user, form]);
 
     const dashboardPages = [
         { id: 'dashboard', label: 'الرئيسية' },
@@ -137,7 +97,37 @@ export default function ProfilePage() {
         { id: 'settings', label: 'إعدادات النظام' },
         { id: 'support', label: 'الدعم الفني' },
     ];
+    
+    const onSubmit = (values: ProfileFormValues) => {
+        if (!firestore || !user) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'يجب تسجيل الدخول.' });
+            return;
+        }
 
+        const docRef = doc(firestore, 'admins', user.uid);
+        const dataToSave = {
+            ...values,
+            // Preserve existing permissions/access if they exist, otherwise set defaults
+            permissions: adminProfile?.permissions || { canUseCustomerApp: true, canUseDriverApp: true, canUseDashboard: true },
+            dashboardAccess: adminProfile?.dashboardAccess || dashboardPages.map(p => p.id),
+            is_active: adminProfile?.is_active ?? true,
+        };
+        
+        // Use setDoc with merge to create or update the document at the specific UID path
+        setDocumentNonBlocking(docRef, dataToSave, { merge: true });
+        
+        toast({
+            title: isNewUser ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
+            description: "تم حفظ بياناتك بنجاح.",
+        });
+    };
+
+    const isLoading = isUserLoading || isLoadingProfile;
+    if (isLoading) {
+        return <ProfileLoading />;
+    }
+
+    const photoUrl = form.watch('personalPhotoUrl');
 
     return (
         <div className="space-y-6">

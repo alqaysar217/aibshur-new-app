@@ -50,21 +50,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
     const firestore = useFirestore();
-    const [phone, setPhone] = useState<string | null>(null);
 
-    // Get phone from localStorage once on mount
-    useEffect(() => {
-        setPhone(localStorage.getItem('userPhone'));
-    }, []);
+    // New, direct query for the admin profile using the auth UID.
+    const adminDocRef = useMemoFirebase(() => {
+        if (!firestore || !user?.uid) return null;
+        return doc(firestore, 'admins', user.uid);
+    }, [firestore, user?.uid]);
 
-    // New query-based fetching for admin profile
-    const adminQuery = useMemoFirebase(() => {
-        if (!firestore || !phone) return null;
-        return query(collection(firestore, 'admins'), where('phone', '==', phone));
-    }, [firestore, phone]);
-
-    const { data: adminProfiles, isLoading: isLoadingAdminProfile } = useCollection<Admin>(adminQuery);
-    const adminProfile = useMemo(() => adminProfiles?.[0], [adminProfiles]);
+    const { data: adminProfile, isLoading: isLoadingAdminProfile } = useDoc<Admin>(adminDocRef);
 
     // Check if the DB is seeded before fetching collections that might not exist.
     const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
@@ -98,7 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         // Wait until loading is finished and we are sure if a profile exists or not
         if (isUserLoading || isLoadingAdminProfile) return;
 
-        // If user is authenticated but no admin profile is found for their phone number
+        // If user is authenticated but no admin profile is found for their uid, redirect
         if (user && !adminProfile && pathname !== '/admin/profile') {
              router.replace('/admin/profile');
         }
@@ -205,7 +198,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border">
                                     <Avatar className="h-full w-full">
                                         <AvatarImage src={adminProfile?.personalPhotoUrl || "/profile.png"} alt={adminProfile?.name || "Admin"}/>
-                                        <AvatarFallback>{adminProfile?.name.charAt(0) || 'A'}</AvatarFallback>
+                                        <AvatarFallback>{adminProfile?.name?.charAt(0) || 'A'}</AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
