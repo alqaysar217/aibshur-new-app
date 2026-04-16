@@ -50,14 +50,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
     const firestore = useFirestore();
-    
-    // Instead of using user.uid directly, we use the stable UID from the auth session.
-    // The new OTP logic ensures this UID is stable across logins for the same phone number.
-    const adminDocRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, 'admins', user.uid);
-    }, [firestore, user]);
-    const { data: adminProfile, isLoading: isLoadingAdminProfile } = useDoc<Admin>(adminDocRef);
+    const [phone, setPhone] = useState<string | null>(null);
+
+    // Get phone from localStorage once on mount
+    useEffect(() => {
+        setPhone(localStorage.getItem('userPhone'));
+    }, []);
+
+    // New query-based fetching for admin profile
+    const adminQuery = useMemoFirebase(() => {
+        if (!firestore || !phone) return null;
+        return query(collection(firestore, 'admins'), where('phone', '==', phone));
+    }, [firestore, phone]);
+
+    const { data: adminProfiles, isLoading: isLoadingAdminProfile } = useCollection<Admin>(adminQuery);
+    const adminProfile = useMemo(() => adminProfiles?.[0], [adminProfiles]);
 
     // Check if the DB is seeded before fetching collections that might not exist.
     const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
@@ -88,12 +95,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, [isUserLoading, user, router]);
     
     useEffect(() => {
-        if (!isUserLoading && !isLoadingAdminProfile && user && !adminProfile && pathname !== '/admin/profile') {
+        // Wait until loading is finished and we are sure if a profile exists or not
+        if (isUserLoading || isLoadingAdminProfile) return;
+
+        // If user is authenticated but no admin profile is found for their phone number
+        if (user && !adminProfile && pathname !== '/admin/profile') {
              router.replace('/admin/profile');
         }
     }, [isUserLoading, isLoadingAdminProfile, user, adminProfile, pathname, router]);
 
-    if (isUserLoading || isLoadingAdminProfile || (user && !adminProfile && pathname !== '/admin/profile')) {
+    if (isUserLoading || (user && isLoadingAdminProfile)) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-muted/40">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />

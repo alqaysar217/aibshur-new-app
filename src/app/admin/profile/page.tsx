@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Image from 'next/image';
-import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, useDoc } from '@/firebase'; 
-import { doc, collection } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, useCollection } from '@/firebase'; 
+import { doc, collection, query, where } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -31,14 +31,21 @@ export default function ProfilePage() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isNewUser, setIsNewUser] = useState(false);
+    const [phone, setPhone] = useState<string | null>(null);
 
-    const adminDocRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, 'admins', user.uid);
-    }, [firestore, user]);
+    // Get phone from localStorage
+    useEffect(() => {
+        setPhone(localStorage.getItem('userPhone'));
+    }, []);
+
+    // Fetch profile using the phone number
+    const adminQuery = useMemoFirebase(() => {
+        if (!firestore || !phone) return null;
+        return query(collection(firestore, 'admins'), where('phone', '==', phone));
+    }, [firestore, phone]);
     
-    const { data: adminProfile, isLoading: isLoadingProfile } = useDoc<Admin>(adminDocRef);
-
+    const { data: adminProfiles, isLoading: isLoadingProfile } = useCollection<Admin>(adminQuery);
+    const adminProfile = useMemo(() => adminProfiles?.[0], [adminProfiles]);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -50,59 +57,53 @@ export default function ProfilePage() {
         },
     });
 
+    // This useEffect populates the form once the profile is loaded
     useEffect(() => {
-        // Always set the phone from localStorage as it's the identifier.
-        const phoneFromStorage = localStorage.getItem('userPhone');
-        if (phoneFromStorage) {
-            form.setValue('phone', phoneFromStorage);
-        }
+        if (isLoadingProfile) return; // Wait until loading is done
 
-        if (!isLoadingProfile) {
-            if (adminProfile) {
-                // If profile exists, populate the rest of the form
-                setIsNewUser(false);
-                form.reset({
-                    name: adminProfile.name,
-                    phone: adminProfile.phone,
-                    address: adminProfile.address,
-                    personalPhotoUrl: adminProfile.personalPhotoUrl || '',
-                });
-            } else {
-                // If profile does not exist after loading
-                setIsNewUser(true);
-            }
+        const phoneFromStorage = localStorage.getItem('userPhone');
+
+        if (adminProfile) {
+            // Profile exists, populate the form
+            setIsNewUser(false);
+            form.reset({
+                name: adminProfile.name,
+                phone: adminProfile.phone, // Use data from DB
+                address: adminProfile.address,
+                personalPhotoUrl: adminProfile.personalPhotoUrl || '',
+            });
+        } else if(phoneFromStorage) {
+            // No profile exists, prepare for creation
+            setIsNewUser(true);
+            form.reset({
+                name: '',
+                phone: phoneFromStorage, // Pre-fill phone from storage
+                address: '',
+                personalPhotoUrl: '',
+            })
         }
     }, [adminProfile, isLoadingProfile, form]);
 
     const onSubmit = (values: ProfileFormValues) => {
         if (!firestore) return;
 
-        const docId = user?.uid;
-        if (!docId) {
-             toast({
-                variant: "destructive",
-                title: "خطأ",
-                description: "لا يمكن تحديد المستخدم للحفظ.",
-            });
-            return;
-        }
+        if (adminProfile?.id) { // If profile exists, update it
+            const docRef = doc(firestore, 'admins', adminProfile.id);
+            // Use simple update, no need for complex setDoc with merge for this case
+            updateDocumentNonBlocking(docRef, values);
+            toast({ title: "تم تحديث الملف الشخصي", description: "تم حفظ بياناتك بنجاح." });
 
-        const docToUpdateRef = doc(firestore, 'admins', docId);
-
-        const dataToSave = isNewUser 
-            ? { 
+        } else { // Profile doesn't exist, create it
+            const dataToSave = { 
                 ...values,
                 permissions: { canUseCustomerApp: true, canUseDriverApp: true, canUseDashboard: true },
                 dashboardAccess: dashboardPages.map(p => p.id),
                 is_active: true,
-              }
-            : values;
-
-        setDocumentNonBlocking(docToUpdateRef, dataToSave, { merge: true });
-        toast({
-            title: isNewUser ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
-            description: "تم حفظ بياناتك بنجاح.",
-        });
+            };
+            addDocumentNonBlocking(collection(firestore, 'admins'), dataToSave);
+            toast({ title: "تم إنشاء الملف الشخصي", description: "تم حفظ بياناتك بنجاح." });
+            setIsNewUser(false); // After creation, it's no longer a "new user" for this session
+        }
     };
 
     const isLoading = isUserLoading || isLoadingProfile;
