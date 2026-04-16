@@ -113,14 +113,10 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
-      // Wallet Transactions: Owners can list/read their own. Admin read is granted above.
-      match /walletTransactions {
-          allow list: if isOwner(userId) || isAdmin();
-      }
-      match /walletTransactions/{transactionId} {
-        allow get: if isOwner(userId) || isAdmin();
+      // Wallet Transactions: Owners or Admins can read. Admins can create.
+      match /walletTransactions/{transactionId=**} {
+        allow read: if isOwner(userId) || isAdmin();
         allow create: if isAdmin();
-        allow update, delete: if false;
       }
     }
 
