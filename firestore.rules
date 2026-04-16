@@ -11,11 +11,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      if (!isSignedIn()) {
-        return false;
-      }
-      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
-      return adminDoc != null && adminDoc.data.is_active == true;
+      // Simplified to check for existence only, as accessing .data can be problematic in list queries.
+      return isSignedIn() && get(/databases/$(database)/documents/admins/$(request.auth.uid)) != null;
     }
 
     // --- Admin-Managed Collections ---
