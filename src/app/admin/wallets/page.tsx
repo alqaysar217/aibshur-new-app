@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Search, User, Phone, BadgeCent, Loader2, List, History, FileText, Filter, Calendar, Building, Hash, Paperclip, CircleDollarSign, ListChecks } from 'lucide-react';
+import { Wallet, Search, User, Phone, BadgeCent, Loader2, List, History, FileText, Filter, Calendar, Building, Hash, Paperclip, CircleDollarSign, ListChecks, Banknote } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
@@ -446,31 +446,31 @@ export default function WalletsPage() {
                                 <div className="flex items-start gap-3">
                                     <Calendar className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                     <div>
-                                        <p className="text-muted-foreground">التاريخ والوقت</p>
-                                        <p className="font-semibold">{format(detailsDialogState.transaction.createdAt.toDate(), 'd MMMM yyyy, h:mm a', {locale: ar})}</p>
+                                        <div className="text-muted-foreground">التاريخ والوقت</div>
+                                        <div className="font-semibold">{format(detailsDialogState.transaction.createdAt.toDate(), 'd MMMM yyyy, h:mm a', {locale: ar})}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <ListChecks className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                     <div>
-                                        <p className="text-muted-foreground">نوع العملية</p>
+                                        <div className="text-muted-foreground">نوع العملية</div>
                                         <div><Badge variant={detailsDialogState.transaction.type === 'deposit' ? 'default' : 'secondary'}>{detailsDialogState.transaction.type}</Badge></div>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <CircleDollarSign className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                     <div>
-                                        <p className="text-muted-foreground">المبلغ</p>
-                                        <p className={cn("font-bold font-mono text-lg", detailsDialogState.transaction.amount > 0 ? 'text-green-600' : 'text-red-600')}>
+                                        <div className="text-muted-foreground">المبلغ</div>
+                                        <div className={cn("font-bold font-mono text-lg", detailsDialogState.transaction.amount > 0 ? 'text-green-600' : 'text-red-600')}>
                                             {detailsDialogState.transaction.amount > 0 ? `+${detailsDialogState.transaction.amount.toLocaleString('en-US')}` : detailsDialogState.transaction.amount.toLocaleString('en-US')} ر.ي
-                                        </p>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <Wallet className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                     <div>
-                                        <p className="text-muted-foreground">الرصيد الجديد</p>
-                                        <p className="font-bold font-mono text-lg">{detailsDialogState.transaction.newBalance.toLocaleString('en-US')} ر.ي</p>
+                                        <div className="text-muted-foreground">الرصيد الجديد</div>
+                                        <div className="font-bold font-mono text-lg">{detailsDialogState.transaction.newBalance.toLocaleString('en-US')} ر.ي</div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -480,8 +480,8 @@ export default function WalletsPage() {
                                 <div className="flex items-start gap-3">
                                     <FileText className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                     <div>
-                                        <p className="text-muted-foreground">الملاحظات</p>
-                                        <p className="font-semibold">{detailsDialogState.transaction.notes}</p>
+                                        <div className="text-muted-foreground">الملاحظات</div>
+                                        <div className="font-semibold">{detailsDialogState.transaction.notes}</div>
                                     </div>
                                 </div>
                                 {detailsDialogState.transaction.bankDetails && (
@@ -490,22 +490,22 @@ export default function WalletsPage() {
                                         <div className="flex items-start gap-3">
                                             <Building className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                             <div>
-                                                <p className="text-muted-foreground">البنك</p>
-                                                <p className="font-semibold">{detailsDialogState.transaction.bankDetails.bankName}</p>
+                                                <div className="text-muted-foreground">البنك</div>
+                                                <div className="font-semibold">{detailsDialogState.transaction.bankDetails.bankName}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
                                             <Hash className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                             <div>
-                                                <p className="text-muted-foreground">رقم السند</p>
-                                                <p className="font-semibold">{detailsDialogState.transaction.bankDetails.referenceNumber}</p>
+                                                <div className="text-muted-foreground">رقم السند</div>
+                                                <div className="font-semibold">{detailsDialogState.transaction.bankDetails.referenceNumber}</div>
                                             </div>
                                         </div>
                                         {detailsDialogState.transaction.bankDetails.receiptImageUrl && (
                                             <div className="flex items-start gap-3">
                                                 <Paperclip className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                                                 <div>
-                                                    <p className="text-muted-foreground">صورة السند</p>
+                                                    <div className="text-muted-foreground">صورة السند</div>
                                                     <ImagePreview url={detailsDialogState.transaction.bankDetails.receiptImageUrl} />
                                                 </div>
                                             </div>
