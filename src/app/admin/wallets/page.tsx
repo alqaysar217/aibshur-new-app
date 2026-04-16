@@ -392,10 +392,10 @@ export default function WalletsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="text-right">التاريخ</TableHead>
-                                        <TableHead className="text-center">النوع</TableHead>
-                                        <TableHead className="text-center">المبلغ</TableHead>
-                                        <TableHead className="text-center">الرصيد الجديد</TableHead>
+                                        <TableHead className="text-center"><div className="flex items-center justify-center gap-2"><Calendar className="h-4 w-4" />التاريخ</div></TableHead>
+                                        <TableHead className="text-center"><div className="flex items-center justify-center gap-2"><ListChecks className="h-4 w-4" />النوع</div></TableHead>
+                                        <TableHead className="text-center"><div className="flex items-center justify-center gap-2"><CircleDollarSign className="h-4 w-4" />المبلغ</div></TableHead>
+                                        <TableHead className="text-center"><div className="flex items-center justify-center gap-2"><Wallet className="h-4 w-4" />الرصيد الجديد</div></TableHead>
                                         <TableHead className="text-center">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -405,7 +405,7 @@ export default function WalletsPage() {
                                     ) : filteredTransactions && filteredTransactions.length > 0 ? (
                                         filteredTransactions.map(tx => (
                                             <TableRow key={tx.id}>
-                                                <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar}) : '...'}</TableCell>
+                                                <TableCell className="text-center font-mono">{tx.createdAt ? format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar}) : '...'}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={tx.type === 'deposit' ? 'default' : 'secondary'}>{tx.type}</Badge></TableCell>
                                                 <TableCell className={cn("text-center font-mono", tx.amount > 0 ? 'text-green-600' : 'text-red-600')}>
                                                     {tx.amount > 0 ? `+${tx.amount.toLocaleString('en-US')}` : tx.amount.toLocaleString('en-US')}
@@ -431,7 +431,7 @@ export default function WalletsPage() {
           </>
         )}
         <Dialog open={detailsDialogState.isOpen} onOpenChange={(isOpen) => setDetailsDialogState({ isOpen, transaction: isOpen ? detailsDialogState.transaction : null })}>
-            <DialogContent dir="rtl" className="max-w-lg rounded-xl">
+            <DialogContent dir="rtl" className="max-w-lg rounded-xl [&>button]:right-auto [&>button]:left-4">
                 <DialogHeader className="text-right">
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                         <FileText className="text-primary"/>
