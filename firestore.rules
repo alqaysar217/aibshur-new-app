@@ -11,12 +11,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // An admin is a signed-in user with an active admin document.
-      // NOTE: Using exists() is more performant and required for client-side transactions.
       if (!isSignedIn()) {
         return false;
       }
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return adminDoc != null && adminDoc.data.is_active == true;
     }
 
     // --- Admin-Managed Collections ---
