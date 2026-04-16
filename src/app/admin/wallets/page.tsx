@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
-import { useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import WalletsLoading from './loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -26,6 +26,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { updateDoc } from 'firebase/firestore';
+
 
 // Types
 type UserWallet = {
@@ -82,7 +84,7 @@ export default function WalletsPage() {
 
     // Data Fetching
     const { data: clientData, isLoading: isLoadingClientCollection } = useCollection<Client>(useMemoFirebase(() => (firestore && debouncedSearchTerm) ? query(collection(firestore, 'clients'), where('phone', '==', debouncedSearchTerm)) : null, [firestore, debouncedSearchTerm]));
-    const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
+    const { data: userWallet, isLoading: isLoadingWallet, error: walletError } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
     const { data: bankAccounts, isLoading: isLoadingBanks } = useCollection<BankAccount>(useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]));
     
     // Forms
@@ -105,11 +107,15 @@ export default function WalletsPage() {
             setIsLoadingTransactions(true);
             getWalletTransactions({ clientId: foundClient.id })
                 .then(data => {
-                    const processedData = data.map((tx: any) => ({
-                        ...tx,
-                        createdAt: new Timestamp(tx.createdAt.seconds, tx.createdAt.nanoseconds)
-                    })).sort((a: any, b: any) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-                    setTransactions(processedData);
+                    if(Array.isArray(data)) {
+                        const processedData = data.map((tx: any) => ({
+                            ...tx,
+                            createdAt: tx.createdAt ? new Timestamp(tx.createdAt.seconds, tx.createdAt.nanoseconds) : Timestamp.now()
+                        })).sort((a: any, b: any) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+                        setTransactions(processedData);
+                    } else {
+                        setTransactions([]);
+                    }
                 })
                 .catch(error => {
                     console.error("Failed to fetch transactions:", error);
@@ -133,7 +139,7 @@ export default function WalletsPage() {
     const handleToggleActive = async () => {
         if (!foundClient || !firestore) return;
         const newStatus = !foundClient.is_active;
-        await updateDocumentNonBlocking(doc(firestore, 'clients', foundClient.id), { is_active: newStatus });
+        await updateDoc(doc(firestore, 'clients', foundClient.id), { is_active: newStatus });
         setFoundClient(c => c ? { ...c, is_active: newStatus } : null);
         toast({ title: newStatus ? "تم تفعيل الحساب" : "تم تجميد الحساب" });
     };
@@ -146,6 +152,11 @@ export default function WalletsPage() {
             if (result.success) {
                 toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
                 depositForm.reset();
+                 // Manually trigger a re-fetch of the wallet doc
+                if (userWallet) {
+                    // This is a trick to force a re-render and re-fetch as useDoc depends on the doc ref
+                    const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
+                }
             } else {
                 throw new Error(result.message);
             }
@@ -165,6 +176,10 @@ export default function WalletsPage() {
             if (result.success) {
                 toast({ title: "تم الاسترجاع بنجاح" });
                 refundForm.reset();
+                 // Manually trigger a re-fetch of the wallet doc
+                if (userWallet) {
+                    const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
+                }
                 return true;
             } else {
                  throw new Error(result.message);

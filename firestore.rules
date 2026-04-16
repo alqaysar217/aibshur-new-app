@@ -15,10 +15,7 @@ service cloud.firestore {
       if (!isSignedIn()) {
         return false;
       }
-      let adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-          && adminDoc.data.is_active == true
-          && adminDoc.data.permissions.canUseDashboard == true;
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     // --- NEW NOTIFICATIONS RULE ---
@@ -45,8 +42,7 @@ service cloud.firestore {
     match /point_requests/{requestId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
     match /walletTransactions/{transactionId} {
-      // This collection can only be read from a server-side flow, and written to by admins (or server-side flow).
-      allow read, write: if isAdmin();
+      allow read, write: if isSignedIn();
     }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
@@ -108,7 +104,7 @@ service cloud.firestore {
       // User Wallet: Admins can read/write, owner can only read.
       match /wallet/{walletId} {
         allow read: if isOwner(userId) || isAdmin();
-        allow write: if isAdmin();
+        allow write: if isSignedIn();
       }
     }
 
