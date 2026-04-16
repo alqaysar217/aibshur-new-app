@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, doc, query, where, Timestamp, runTransaction, serverTimestamp, orderBy } from 'firebase/firestore';
-import { useFirestore, useCollection, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import WalletsLoading from './loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -26,7 +26,6 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { updateDoc } from 'firebase/firestore';
-import { getWalletTransactions, depositToWallet, refundFromWallet } from '@/ai/flows/wallet-flows';
 
 
 // Types
@@ -87,38 +86,34 @@ export default function WalletsPage() {
 
     // Data Fetching
     const { data: clientData, isLoading: isLoadingClientCollection } = useCollection<Client>(useMemoFirebase(() => (firestore && debouncedSearchTerm) ? query(collection(firestore, 'clients'), where('phone', '==', debouncedSearchTerm)) : null, [firestore, debouncedSearchTerm]));
-    const { data: userWallet, isLoading: isLoadingWallet, error: walletError } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
+    const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
     const { data: bankAccounts, isLoading: isLoadingBanks } = useCollection<BankAccount>(useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]));
     
-    const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-    const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+    const transactionsQuery = useMemoFirebase(() => {
+        if (!firestore || !foundClient) return null;
+        return query(collection(firestore, 'users', foundClient.id, 'walletTransactions'), orderBy('createdAt', 'desc'));
+    }, [firestore, foundClient]);
+
+    const { data: rawTransactions, isLoading: isLoadingTransactions, error: transactionsError } = useCollection<WalletTransaction>(transactionsQuery);
+
+    const transactions = useMemo(() => {
+        if (!rawTransactions) return [];
+        return rawTransactions.map(tx => ({
+            ...tx,
+            createdAt: tx.createdAt,
+        }));
+    }, [rawTransactions]);
 
     useEffect(() => {
-        if (foundClient) {
-            setIsLoadingTransactions(true);
-            getWalletTransactions({ clientId: foundClient.id })
-                .then(data => {
-                    const formattedData = data.map(tx => ({
-                        ...tx,
-                        createdAt: tx.createdAt ? Timestamp.fromDate(new Date(tx.createdAt)) : Timestamp.now(),
-                    }));
-                    setTransactions(formattedData as WalletTransaction[]);
-                })
-                .catch(err => {
-                    console.error("Failed to get wallet transactions:", err);
-                    toast({
-                        variant: 'destructive',
-                        title: 'خطأ',
-                        description: 'فشل في تحميل سجل العمليات.',
-                    });
-                })
-                .finally(() => {
-                    setIsLoadingTransactions(false);
-                });
-        } else {
-            setTransactions([]); // Clear transactions if no client is found
+        if (transactionsError) {
+            console.error("Failed to get wallet transactions:", transactionsError);
+            toast({
+                variant: 'destructive',
+                title: 'خطأ',
+                description: `فشل في تحميل سجل العمليات: ${transactionsError.message}`,
+            });
         }
-    }, [foundClient, toast]);
+    }, [transactionsError, toast]);
 
     
     // Forms
@@ -154,52 +149,88 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return;
         setIsSubmitting(true);
         
-        const result = await depositToWallet({
-            clientId: foundClient.id,
-            ...values,
-        });
+        const { amount, bankName, referenceNumber, receiptImageUrl } = values;
+        const clientId = foundClient.id;
 
-        if (result.success) {
-            toast({ title: result.message, description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
-            depositForm.reset();
-            // Manually refetch transactions to show update
-            if (foundClient) {
-                 getWalletTransactions({ clientId: foundClient.id }).then(data => {
-                    const formattedData = data.map(tx => ({...tx, createdAt: tx.createdAt ? Timestamp.fromDate(new Date(tx.createdAt)) : Timestamp.now() }));
-                    setTransactions(formattedData as WalletTransaction[]);
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const walletRef = doc(firestore, 'users', clientId, 'wallet', 'main');
+                const walletDoc = await transaction.get(walletRef);
+                
+                const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
+                const newBalance = currentBalance + amount;
+
+                if (walletDoc.exists()) {
+                    transaction.update(walletRef, { cashBalance: newBalance });
+                } else {
+                    transaction.set(walletRef, { userId: clientId, cashBalance: newBalance, pointsBalance: 0 });
+                }
+
+                const logRef = doc(collection(firestore, 'users', clientId, 'walletTransactions'));
+                transaction.set(logRef, {
+                    userId: clientId,
+                    type: 'deposit',
+                    amount: amount,
+                    newBalance: newBalance,
+                    notes: `إيداع عبر ${bankName}`,
+                    bankDetails: { bankName, referenceNumber, receiptImageUrl: receiptImageUrl || '' },
+                    createdAt: serverTimestamp(),
                 });
-            }
-        } else {
-            toast({ variant: 'destructive', title: 'فشل الإيداع', description: result.message });
+            });
+
+            toast({ title: 'تم الإيداع بنجاح', description: `تمت إضافة ${amount} ر.ي إلى محفظة ${foundClient.name}.` });
+            depositForm.reset();
+        } catch (e: any) {
+            console.error("Deposit transaction failed:", e);
+            toast({ variant: 'destructive', title: 'فشل الإيداع', description: e.message });
+        } finally {
+            setIsSubmitting(false);
         }
-        setIsSubmitting(false);
     };
     
     const onRefundSubmit = async (values: z.infer<typeof refundSchema>) => {
         if (!firestore || !foundClient) return false;
         setIsSubmitting(true);
         
-        const result = await refundFromWallet({
-            clientId: foundClient.id,
-            amount: values.amount,
-            reason: values.reason,
-        });
-
-        if (result.success) {
-            toast({ title: result.message });
-            refundForm.reset();
-            // Manually refetch transactions
-            if (foundClient) {
-                 getWalletTransactions({ clientId: foundClient.id }).then(data => {
-                    const formattedData = data.map(tx => ({...tx, createdAt: tx.createdAt ? Timestamp.fromDate(new Date(tx.createdAt)) : Timestamp.now() }));
-                    setTransactions(formattedData as WalletTransaction[]);
+        const { amount, reason } = values;
+        const clientId = foundClient.id;
+    
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const walletRef = doc(firestore, 'users', clientId, 'wallet', 'main');
+                const walletDoc = await transaction.get(walletRef);
+    
+                if (!walletDoc.exists()) {
+                    throw new Error("لم يتم العثور على محفظة العميل.");
+                }
+                
+                const currentBalance = walletDoc.data().cashBalance || 0;
+                if (currentBalance < amount) {
+                    throw new Error("رصيد العميل غير كافٍ لعملية الاسترجاع.");
+                }
+                const newBalance = currentBalance - amount;
+    
+                transaction.update(walletRef, { cashBalance: newBalance });
+    
+                const logRef = doc(collection(firestore, 'users', clientId, 'walletTransactions'));
+                transaction.set(logRef, {
+                    userId: clientId,
+                    type: 'refund',
+                    amount: -amount,
+                    newBalance: newBalance,
+                    notes: `استرجاع رصيد: ${reason}`,
+                    createdAt: serverTimestamp(),
                 });
-            }
-            return true;
-        } else {
-            toast({ variant: 'destructive', title: 'فشل الاسترجاع', description: result.message });
+            });
+            toast({ title: "تم الاسترجاع بنجاح" });
+            refundForm.reset();
+            return true; // for closing dialog
+        } catch (e: any) {
+            console.error("Refund transaction failed:", e);
+            toast({ variant: 'destructive', title: 'فشل الاسترجاع', description: e.message });
+            return false; // for not closing dialog
+        } finally {
             setIsSubmitting(false);
-            return false;
         }
     };
 
