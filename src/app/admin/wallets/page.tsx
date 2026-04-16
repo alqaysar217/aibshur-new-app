@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { updateDoc } from 'firebase/firestore';
-import { getWalletTransactions } from '@/ai/flows/wallet-flows';
+import { getWalletTransactions, depositToWallet, refundFromWallet } from '@/ai/flows/wallet-flows';
 
 
 // Types
@@ -153,97 +153,53 @@ export default function WalletsPage() {
     const onDepositSubmit = async (values: z.infer<typeof depositSchema>) => {
         if (!firestore || !foundClient) return;
         setIsSubmitting(true);
+        
+        const result = await depositToWallet({
+            clientId: foundClient.id,
+            ...values,
+        });
 
-        const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-        const transactionCollectionRef = collection(firestore, 'users', foundClient.id, 'walletTransactions');
-
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const walletDoc = await transaction.get(walletRef);
-                const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
-                const newBalance = currentBalance + values.amount;
-
-                if (walletDoc.exists()) {
-                    transaction.update(walletRef, { cashBalance: newBalance });
-                } else {
-                    transaction.set(walletRef, { userId: foundClient.id, cashBalance: newBalance, pointsBalance: 0 });
-                }
-                
-                const logRef = doc(transactionCollectionRef);
-                transaction.set(logRef, {
-                    userId: foundClient.id,
-                    type: 'deposit',
-                    amount: values.amount,
-                    newBalance: newBalance,
-                    notes: `إيداع عبر ${values.bankName}`,
-                    bankDetails: {
-                        bankName: values.bankName,
-                        referenceNumber: values.referenceNumber,
-                        receiptImageUrl: values.receiptImageUrl || '',
-                    },
-                    createdAt: serverTimestamp(),
-                });
-            });
-
-            toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
+        if (result.success) {
+            toast({ title: result.message, description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
             depositForm.reset();
-        } catch (e: any) {
-            const error = new FirestorePermissionError({
-                path: `users/${foundClient.id}/wallet/main`,
-                operation: 'write', 
-                requestResourceData: values,
-            });
-            errorEmitter.emit('permission-error', error);
-        } finally {
-            setIsSubmitting(false);
+            // Manually refetch transactions to show update
+            if (foundClient) {
+                 getWalletTransactions({ clientId: foundClient.id }).then(data => {
+                    const formattedData = data.map(tx => ({...tx, createdAt: tx.createdAt ? Timestamp.fromDate(new Date(tx.createdAt)) : Timestamp.now() }));
+                    setTransactions(formattedData as WalletTransaction[]);
+                });
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'فشل الإيداع', description: result.message });
         }
+        setIsSubmitting(false);
     };
     
     const onRefundSubmit = async (values: z.infer<typeof refundSchema>) => {
         if (!firestore || !foundClient) return false;
         setIsSubmitting(true);
-        const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-        const transactionCollectionRef = collection(firestore, 'users', foundClient.id, 'walletTransactions');
+        
+        const result = await refundFromWallet({
+            clientId: foundClient.id,
+            amount: values.amount,
+            reason: values.reason,
+        });
 
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const walletDoc = await transaction.get(walletRef);
-                if (!walletDoc.exists()) {
-                    throw new Error("لم يتم العثور على محفظة العميل.");
-                }
-
-                const currentBalance = walletDoc.data().cashBalance || 0;
-                if (currentBalance < values.amount) {
-                    throw new Error("رصيد العميل غير كافٍ لعملية الاسترجاع.");
-                }
-                const newBalance = currentBalance - values.amount;
-
-                transaction.update(walletRef, { cashBalance: newBalance });
-
-                const logRef = doc(transactionCollectionRef);
-                transaction.set(logRef, {
-                    userId: foundClient.id,
-                    type: 'refund',
-                    amount: -values.amount,
-                    newBalance: newBalance,
-                    notes: `استرجاع رصيد: ${values.reason}`,
-                    createdAt: serverTimestamp(),
-                });
-            });
-
-            toast({ title: "تم الاسترجاع بنجاح" });
+        if (result.success) {
+            toast({ title: result.message });
             refundForm.reset();
+            // Manually refetch transactions
+            if (foundClient) {
+                 getWalletTransactions({ clientId: foundClient.id }).then(data => {
+                    const formattedData = data.map(tx => ({...tx, createdAt: tx.createdAt ? Timestamp.fromDate(new Date(tx.createdAt)) : Timestamp.now() }));
+                    setTransactions(formattedData as WalletTransaction[]);
+                });
+            }
             return true;
-        } catch (e: any) {
-            const error = new FirestorePermissionError({
-                path: `users/${foundClient.id}/wallet/main`,
-                operation: 'write',
-                requestResourceData: values,
-            });
-            errorEmitter.emit('permission-error', error);
-            return false;
-        } finally {
+        } else {
+            toast({ variant: 'destructive', title: 'فشل الاسترجاع', description: result.message });
             setIsSubmitting(false);
+            return false;
         }
     };
 
