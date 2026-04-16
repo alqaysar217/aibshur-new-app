@@ -30,7 +30,7 @@ export default function ProfilePage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
-    const [isFirstTime, setIsFirstTime] = useState(false);
+    const [isNewUser, setIsNewUser] = useState(false);
 
     const adminDocRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -51,21 +51,26 @@ export default function ProfilePage() {
     });
 
     useEffect(() => {
-        if (!isLoadingProfile && !adminProfile) {
-            setIsFirstTime(true);
-            const phoneFromStorage = localStorage.getItem('userPhone');
-            if (phoneFromStorage) {
-                form.setValue('phone', phoneFromStorage);
-            }
+        // Always set the phone from localStorage as it's the identifier.
+        const phoneFromStorage = localStorage.getItem('userPhone');
+        if (phoneFromStorage) {
+            form.setValue('phone', phoneFromStorage);
         }
-        if (adminProfile) {
-            setIsFirstTime(false);
-            form.reset({
-                name: adminProfile.name,
-                phone: adminProfile.phone,
-                address: adminProfile.address,
-                personalPhotoUrl: adminProfile.personalPhotoUrl || '',
-            });
+
+        if (!isLoadingProfile) {
+            if (adminProfile) {
+                // If profile exists, populate the rest of the form
+                setIsNewUser(false);
+                form.reset({
+                    name: adminProfile.name,
+                    phone: adminProfile.phone,
+                    address: adminProfile.address,
+                    personalPhotoUrl: adminProfile.personalPhotoUrl || '',
+                });
+            } else {
+                // If profile does not exist after loading
+                setIsNewUser(true);
+            }
         }
     }, [adminProfile, isLoadingProfile, form]);
 
@@ -84,22 +89,20 @@ export default function ProfilePage() {
 
         const docToUpdateRef = doc(firestore, 'admins', docId);
 
-        // For a new admin, we also need to set the permissions
-        const dataToSave = isFirstTime 
+        const dataToSave = isNewUser 
             ? { 
                 ...values,
                 permissions: { canUseCustomerApp: true, canUseDriverApp: true, canUseDashboard: true },
-                dashboardAccess: dashboardPages.map(p => p.id), // Give all permissions by default to first admin
+                dashboardAccess: dashboardPages.map(p => p.id),
                 is_active: true,
               }
             : values;
 
         setDocumentNonBlocking(docToUpdateRef, dataToSave, { merge: true });
         toast({
-            title: isFirstTime ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
+            title: isNewUser ? "تم إنشاء الملف الشخصي" : "تم تحديث الملف الشخصي",
             description: "تم حفظ بياناتك بنجاح.",
         });
-        setIsFirstTime(false);
     };
 
     const isLoading = isUserLoading || isLoadingProfile;
@@ -142,7 +145,7 @@ export default function ProfilePage() {
                 <p className="text-muted-foreground mt-1">عرض وتحديث معلومات حسابك كمسؤول في النظام.</p>
             </div>
             
-            {isFirstTime && (
+            {isNewUser && (
                  <Card className="border-blue-500 bg-blue-50">
                     <CardHeader className="flex flex-row items-center gap-3 space-y-0">
                         <AlertCircle className="h-6 w-6 text-blue-700" />
@@ -182,7 +185,7 @@ export default function ProfilePage() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2"><Phone /> رقم الهاتف</FormLabel>
-                                            <FormControl><Input {...field} disabled={isFirstTime} /></FormControl>
+                                            <FormControl><Input {...field} readOnly className="bg-muted/50" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -215,7 +218,7 @@ export default function ProfilePage() {
                                                     </div>
                                                 )}
                                             </div>
-                                             <FormControl><Input {...field} placeholder="https://example.com/photo.png" className="mt-4 text-left" dir="ltr" /></FormControl>
+                                             <FormControl><Input {...field} placeholder="https://... أو /logo.png" className="mt-4 text-left" dir="ltr" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -224,7 +227,7 @@ export default function ProfilePage() {
                         </CardContent>
                         <CardFooter>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
-                                <Save /> {isFirstTime ? 'إنشاء وحفظ الملف الشخصي' : 'حفظ التغييرات'}
+                                <Save /> {isNewUser ? 'إنشاء وحفظ الملف الشخصي' : 'حفظ التغييرات'}
                             </Button>
                         </CardFooter>
                     </Card>
