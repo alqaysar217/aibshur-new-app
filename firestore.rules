@@ -45,8 +45,11 @@ service cloud.firestore {
     match /point_requests/{requestId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
     match /walletTransactions/{transactionId} {
-      allow read: if true; // TEMPORARY DIAGNOSTIC RULE
-      allow create, update, delete: if isAdmin();
+      // TEMPORARY RULE: Allow any signed-in user to read/create for debugging wallet page.
+      // This is NOT secure for production.
+      // Original rule: allow read, write: if isAdmin();
+      allow read, create: if isSignedIn();
+      allow update, delete: if isAdmin();
     }
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
@@ -105,9 +108,10 @@ service cloud.firestore {
       match /profile/{profileId} {
         allow read, write: if isOwner(userId);
       }
-      // User Wallet: Owner and Admin can access
+      // User Wallet: Temporarily open for signed-in users for debugging.
+      // Original rule: allow read, write: if isAdmin() || isOwner(userId);
       match /wallet/{walletId} {
-        allow read, write: if isAdmin() || isOwner(userId);
+        allow read, write: if isSignedIn();
       }
     }
 

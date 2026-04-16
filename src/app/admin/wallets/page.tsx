@@ -20,7 +20,12 @@ import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import type { BankAccount } from '../bank-accounts/page';
-
+import { depositWallet, refundWallet } from '@/ai/flows/wallet-flows';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 // Types
 type UserWallet = {
@@ -78,6 +83,7 @@ export default function WalletsPage() {
     const { data: clientData, isLoading: isLoadingClientCollection } = useCollection<Client>(useMemoFirebase(() => (firestore && debouncedSearchTerm) ? query(collection(firestore, 'clients'), where('phone', '==', debouncedSearchTerm)) : null, [firestore, debouncedSearchTerm]));
     const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
     const { data: bankAccounts, isLoading: isLoadingBanks } = useCollection<BankAccount>(useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]));
+    const { data: allTransactions, isLoading: isLoadingTransactions } = useCollection<WalletTransaction>(useMemoFirebase(() => firestore ? collection(firestore, 'walletTransactions') : null, [firestore]));
 
     // Forms
     const depositForm = useForm<z.infer<typeof depositSchema>>({ resolver: zodResolver(depositSchema), defaultValues: { amount: 0, bankName: '', referenceNumber: '', receiptImageUrl: '' }});
@@ -93,6 +99,13 @@ export default function WalletsPage() {
         }
     }, [clientData, isLoadingClientCollection]);
     
+    // Memoized Data
+    const clientTransactions = useMemo(() => {
+        if (!foundClient || !allTransactions) return [];
+        return allTransactions.filter(t => t.userId === foundClient.id).sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+    }, [foundClient, allTransactions]);
+
+
     // Handlers
     const handleSearch = () => {
         setIsLoadingClient(true);
@@ -112,40 +125,13 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return;
         setIsSubmitting(true);
         try {
-            const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-            const logRef = doc(collection(firestore, 'walletTransactions'));
-            
-            const batch = writeBatch(firestore);
-
-            const walletDoc = await getDoc(walletRef);
-            const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
-            const newBalance = currentBalance + values.amount;
-
-            if (walletDoc.exists()) {
-                batch.update(walletRef, { cashBalance: newBalance });
+            const result = await depositWallet({ ...values, clientId: foundClient.id });
+            if (result.success) {
+                toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
+                depositForm.reset();
             } else {
-                batch.set(walletRef, { userId: foundClient.id, cashBalance: newBalance, pointsBalance: 0 });
+                throw new Error(result.message);
             }
-
-            batch.set(logRef, {
-                userId: foundClient.id,
-                type: 'deposit',
-                amount: values.amount,
-                newBalance: newBalance,
-                notes: `إيداع عبر ${values.bankName}`,
-                bankDetails: {
-                    bankName: values.bankName,
-                    referenceNumber: values.referenceNumber,
-                    receiptImageUrl: values.receiptImageUrl || '',
-                },
-                createdAt: serverTimestamp(),
-            });
-
-            await batch.commit();
-
-            toast({ title: "تم الإيداع بنجاح", description: `تمت إضافة ${values.amount} ر.ي إلى محفظة ${foundClient.name}.` });
-            depositForm.reset();
-
         } catch (e: any) {
             console.error(e);
             toast({ variant: 'destructive', title: "خطأ", description: e.message || "فشلت عملية الإيداع." });
@@ -158,38 +144,14 @@ export default function WalletsPage() {
         if (!firestore || !foundClient) return false;
         setIsSubmitting(true);
         try {
-            const walletRef = doc(firestore, 'users', foundClient.id, 'wallet', 'main');
-            const walletDoc = await getDoc(walletRef);
-
-            if (!walletDoc.exists()) {
-                throw new Error("لم يتم العثور على محفظة العميل.");
+            const result = await refundWallet({ ...values, clientId: foundClient.id });
+            if (result.success) {
+                toast({ title: "تم الاسترجاع بنجاح" });
+                refundForm.reset();
+                return true; // To close dialog
+            } else {
+                 throw new Error(result.message);
             }
-
-            const currentBalance = walletDoc.data().cashBalance;
-            if (currentBalance < values.amount) {
-                throw new Error("رصيد العميل غير كافٍ لعملية الاسترجاع.");
-            }
-            
-            const newBalance = currentBalance - values.amount;
-
-            const batch = writeBatch(firestore);
-            batch.update(walletRef, { cashBalance: newBalance });
-
-            const logRef = doc(collection(firestore, 'walletTransactions'));
-            batch.set(logRef, {
-                userId: foundClient.id,
-                type: 'refund',
-                amount: -values.amount,
-                newBalance: newBalance,
-                notes: `استرجاع رصيد: ${values.reason}`,
-                createdAt: serverTimestamp(),
-            });
-
-            await batch.commit();
-            
-            toast({ title: "تم الاسترجاع بنجاح" });
-            refundForm.reset();
-            return true; // To close dialog
         } catch (e: any) {
             console.error(e);
             toast({ variant: 'destructive', title: "خطأ", description: e.message });
@@ -199,7 +161,7 @@ export default function WalletsPage() {
         }
     };
 
-    if (isLoadingClientCollection || isLoadingBanks) {
+    if (isLoadingClientCollection || isLoadingBanks || isLoadingTransactions) {
         return <WalletsLoading />;
     }
 
@@ -240,46 +202,83 @@ export default function WalletsPage() {
         {foundClient && (
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-                <Form {...depositForm}>
-                <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
-                    <Card>
-                    <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField
-                            name="bankName"
-                            control={depositForm.control}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>البنك</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
-                                        <FormControl><SelectTrigger className="h-10 rounded-[10px]">
-                                                <SelectValue placeholder="اختر البنك..." />
-                                            </SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {(bankAccounts || []).map(bank => (
-                                                <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( 
-                            <FormItem> 
-                                <FormLabel>رابط صورة السند (اختياري)</FormLabel> 
-                                <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl>
-                                <ImagePreview url={field.value} />
-                                <FormMessage /> 
-                            </FormItem> 
-                        )} />
-                    </CardContent>
-                    <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
-                    </Card>
-                </form>
-                </Form>
+                <Tabs defaultValue="deposit">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="deposit">إيداع / استرجاع</TabsTrigger>
+                        <TabsTrigger value="log">سجل العمليات</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="deposit" className="mt-4">
+                        <Form {...depositForm}>
+                        <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
+                            <Card>
+                            <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                <FormField
+                                    name="bankName"
+                                    control={depositForm.control}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>البنك</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
+                                                <FormControl><SelectTrigger className="h-10 rounded-[10px]">
+                                                        <SelectValue placeholder="اختر البنك..." />
+                                                    </SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    {(bankAccounts || []).map(bank => (
+                                                        <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( 
+                                    <FormItem> 
+                                        <FormLabel>رابط صورة السند (اختياري)</FormLabel> 
+                                        <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl>
+                                        <ImagePreview url={field.value} />
+                                        <FormMessage /> 
+                                    </FormItem> 
+                                )} />
+                            </CardContent>
+                            <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
+                            </Card>
+                        </form>
+                        </Form>
+                    </TabsContent>
+                    <TabsContent value="log" className="mt-4">
+                        <Card>
+                            <CardHeader><CardTitle>سجل عمليات المحفظة للعميل</CardTitle></CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-center">التاريخ</TableHead>
+                                            <TableHead className="text-center">النوع</TableHead>
+                                            <TableHead className="text-center">المبلغ</TableHead>
+                                            <TableHead className="text-center">الرصيد الجديد</TableHead>
+                                            <TableHead className="text-center">ملاحظات</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {clientTransactions.length > 0 ? clientTransactions.map(tx => (
+                                            <TableRow key={tx.id}>
+                                                <TableCell className="text-center text-xs">{format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', { locale: ar })}</TableCell>
+                                                <TableCell className="text-center"><Badge variant="secondary">{tx.type}</Badge></TableCell>
+                                                <TableCell className={cn("text-center font-bold", tx.amount > 0 ? "text-green-600" : "text-red-600")}>{tx.amount.toLocaleString()} ر.ي</TableCell>
+                                                <TableCell className="text-center">{tx.newBalance.toLocaleString()} ر.ي</TableCell>
+                                                <TableCell className="text-center text-xs">{tx.notes}</TableCell>
+                                            </TableRow>
+                                        )) : <TableRow><TableCell colSpan={5} className="text-center h-24">لا توجد عمليات لعرضها.</TableCell></TableRow>}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
             </div>
 
             <div className="space-y-6">
