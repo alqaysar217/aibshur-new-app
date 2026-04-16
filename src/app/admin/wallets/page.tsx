@@ -72,15 +72,6 @@ export default function WalletsPage() {
     const { data: clientData, isLoading: isLoadingClientCollection } = useCollection<Client>(useMemoFirebase(() => (firestore && debouncedSearchTerm) ? query(collection(firestore, 'clients'), where('phone', '==', debouncedSearchTerm)) : null, [firestore, debouncedSearchTerm]));
     const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
     
-    // Fetch all transactions and filter on client
-    const { data: allWalletLogs, isLoading: isLoadingLogs } = useCollection<WalletTransaction>(useMemoFirebase(() => firestore ? collection(firestore, 'walletTransactions') : null, [firestore]));
-    
-    const walletLogs = useMemo(() => {
-        if (!allWalletLogs || !foundClient) return [];
-        return allWalletLogs.filter(log => log.userId === foundClient.id);
-    }, [allWalletLogs, foundClient]);
-
-
     // Forms
     const depositForm = useForm<z.infer<typeof depositSchema>>({ resolver: zodResolver(depositSchema), defaultValues: { amount: 0, bankName: '', referenceNumber: '', receiptImageUrl: '' }});
     const refundForm = useForm<z.infer<typeof refundSchema>>({ resolver: zodResolver(refundSchema), defaultValues: { amount: 0, reason: '' }});
@@ -192,7 +183,9 @@ export default function WalletsPage() {
         }
     };
 
-    const sortedLogs = useMemo(() => walletLogs?.sort((a,b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()) || [], [walletLogs]);
+    if (isLoadingClientCollection) {
+        return <WalletsLoading />;
+    }
 
     return (
       <div className="space-y-6" dir="rtl">
@@ -231,67 +224,39 @@ export default function WalletsPage() {
         {foundClient && (
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              <Tabs defaultValue="deposit">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="deposit">إيداع / إدارة</TabsTrigger>
-                  <TabsTrigger value="log">سجل العمليات</TabsTrigger>
-                </TabsList>
-                <TabsContent value="deposit" className="mt-4">
-                  <Form {...depositForm}>
-                    <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
-                      <Card>
-                        <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                          <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                          <FormField
-                                name="bankName"
-                                control={depositForm.control}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>البنك</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
-                                            <FormControl><SelectTrigger className="h-10 rounded-[10px]">
-                                                    <SelectValue placeholder="اختر البنك..." />
-                                                </SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="الكريمي">الكريمي</SelectItem>
-                                                <SelectItem value="العمقي">العمقي</SelectItem>
-                                                <SelectItem value="بن دول">بن دول</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                          <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                          <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <FormMessage /> </FormItem> )} />
-                        </CardContent>
-                        <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
-                      </Card>
-                    </form>
-                  </Form>
-                </TabsContent>
-                <TabsContent value="log" className="mt-4">
+                <Form {...depositForm}>
+                <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
                     <Card>
-                        <CardHeader><CardTitle>سجل عمليات المحفظة</CardTitle></CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader><TableRow><TableHead>التاريخ</TableHead><TableHead>النوع</TableHead><TableHead>المبلغ</TableHead><TableHead>ملاحظات</TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {sortedLogs.map(log => (
-                                        <TableRow key={log.id}>
-                                            <TableCell>{format(log.createdAt.toDate(), 'd MMM, h:mm a', { locale: ar })}</TableCell>
-                                            <TableCell><Badge variant="outline">{log.type}</Badge></TableCell>
-                                            <TableCell className={cn("font-mono", log.amount > 0 ? "text-green-600" : "text-red-600")}>{log.amount.toLocaleString()}</TableCell>
-                                            <TableCell>{log.notes}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
+                    <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField
+                            name="bankName"
+                            control={depositForm.control}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>البنك</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
+                                        <FormControl><SelectTrigger className="h-10 rounded-[10px]">
+                                                <SelectValue placeholder="اختر البنك..." />
+                                            </SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="الكريمي">الكريمي</SelectItem>
+                                            <SelectItem value="العمقي">العمقي</SelectItem>
+                                            <SelectItem value="بن دول">بن دول</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <FormMessage /> </FormItem> )} />
+                    </CardContent>
+                    <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
                     </Card>
-                </TabsContent>
-              </Tabs>
+                </form>
+                </Form>
             </div>
 
             <div className="space-y-6">
