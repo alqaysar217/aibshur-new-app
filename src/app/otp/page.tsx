@@ -100,12 +100,8 @@ export default function OtpPage() {
 
     switch (finalOtp) {
         case MOCK_OTP_USER:
-            // Allow if user is a client OR if they have no role yet (new registration)
             if (userRoles.includes('client') || userRoles.length === 0) {
                 isAuthenticated = true;
-                // If they have no roles, it's a new registration.
-                // The registration page doesn't exist in the current file list, but we can assume it sets them up to be a client.
-                // If they are new, send to register. If they exist, send to home.
                 redirectPath = userRoles.length > 0 ? '/home' : `/register?phone=${phone}&role=client`;
                 roleToSave = 'client';
             } else {
@@ -152,29 +148,40 @@ export default function OtpPage() {
     if (isAuthenticated) {
         try {
             const email = `${phone}@example.com`;
-            // This is a mock auth system, so a static password is used to link a phone number to a stable UID.
-            const password = "password-for-mock-auth-system"; 
+            const password = "password-for-mock-auth-system";
 
             try {
+                // Attempt to sign in first.
                 await signInWithEmailAndPassword(auth, email, password);
-            } catch (error: any) {
-                // If user not found, this is their first login. Create the auth user.
-                if (error.code === 'auth/user-not-found') {
-                    await createUserWithEmailAndPassword(auth, email, password);
+            } catch (signInError: any) {
+                // In modern Firebase SDKs, 'auth/invalid-credential' can mean the user doesn't exist OR the password is wrong.
+                // We'll assume the user doesn't exist and try to create them.
+                if (signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/user-not-found') {
+                    try {
+                        // If sign-in fails, attempt to create a new user.
+                        await createUserWithEmailAndPassword(auth, email, password);
+                    } catch (creationError: any) {
+                        // If user creation also fails, then there's a more fundamental issue.
+                        // For example, if the email is already in use but the password was wrong,
+                        // this indicates an unrecoverable state for our mock system.
+                        console.error("Sign-in failed, and user creation also failed:", creationError);
+                        throw new Error(`فشل إنشاء الحساب: ${creationError.message}`);
+                    }
                 } else {
-                    // For other auth errors (e.g., weak password, network issues), show an error.
-                    throw error;
+                    // For other sign-in errors (network issues, etc.), re-throw.
+                    console.error("An unexpected sign-in error occurred:", signInError);
+                    throw signInError;
                 }
             }
             
-            // The onAuthStateChanged listener will now have a stable user.
+            // If sign-in or creation was successful, proceed.
             localStorage.setItem('userPhone', phone);
             localStorage.setItem('userRole', roleToSave);
             router.push(redirectPath);
 
         } catch (authError: any) {
             console.error("Authentication process failed:", authError);
-            setError("فشلت عملية المصادقة. يرجى المحاولة مرة أخرى.");
+            setError(`فشلت عملية المصادقة: ${authError.message}`);
             setIsLoading(false);
         }
     } else {
