@@ -105,9 +105,9 @@ service cloud.firestore {
       match /profile/{profileId} {
         allow read, write: if isOwner(userId);
       }
-      // User Wallet: Only owner can read. Writes are handled by server-side flows.
+      // User Wallet: Admins can read/write, owner can only read.
       match /wallet/{walletId} {
-        allow read: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
         allow write: if isAdmin();
       }
     }
