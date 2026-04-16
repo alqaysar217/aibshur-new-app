@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!firestore || !user) return null;
         return doc(firestore, 'admins', user.uid);
     }, [firestore, user]);
-    const { data: adminProfile } = useDoc<Admin>(adminDocRef);
+    const { data: adminProfile, isLoading: isLoadingAdminProfile } = useDoc<Admin>(adminDocRef);
 
     // Check if the DB is seeded before fetching collections that might not exist.
     const settingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'systemSettings', 'main') : null, [firestore]);
@@ -82,8 +82,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             router.replace('/login');
         }
     }, [isUserLoading, user, router]);
+    
+    useEffect(() => {
+        // If we are done checking for the admin profile, and it doesn't exist,
+        // and we are NOT on the profile page already, then redirect to create it.
+        if (!isLoadingAdminProfile && !adminProfile && pathname !== '/admin/profile') {
+            router.replace('/admin/profile');
+        }
+    }, [isLoadingAdminProfile, adminProfile, pathname, router]);
 
-    if (isUserLoading || !user) {
+    if (isUserLoading || isLoadingAdminProfile || (!adminProfile && pathname !== '/admin/profile')) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-muted/40">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -207,5 +215,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
     );
 }
-
-  
