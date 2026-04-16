@@ -24,10 +24,11 @@ service cloud.firestore {
     match /drivers_v2/{docId} { allow read, write: if isAdmin(); }
     match /storeOwners/{docId} { allow read, write: if isAdmin(); }
     
-    // Admin collection: Allow signed-in users to check for existence, but only admins to list/write.
-    match /admins/{docId} {
+    // Admin collection: A user can create their own admin doc. Only admins can manage other admins.
+    match /admins/{adminId} {
         allow get: if isSignedIn();
-        allow list, create, update, delete: if isAdmin();
+        allow create: if isOwner(adminId);
+        allow list, update, delete: if isAdmin();
     }
 
     match /bankAccounts/{docId} { 
