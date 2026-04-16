@@ -99,26 +99,27 @@ service cloud.firestore {
     
     // --- User-Specific Data ---
     match /users/{userId} {
-      // User Profile: Only owner can access
+      // Admins get read access to all user data and subcollections.
+      allow read: if isAdmin();
+
+      // User Profile: Owner can read/write. Admin read is granted above.
       match /profile/{profileId} {
         allow read, write: if isOwner(userId);
       }
-      // User Wallet: Admins can write and read. Owner can only read.
+
+      // User Wallet: Admins can write. Owners can read. Admin read is granted above.
       match /wallet/{walletId} {
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId);
         allow write: if isAdmin();
       }
-      // Wallet Transactions:
-      // Admins can list and read any transaction.
-      // Owners can only list and read their own.
+
+      // Wallet Transactions: Owners can list/read their own. Admin read is granted above.
       match /walletTransactions {
-          allow list: if isOwner(userId) || isAdmin();
+          allow list: if isOwner(userId);
       }
       match /walletTransactions/{transactionId} {
-        allow get: if isOwner(userId) || isAdmin();
-        // Create is handled server-side via flows, but we'll protect it anyway.
+        allow get: if isOwner(userId);
         allow create: if isAdmin();
-        // Transactions should be immutable
         allow update, delete: if false;
       }
     }
