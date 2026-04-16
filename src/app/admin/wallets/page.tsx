@@ -24,6 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import type { BankAccount } from '../bank-accounts/page';
 
 
 // Types
@@ -58,6 +60,16 @@ const refundSchema = z.object({
     reason: z.string().min(10, "الرجاء كتابة سبب واضح للاسترجاع"),
 });
 
+const ImagePreview = ({ url }: { url?: string }) => {
+    if (!url) return null;
+    return (
+        <div className="mt-2 flex justify-center rounded-lg border border-dashed p-1">
+            <Image src={url} alt="معاينة" width={80} height={80} className="rounded-md object-contain" unoptimized />
+        </div>
+    )
+};
+
+
 export default function WalletsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -71,7 +83,8 @@ export default function WalletsPage() {
     // Data Fetching
     const { data: clientData, isLoading: isLoadingClientCollection } = useCollection<Client>(useMemoFirebase(() => (firestore && debouncedSearchTerm) ? query(collection(firestore, 'clients'), where('phone', '==', debouncedSearchTerm)) : null, [firestore, debouncedSearchTerm]));
     const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
-    
+    const { data: bankAccounts, isLoading: isLoadingBanks } = useCollection<BankAccount>(useMemoFirebase(() => firestore ? collection(firestore, 'bankAccounts') : null, [firestore]));
+
     // Forms
     const depositForm = useForm<z.infer<typeof depositSchema>>({ resolver: zodResolver(depositSchema), defaultValues: { amount: 0, bankName: '', referenceNumber: '', receiptImageUrl: '' }});
     const refundForm = useForm<z.infer<typeof refundSchema>>({ resolver: zodResolver(refundSchema), defaultValues: { amount: 0, reason: '' }});
@@ -183,7 +196,7 @@ export default function WalletsPage() {
         }
     };
 
-    if (isLoadingClientCollection) {
+    if (isLoadingClientCollection || isLoadingBanks) {
         return <WalletsLoading />;
     }
 
@@ -241,9 +254,9 @@ export default function WalletsPage() {
                                                 <SelectValue placeholder="اختر البنك..." />
                                             </SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="الكريمي">الكريمي</SelectItem>
-                                            <SelectItem value="العمقي">العمقي</SelectItem>
-                                            <SelectItem value="بن دول">بن دول</SelectItem>
+                                            {(bankAccounts || []).map(bank => (
+                                                <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -251,7 +264,14 @@ export default function WalletsPage() {
                             )}
                         />
                         <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( 
+                            <FormItem> 
+                                <FormLabel>رابط صورة السند (اختياري)</FormLabel> 
+                                <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl>
+                                <ImagePreview url={field.value} />
+                                <FormMessage /> 
+                            </FormItem> 
+                        )} />
                     </CardContent>
                     <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
                     </Card>
