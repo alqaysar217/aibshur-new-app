@@ -11,23 +11,25 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // An admin is a signed-in user with an active admin document and dashboard permissions.
+      // An admin is a signed-in user with an active admin document.
+      // NOTE: Using exists() is more performant and required for client-side transactions.
       if (!isSignedIn()) {
         return false;
       }
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // --- NEW NOTIFICATIONS RULE ---
-    match /notifications/{docId} {
-        allow read, write: if isAdmin();
-    }
-
     // --- Admin-Managed Collections ---
     match /clients/{docId} { allow read, write: if isAdmin(); }
     match /drivers_v2/{docId} { allow read, write: if isAdmin(); }
     match /storeOwners/{docId} { allow read, write: if isAdmin(); }
-    match /admins/{docId} { allow read, write: if isAdmin(); }
+    
+    // Admin collection: Allow signed-in users to check for existence, but only admins to list/write.
+    match /admins/{docId} {
+        allow get: if isSignedIn();
+        allow list, create, update, delete: if isAdmin();
+    }
+
     match /bankAccounts/{docId} { 
       allow get, list: if isSignedIn();
       allow write: if isAdmin();
@@ -41,13 +43,17 @@ service cloud.firestore {
     match /loyaltyRules/{docId} { allow read, write: if isAdmin(); }
     match /point_requests/{requestId} { allow read, write: if isAdmin(); }
     match /loyaltyLogs/{logId} { allow read, write: if isAdmin(); }
+    
+    // Wallet Transactions: Only admins can create/read.
     match /walletTransactions/{transactionId} {
-      allow read, write: if isSignedIn();
+      allow read, create: if isAdmin();
     }
+
     match /orders/{orderId} { allow read, write: if isAdmin(); }
     match /supportTickets/{ticketId} { allow read, write: if isAdmin(); }
     match /notificationTemplates/{docId} { allow read, write: if isAdmin(); }
     match /broadcasts/{docId} { allow read, write: if isAdmin(); }
+    match /notifications/{docId} { allow read, write: if isAdmin(); }
     
     // --- Public Read to unblock seeding flow, Admin Write ---
     match /systemSettings/{docId} { 
@@ -101,10 +107,10 @@ service cloud.firestore {
       match /profile/{profileId} {
         allow read, write: if isOwner(userId);
       }
-      // User Wallet: Admins can read/write, owner can only read.
+      // User Wallet: Admins can write and read. Owner can only read.
       match /wallet/{walletId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow write: if isSignedIn();
+        allow get: if isOwner(userId) || isAdmin();
+        allow list, write: if isAdmin();
       }
     }
 
