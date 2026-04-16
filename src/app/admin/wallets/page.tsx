@@ -14,13 +14,18 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Search, User, Phone, BadgeCent, Loader2 } from 'lucide-react';
+import { Wallet, Search, User, Phone, BadgeCent, Loader2, List, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import type { BankAccount } from '../bank-accounts/page';
-import { depositWallet, refundWallet } from '@/ai/flows/wallet-flows';
+import { depositWallet, refundWallet, getWalletTransactions } from '@/ai/flows/wallet-flows';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 // Types
 type UserWallet = {
@@ -29,6 +34,16 @@ type UserWallet = {
     pointsBalance: number;
     cashBalance: number;
 };
+
+type WalletTransaction = {
+    id: string;
+    type: 'deposit' | 'withdrawal' | 'payment' | 'refund' | 'adjustment';
+    amount: number;
+    newBalance: number;
+    notes: string;
+    createdAt: Timestamp;
+};
+
 
 // Zod Schemas
 const depositSchema = z.object({
@@ -59,6 +74,8 @@ export default function WalletsPage() {
     const [foundClient, setFoundClient] = useState<Client | null>(null);
     const [isLoadingClient, setIsLoadingClient] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [transactions, setTransactions] = useState<WalletTransaction[] | null>(null);
+    const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -74,6 +91,7 @@ export default function WalletsPage() {
 
     // Effects
     useEffect(() => { const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500); return () => clearTimeout(handler); }, [searchTerm]);
+    
     useEffect(() => {
         if (!isLoadingClientCollection) {
             const client = clientData?.[0] || null;
@@ -81,12 +99,34 @@ export default function WalletsPage() {
             setIsLoadingClient(false);
         }
     }, [clientData, isLoadingClientCollection]);
+    
+     useEffect(() => {
+        if (foundClient) {
+            setIsLoadingTransactions(true);
+            getWalletTransactions({ clientId: foundClient.id })
+                .then(data => {
+                    const processedData = data.map((tx: any) => ({
+                        ...tx,
+                        createdAt: new Timestamp(tx.createdAt.seconds, tx.createdAt.nanoseconds)
+                    })).sort((a: any, b: any) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+                    setTransactions(processedData);
+                })
+                .catch(error => {
+                    console.error("Failed to fetch transactions:", error);
+                    toast({ variant: 'destructive', title: 'فشل تحميل السجل' });
+                })
+                .finally(() => {
+                    setIsLoadingTransactions(false);
+                });
+        } else {
+            setTransactions(null);
+        }
+    }, [foundClient, toast]);
 
 
     // Handlers
     const handleSearch = () => {
         setIsLoadingClient(true);
-        // This will trigger the useEffect for debouncing
         setDebouncedSearchTerm(searchTerm);
     };
 
@@ -125,7 +165,7 @@ export default function WalletsPage() {
             if (result.success) {
                 toast({ title: "تم الاسترجاع بنجاح" });
                 refundForm.reset();
-                return true; // To close dialog
+                return true;
             } else {
                  throw new Error(result.message);
             }
@@ -179,46 +219,67 @@ export default function WalletsPage() {
         {foundClient && (
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-                 <Form {...depositForm}>
-                    <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
+                 <Tabs defaultValue="actions">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="actions"><Wallet/>إجراءات المحفظة</TabsTrigger>
+                        <TabsTrigger value="log"><History/>سجل العمليات</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="actions" className="mt-4">
+                        <Form {...depositForm}>
+                            <form onSubmit={depositForm.handleSubmit(onDepositSubmit)}>
+                                <Card>
+                                <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                    <FormField name="bankName" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>البنك</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl"> <FormControl><SelectTrigger className="h-10 rounded-[10px]"> <SelectValue placeholder="اختر البنك..." /> </SelectTrigger></FormControl> <SelectContent> {(bankAccounts || []).map(bank => ( <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem> ))} </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+                                    <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
+                                    <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رابط صورة السند (اختياري)</FormLabel> <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl> <ImagePreview url={field.value} /> <FormMessage /> </FormItem> )} />
+                                </CardContent>
+                                <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
+                                </Card>
+                            </form>
+                        </Form>
+                    </TabsContent>
+                    <TabsContent value="log" className="mt-4">
                         <Card>
-                        <CardHeader><CardTitle>إضافة رصيد جديد</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField name="amount" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>المبلغ</FormLabel> <FormControl><Input type="number" {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                            <FormField
-                                name="bankName"
-                                control={depositForm.control}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>البنك</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
-                                            <FormControl><SelectTrigger className="h-10 rounded-[10px]">
-                                                    <SelectValue placeholder="اختر البنك..." />
-                                                </SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                {(bankAccounts || []).map(bank => (
-                                                    <SelectItem key={bank.id} value={bank.bankName}>{bank.bankName}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField name="referenceNumber" control={depositForm.control} render={({ field }) => ( <FormItem> <FormLabel>رقم السند</FormLabel> <FormControl><Input {...field} className="h-10 rounded-[10px]" /></FormControl> <FormMessage /> </FormItem> )} />
-                            <FormField name="receiptImageUrl" control={depositForm.control} render={({ field }) => ( 
-                                <FormItem> 
-                                    <FormLabel>رابط صورة السند (اختياري)</FormLabel> 
-                                    <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-[10px]" placeholder="https://..." dir="ltr"/></FormControl>
-                                    <ImagePreview url={field.value} />
-                                    <FormMessage /> 
-                                </FormItem> 
-                            )} />
-                        </CardContent>
-                        <CardFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : 'تأكيد الإيداع'}</Button></CardFooter>
+                            <CardHeader><CardTitle>سجل العمليات لـ {foundClient.name}</CardTitle></CardHeader>
+                            <CardContent>
+                                <div className="border rounded-lg max-h-96 overflow-y-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-right">التاريخ</TableHead>
+                                            <TableHead className="text-center">النوع</TableHead>
+                                            <TableHead className="text-center">المبلغ</TableHead>
+                                            <TableHead className="text-center">الرصيد الجديد</TableHead>
+                                            <TableHead className="text-center">ملاحظات</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {isLoadingTransactions ? (
+                                            <TableRow><TableCell colSpan={5} className="text-center"><Loader2 className="animate-spin mx-auto"/></TableCell></TableRow>
+                                        ) : transactions && transactions.length > 0 ? (
+                                            transactions.map(tx => (
+                                                <TableRow key={tx.id}>
+                                                    <TableCell className="text-right">{format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar})}</TableCell>
+                                                    <TableCell className="text-center"><Badge variant={tx.type === 'deposit' ? 'default' : 'secondary'}>{tx.type}</Badge></TableCell>
+                                                    <TableCell className={cn("text-center font-mono", tx.amount > 0 ? 'text-green-600' : 'text-red-600')}>
+                                                        {tx.amount > 0 ? `+${tx.amount.toLocaleString()}` : tx.amount.toLocaleString()}
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-mono">{tx.newBalance.toLocaleString()}</TableCell>
+                                                    <TableCell className="text-center text-xs">{tx.notes}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">لا توجد عمليات لهذه المحفظة.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                                </div>
+                            </CardContent>
                         </Card>
-                    </form>
-                 </Form>
+                    </TabsContent>
+                </Tabs>
             </div>
 
             <div className="space-y-6">

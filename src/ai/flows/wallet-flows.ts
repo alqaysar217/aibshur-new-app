@@ -2,10 +2,10 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getFirestore, runTransaction, doc, collection, serverTimestamp, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, collection, serverTimestamp, setDoc, getDoc, updateDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase/init'; 
 
-// Deposit Flow
+// --- Deposit Flow ---
 const depositWalletInputSchema = z.object({
   clientId: z.string(),
   amount: z.coerce.number().min(1, "المبلغ يجب أن يكون أكبر من صفر"),
@@ -35,20 +35,17 @@ const depositWalletFlow = ai.defineFlow(
     const db = getFirestore(initializeFirebase().firebaseApp);
     
     try {
-      // Step 1: Get the current wallet state.
       const walletRef = doc(db, 'users', input.clientId, 'wallet', 'main');
       const walletDoc = await getDoc(walletRef);
       const currentBalance = walletDoc.exists() ? walletDoc.data().cashBalance : 0;
       const newBalance = currentBalance + input.amount;
 
-      // Step 2: Update the wallet balance.
       if (walletDoc.exists()) {
           await updateDoc(walletRef, { cashBalance: newBalance });
       } else {
           await setDoc(walletRef, { userId: input.clientId, cashBalance: newBalance, pointsBalance: 0 });
       }
       
-      // Step 3: Log the transaction.
       const logRef = doc(collection(db, 'walletTransactions'));
       await setDoc(logRef, {
         userId: input.clientId,
@@ -73,8 +70,7 @@ const depositWalletFlow = ai.defineFlow(
   }
 );
 
-
-// Refund Flow
+// --- Refund Flow ---
 const refundWalletInputSchema = z.object({
   clientId: z.string(),
   amount: z.coerce.number().min(1, "المبلغ يجب أن يكون أكبر من صفر"),
@@ -87,7 +83,6 @@ const refundWalletOutputSchema = z.object({
   message: z.string(),
 });
 type RefundWalletOutput = z.infer<typeof refundWalletOutputSchema>;
-
 
 export async function refundWallet(input: RefundWalletInput): Promise<RefundWalletOutput> {
   return refundWalletFlow(input);
@@ -117,10 +112,8 @@ const refundWalletFlow = ai.defineFlow(
 
         const newBalance = currentBalance - input.amount;
 
-        // Step 1: Update balance
         await updateDoc(walletRef, { cashBalance: newBalance });
 
-        // Step 2: Log transaction
         const logRef = doc(collection(db, 'walletTransactions'));
         await setDoc(logRef, {
             userId: input.clientId,
@@ -136,6 +129,46 @@ const refundWalletFlow = ai.defineFlow(
     } catch (e: any) {
         console.error("Refund flow failed: ", e);
         return { success: false, message: e.message || "فشلت عملية الاسترجاع." };
+    }
+  }
+);
+
+
+// --- Get Transactions Flow ---
+const getWalletTransactionsInputSchema = z.object({
+  clientId: z.string(),
+});
+type GetWalletTransactionsInput = z.infer<typeof getWalletTransactionsInputSchema>;
+
+const getWalletTransactionsOutputSchema = z.any();
+
+export async function getWalletTransactions(input: GetWalletTransactionsInput): Promise<any[]> {
+  return getWalletTransactionsFlow(input);
+}
+
+const getWalletTransactionsFlow = ai.defineFlow(
+  {
+    name: 'getWalletTransactionsFlow',
+    inputSchema: getWalletTransactionsInputSchema,
+    outputSchema: getWalletTransactionsOutputSchema,
+  },
+  async (input) => {
+    const db = getFirestore(initializeFirebase().firebaseApp);
+    
+    try {
+      const transactionsRef = collection(db, 'walletTransactions');
+      const q = query(transactionsRef, where('userId', '==', input.clientId), orderBy('createdAt', 'desc'));
+      
+      const querySnapshot = await getDocs(q);
+      const transactions: any[] = [];
+      querySnapshot.forEach((doc) => {
+        transactions.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return transactions;
+    } catch (e: any) {
+      console.error("Get transactions flow failed: ", e);
+      return [];
     }
   }
 );
