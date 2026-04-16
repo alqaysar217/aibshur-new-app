@@ -437,16 +437,16 @@ export default function WalletsPage() {
                 </DialogHeader>
                 {detailsDialogState.transaction && (
                     <div className="space-y-3 py-4 text-sm">
-                        <p><strong>تاريخ العملية:</strong> {format(detailsDialogState.transaction.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar})}</p>
-                        <p><strong>النوع:</strong> <Badge variant={detailsDialogState.transaction.type === 'deposit' ? 'default' : 'secondary'}>{detailsDialogState.transaction.type}</Badge></p>
-                        <p><strong>المبلغ:</strong> <span className={cn("font-mono font-bold", detailsDialogState.transaction.amount > 0 ? 'text-green-600' : 'text-red-600')}>{detailsDialogState.transaction.amount.toLocaleString('en-US')} ر.ي</span></p>
-                        <p><strong>الرصيد بعد العملية:</strong> <span className="font-mono font-bold">{detailsDialogState.transaction.newBalance.toLocaleString('en-US')} ر.ي</span></p>
-                        <p><strong>الملاحظات:</strong> {detailsDialogState.transaction.notes}</p>
+                        <div><strong>تاريخ العملية:</strong> {format(detailsDialogState.transaction.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar})}</div>
+                        <div className="flex items-center gap-2"><strong>النوع:</strong> <Badge variant={detailsDialogState.transaction.type === 'deposit' ? 'default' : 'secondary'}>{detailsDialogState.transaction.type}</Badge></div>
+                        <div><strong>المبلغ:</strong> <span className={cn("font-mono font-bold", detailsDialogState.transaction.amount > 0 ? 'text-green-600' : 'text-red-600')}>{detailsDialogState.transaction.amount.toLocaleString('en-US')} ر.ي</span></div>
+                        <div><strong>الرصيد بعد العملية:</strong> <span className="font-mono font-bold">{detailsDialogState.transaction.newBalance.toLocaleString('en-US')} ر.ي</span></div>
+                        <div><strong>الملاحظات:</strong> {detailsDialogState.transaction.notes}</div>
                         {detailsDialogState.transaction.bankDetails && (
                             <div className="border-t pt-3 mt-3 space-y-2">
                                 <h4 className="font-semibold">تفاصيل بنكية</h4>
-                                <p><strong>البنك:</strong> {detailsDialogState.transaction.bankDetails.bankName}</p>
-                                <p><strong>رقم السند:</strong> {detailsDialogState.transaction.bankDetails.referenceNumber}</p>
+                                <div><strong>البنك:</strong> {detailsDialogState.transaction.bankDetails.bankName}</div>
+                                <div><strong>رقم السند:</strong> {detailsDialogState.transaction.bankDetails.referenceNumber}</div>
                                 {detailsDialogState.transaction.bankDetails.receiptImageUrl && <ImagePreview url={detailsDialogState.transaction.bankDetails.receiptImageUrl} />}
                             </div>
                         )}
