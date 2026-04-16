@@ -437,7 +437,7 @@ export default function WalletsPage() {
                         <FileText className="text-primary"/>
                         تفاصيل العملية المالية
                     </DialogTitle>
-                    <DialogDescription>عرض تفصيلي لبيانات العملية المسجلة.</DialogDescription>
+                    <DialogDescription className="text-right">عرض تفصيلي لبيانات العملية المسجلة.</DialogDescription>
                 </DialogHeader>
                 {detailsDialogState.transaction && (
                     <div className="py-4 space-y-4 text-sm">
