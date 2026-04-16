@@ -23,6 +23,8 @@ import { Wallet, Search, User, Phone, CheckCircle, XCircle, Banknote, Upload, Hi
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+
 
 // Types
 type UserWallet = {
@@ -69,7 +71,15 @@ export default function WalletsPage() {
     // Data Fetching
     const { data: clientData, isLoading: isLoadingClientCollection } = useCollection<Client>(useMemoFirebase(() => (firestore && debouncedSearchTerm) ? query(collection(firestore, 'clients'), where('phone', '==', debouncedSearchTerm)) : null, [firestore, debouncedSearchTerm]));
     const { data: userWallet, isLoading: isLoadingWallet } = useDoc<UserWallet>(useMemoFirebase(() => (firestore && foundClient) ? doc(firestore, 'users', foundClient.id, 'wallet', 'main') : null, [firestore, foundClient]));
-    const { data: walletLogs, isLoading: isLoadingLogs } = useCollection<WalletTransaction>(useMemoFirebase(() => (firestore && foundClient) ? query(collection(firestore, 'walletTransactions'), where('userId', '==', foundClient.id)) : null, [firestore, foundClient]));
+    
+    // Fetch all transactions and filter on client
+    const { data: allWalletLogs, isLoading: isLoadingLogs } = useCollection<WalletTransaction>(useMemoFirebase(() => firestore ? collection(firestore, 'walletTransactions') : null, [firestore]));
+    
+    const walletLogs = useMemo(() => {
+        if (!allWalletLogs || !foundClient) return [];
+        return allWalletLogs.filter(log => log.userId === foundClient.id);
+    }, [allWalletLogs, foundClient]);
+
 
     // Forms
     const depositForm = useForm<z.infer<typeof depositSchema>>({ resolver: zodResolver(depositSchema), defaultValues: { amount: 0, bankName: '', referenceNumber: '', receiptImageUrl: '' }});
@@ -240,11 +250,9 @@ export default function WalletsPage() {
                                     <FormItem>
                                         <FormLabel>البنك</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value || ''} dir="rtl">
-                                            <FormControl>
-                                                <SelectTrigger className="h-10 rounded-[10px]">
+                                            <FormControl><SelectTrigger className="h-10 rounded-[10px]">
                                                     <SelectValue placeholder="اختر البنك..." />
-                                                </SelectTrigger>
-                                            </FormControl>
+                                                </SelectTrigger></FormControl>
                                             <SelectContent>
                                                 <SelectItem value="الكريمي">الكريمي</SelectItem>
                                                 <SelectItem value="العمقي">العمقي</SelectItem>
