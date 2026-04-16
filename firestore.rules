@@ -103,9 +103,9 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
-      // User Wallet: Admins can write. Owners can read. Admin read is granted above.
+      // User Wallet: Admins can write. Owners or Admins can read.
       match /wallet/{walletId} {
-        allow get: if isOwner(userId);
+        allow get: if isOwner(userId) || isAdmin();
         allow write: if isAdmin();
       }
 
