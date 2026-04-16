@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Search, User, Phone, BadgeCent, Loader2, List, History } from 'lucide-react';
+import { Wallet, Search, User, Phone, BadgeCent, Loader2, List, History, FileText, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Client } from '../users/page';
 import { Textarea } from '@/components/ui/textarea';
@@ -80,6 +80,8 @@ export default function WalletsPage() {
     const [foundClient, setFoundClient] = useState<Client | null>(null);
     const [isLoadingClient, setIsLoadingClient] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [logFilters, setLogFilters] = useState({ searchTerm: '', type: 'all' });
+    const [detailsDialogState, setDetailsDialogState] = useState<{ isOpen: boolean, transaction: WalletTransaction | null }>({ isOpen: false, transaction: null });
 
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -103,6 +105,20 @@ export default function WalletsPage() {
             createdAt: tx.createdAt,
         }));
     }, [rawTransactions]);
+
+    const filteredTransactions = useMemo(() => {
+        if (!transactions) return [];
+        return transactions.filter(tx => {
+            const matchesType = logFilters.type === 'all' || tx.type === logFilters.type;
+            const searchTermLower = logFilters.searchTerm.toLowerCase();
+            const matchesSearch = !logFilters.searchTerm ||
+                tx.notes.toLowerCase().includes(searchTermLower) ||
+                (tx.bankDetails && tx.bankDetails.referenceNumber && tx.bankDetails.referenceNumber.toLowerCase().includes(searchTermLower)) ||
+                (tx.bankDetails && tx.bankDetails.bankName && tx.bankDetails.bankName.toLowerCase().includes(searchTermLower));
+            return matchesType && matchesSearch;
+        });
+    }, [transactions, logFilters]);
+
 
     useEffect(() => {
         if (transactionsError) {
@@ -328,7 +344,7 @@ export default function WalletsPage() {
                                             <h4 className="font-semibold">تجميد الحساب</h4>
                                             <p className="text-xs text-muted-foreground">منع العميل من استخدام رصيده.</p>
                                         </div>
-                                        <Switch checked={!foundClient.is_active} onCheckedChange={handleToggleActive} />
+                                        <Switch dir="ltr" checked={!foundClient.is_active} onCheckedChange={handleToggleActive} />
                                     </div>
                                     <Dialog>
                                         <DialogTrigger asChild><Button variant="destructive" className="w-full"><BadgeCent/>استرجاع رصيد</Button></DialogTrigger>
@@ -354,7 +370,23 @@ export default function WalletsPage() {
                 
                 <TabsContent value="log" className="mt-4">
                      <Card>
-                        <CardHeader><CardTitle>سجل العمليات لـ {foundClient.name}</CardTitle></CardHeader>
+                        <CardHeader>
+                            <CardTitle>سجل العمليات لـ {foundClient.name}</CardTitle>
+                            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                                <Input placeholder="ابحث في الملاحظات أو رقم السند..." value={logFilters.searchTerm} onChange={e => setLogFilters(f => ({ ...f, searchTerm: e.target.value }))} className="w-full sm:w-auto flex-grow" />
+                                <Select value={logFilters.type} onValueChange={v => setLogFilters(f => ({...f, type: v}))}>
+                                    <SelectTrigger className="w-full sm:w-48"><div className="flex items-center gap-2"><Filter/> <SelectValue /></div></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">كل الأنواع</SelectItem>
+                                        <SelectItem value="deposit">إيداع</SelectItem>
+                                        <SelectItem value="withdrawal">سحب</SelectItem>
+                                        <SelectItem value="payment">دفع</SelectItem>
+                                        <SelectItem value="refund">استرجاع</SelectItem>
+                                        <SelectItem value="adjustment">تعديل</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardHeader>
                         <CardContent>
                             <div className="border rounded-lg max-h-96 overflow-y-auto">
                             <Table>
@@ -364,14 +396,14 @@ export default function WalletsPage() {
                                         <TableHead className="text-center">النوع</TableHead>
                                         <TableHead className="text-center">المبلغ</TableHead>
                                         <TableHead className="text-center">الرصيد الجديد</TableHead>
-                                        <TableHead className="text-center">ملاحظات</TableHead>
+                                        <TableHead className="text-center">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {isLoadingTransactions ? (
                                         <TableRow><TableCell colSpan={5} className="text-center"><Loader2 className="animate-spin mx-auto"/></TableCell></TableRow>
-                                    ) : transactions && transactions.length > 0 ? (
-                                        transactions.map(tx => (
+                                    ) : filteredTransactions && filteredTransactions.length > 0 ? (
+                                        filteredTransactions.map(tx => (
                                             <TableRow key={tx.id}>
                                                 <TableCell className="text-right">{tx.createdAt ? format(tx.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar}) : '...'}</TableCell>
                                                 <TableCell className="text-center"><Badge variant={tx.type === 'deposit' ? 'default' : 'secondary'}>{tx.type}</Badge></TableCell>
@@ -379,7 +411,11 @@ export default function WalletsPage() {
                                                     {tx.amount > 0 ? `+${tx.amount.toLocaleString('en-US')}` : tx.amount.toLocaleString('en-US')}
                                                 </TableCell>
                                                 <TableCell className="text-center font-mono">{tx.newBalance.toLocaleString('en-US')}</TableCell>
-                                                <TableCell className="text-center text-xs">{tx.notes}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button variant="outline" size="sm" onClick={() => setDetailsDialogState({ isOpen: true, transaction: tx })}>
+                                                        <FileText className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
@@ -394,6 +430,33 @@ export default function WalletsPage() {
             </Tabs>
           </>
         )}
+        <Dialog open={detailsDialogState.isOpen} onOpenChange={(isOpen) => setDetailsDialogState({ isOpen, transaction: isOpen ? detailsDialogState.transaction : null })}>
+            <DialogContent dir="rtl" className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>تفاصيل العملية</DialogTitle>
+                </DialogHeader>
+                {detailsDialogState.transaction && (
+                    <div className="space-y-3 py-4 text-sm">
+                        <p><strong>تاريخ العملية:</strong> {format(detailsDialogState.transaction.createdAt.toDate(), 'd MMM yyyy, h:mm a', {locale: ar})}</p>
+                        <p><strong>النوع:</strong> <Badge variant={detailsDialogState.transaction.type === 'deposit' ? 'default' : 'secondary'}>{detailsDialogState.transaction.type}</Badge></p>
+                        <p><strong>المبلغ:</strong> <span className={cn("font-mono font-bold", detailsDialogState.transaction.amount > 0 ? 'text-green-600' : 'text-red-600')}>{detailsDialogState.transaction.amount.toLocaleString('en-US')} ر.ي</span></p>
+                        <p><strong>الرصيد بعد العملية:</strong> <span className="font-mono font-bold">{detailsDialogState.transaction.newBalance.toLocaleString('en-US')} ر.ي</span></p>
+                        <p><strong>الملاحظات:</strong> {detailsDialogState.transaction.notes}</p>
+                        {detailsDialogState.transaction.bankDetails && (
+                            <div className="border-t pt-3 mt-3 space-y-2">
+                                <h4 className="font-semibold">تفاصيل بنكية</h4>
+                                <p><strong>البنك:</strong> {detailsDialogState.transaction.bankDetails.bankName}</p>
+                                <p><strong>رقم السند:</strong> {detailsDialogState.transaction.bankDetails.referenceNumber}</p>
+                                {detailsDialogState.transaction.bankDetails.receiptImageUrl && <ImagePreview url={detailsDialogState.transaction.bankDetails.receiptImageUrl} />}
+                            </div>
+                        )}
+                    </div>
+                )}
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       </div>
     );
 }
