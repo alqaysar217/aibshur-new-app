@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { useUser, useAuth, useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import type { Notification } from '@/lib/notifications';
-import { collection, doc } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { Admin } from '../users/page';
 
 const sidebarNavItems = [
@@ -51,6 +51,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const auth = useAuth();
     const firestore = useFirestore();
     
+    // Instead of using user.uid directly, we use the stable UID from the auth session.
+    // The new OTP logic ensures this UID is stable across logins for the same phone number.
     const adminDocRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
         return doc(firestore, 'admins', user.uid);
@@ -70,6 +72,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         try {
             if (auth) {
                 await signOut(auth);
+                localStorage.removeItem('userPhone');
+                localStorage.removeItem('userRole');
                 router.push('/login');
             }
         } catch (error) {
@@ -84,14 +88,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, [isUserLoading, user, router]);
     
     useEffect(() => {
-        // If we are done checking for the admin profile, and it doesn't exist,
-        // and we are NOT on the profile page already, then redirect to create it.
-        if (!isLoadingAdminProfile && !adminProfile && pathname !== '/admin/profile') {
-            router.replace('/admin/profile');
+        if (!isUserLoading && !isLoadingAdminProfile && user && !adminProfile && pathname !== '/admin/profile') {
+             router.replace('/admin/profile');
         }
-    }, [isLoadingAdminProfile, adminProfile, pathname, router]);
+    }, [isUserLoading, isLoadingAdminProfile, user, adminProfile, pathname, router]);
 
-    if (isUserLoading || isLoadingAdminProfile || (!adminProfile && pathname !== '/admin/profile')) {
+    if (isUserLoading || isLoadingAdminProfile || (user && !adminProfile && pathname !== '/admin/profile')) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-muted/40">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />

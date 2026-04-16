@@ -53,6 +53,10 @@ export default function ProfilePage() {
     useEffect(() => {
         if (!isLoadingProfile && !adminProfile) {
             setIsFirstTime(true);
+            const phoneFromStorage = localStorage.getItem('userPhone');
+            if (phoneFromStorage) {
+                form.setValue('phone', phoneFromStorage);
+            }
         }
         if (adminProfile) {
             setIsFirstTime(false);
@@ -145,7 +149,7 @@ export default function ProfilePage() {
                         <div>
                             <CardTitle className="text-blue-900">مرحباً بك! قم بإنشاء ملفك الشخصي كمسؤول.</CardTitle>
                             <CardDescription className="text-blue-800">
-                                يبدو أنه لا يوجد أي مسؤول في النظام. يرجى إكمال بياناتك لإنشاء أول حساب مسؤول. سيتم منحك جميع الصلاحيات تلقائياً.
+                                يبدو أن هذا أول دخول لك. يرجى إكمال بياناتك لإنشاء حساب المسؤول الخاص بك. سيتم منحك جميع الصلاحيات تلقائياً.
                             </CardDescription>
                         </div>
                     </CardHeader>
@@ -178,7 +182,7 @@ export default function ProfilePage() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="flex items-center gap-2"><Phone /> رقم الهاتف</FormLabel>
-                                            <FormControl><Input {...field} /></FormControl>
+                                            <FormControl><Input {...field} disabled={isFirstTime} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -204,7 +208,7 @@ export default function ProfilePage() {
                                             <FormLabel className="flex items-center gap-2"><Upload/> الصورة الشخصية</FormLabel>
                                             <div className="relative w-40 h-40 mx-auto rounded-full overflow-hidden border-4 border-primary/10 shadow-md bg-muted">
                                                 {photoUrl ? (
-                                                    <Image src={photoUrl} alt="الصورة الشخصية" layout="fill" objectFit="cover" />
+                                                    <Image src={photoUrl} alt="الصورة الشخصية" layout="fill" objectFit="cover" unoptimized />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center">
                                                         <User className="w-20 h-20 text-muted-foreground" />

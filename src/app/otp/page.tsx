@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
-import { useAuth, initiateAnonymousSignIn, useFirestore } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -99,8 +100,12 @@ export default function OtpPage() {
 
     switch (finalOtp) {
         case MOCK_OTP_USER:
+            // Allow if user is a client OR if they have no role yet (new registration)
             if (userRoles.includes('client') || userRoles.length === 0) {
                 isAuthenticated = true;
+                // If they have no roles, it's a new registration.
+                // The registration page doesn't exist in the current file list, but we can assume it sets them up to be a client.
+                // If they are new, send to register. If they exist, send to home.
                 redirectPath = userRoles.length > 0 ? '/home' : `/register?phone=${phone}&role=client`;
                 roleToSave = 'client';
             } else {
@@ -145,10 +150,33 @@ export default function OtpPage() {
     }
 
     if (isAuthenticated) {
-        initiateAnonymousSignIn(auth);
-        localStorage.setItem('userPhone', phone);
-        localStorage.setItem('userRole', roleToSave);
-        router.push(redirectPath);
+        try {
+            const email = `${phone}@example.com`;
+            // This is a mock auth system, so a static password is used to link a phone number to a stable UID.
+            const password = "password-for-mock-auth-system"; 
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error: any) {
+                // If user not found, this is their first login. Create the auth user.
+                if (error.code === 'auth/user-not-found') {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } else {
+                    // For other auth errors (e.g., weak password, network issues), show an error.
+                    throw error;
+                }
+            }
+            
+            // The onAuthStateChanged listener will now have a stable user.
+            localStorage.setItem('userPhone', phone);
+            localStorage.setItem('userRole', roleToSave);
+            router.push(redirectPath);
+
+        } catch (authError: any) {
+            console.error("Authentication process failed:", authError);
+            setError("فشلت عملية المصادقة. يرجى المحاولة مرة أخرى.");
+            setIsLoading(false);
+        }
     } else {
         setIsLoading(false);
     }
