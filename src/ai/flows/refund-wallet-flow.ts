@@ -5,14 +5,14 @@ import { z } from 'zod';
 import { getFirestore, runTransaction, doc, collection, serverTimestamp } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
-export const refundWalletInputSchema = z.object({
+const refundWalletInputSchema = z.object({
   clientId: z.string(),
   amount: z.number().min(1),
   reason: z.string().min(10),
 });
 export type RefundWalletInput = z.infer<typeof refundWalletInputSchema>;
 
-export const refundWalletOutputSchema = z.object({
+const refundWalletOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   newBalance: z.number().optional(),

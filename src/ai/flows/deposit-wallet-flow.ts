@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getFirestore, runTransaction, doc, collection, serverTimestamp } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
-export const depositWalletInputSchema = z.object({
+const depositWalletInputSchema = z.object({
   clientId: z.string(),
   amount: z.number().min(1),
   bankName: z.string(),
@@ -14,7 +14,7 @@ export const depositWalletInputSchema = z.object({
 });
 export type DepositWalletInput = z.infer<typeof depositWalletInputSchema>;
 
-export const depositWalletOutputSchema = z.object({
+const depositWalletOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   newBalance: z.number().optional(),

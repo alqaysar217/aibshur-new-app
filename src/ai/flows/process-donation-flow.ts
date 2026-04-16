@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { getFirestore, runTransaction, doc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase'; 
 
-export const processDonationInputSchema = z.object({
+const processDonationInputSchema = z.object({
   userId: z.string(),
   userName: z.string(),
   userPhone: z.string(),
@@ -14,7 +14,7 @@ export const processDonationInputSchema = z.object({
 });
 export type ProcessDonationInput = z.infer<typeof processDonationInputSchema>;
 
-export const processDonationOutputSchema = z.object({
+const processDonationOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
